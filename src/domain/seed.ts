@@ -113,6 +113,17 @@ export function gerarBase(seed = 20260819): BaseDados {
       cargaBaseKW,
       precoBaseKWh: Number(r.float(1.65, 2.15).toFixed(2)),
       ativo: r.chance(0.93),
+      ...(() => {
+        // ~60% dos pontos ja sao clientes GoodWe de solar; metade tem bateria
+        const temSolar = r.chance(0.6);
+        const temBateria = temSolar && r.chance(0.5);
+        return {
+          temSolar,
+          potenciaFVkWp: temSolar ? Number(r.float(8, 55).toFixed(1)) : 0,
+          temBateria,
+          capacidadeBateriaKWh: temBateria ? Number(r.pick([10, 15, 20, 30, 40])) : 0,
+        };
+      })(),
       inauguradoEm: iso(new Date(agora.getTime() - r.int(100, 800) * 86400000)),
       lat: Number(r.float(-30, -8).toFixed(4)),
       lng: Number(r.float(-51, -35).toFixed(4)),

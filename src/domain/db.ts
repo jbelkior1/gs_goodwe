@@ -3,6 +3,7 @@ import { MODELOS_CARREGADOR, REGIOES, REGRAS, FORMATOS, VEICULOS } from './catal
 import { calcularDemanda, cargaComercioNaHora } from './engine/demanda';
 import { calcularTarifa } from './engine/tarifa';
 import { preverDemanda, gerarRecomendacoes, resumoGerencial, detectarAnomalias } from './engine/ia';
+import { resumoSolar, mixDoDia } from './engine/solar';
 import type {
   Carregador,
   Cobranca,
@@ -359,5 +360,56 @@ export function economiaDoPonto(pontoId: string) {
     paybackMeses: Number(paybackMeses.toFixed(1)),
     horasUsoDia: kpis.horasUsoDia,
     acimaDoLimiar: kpis.horasUsoDia >= REGRAS.limiarViabilidadeHoras,
+  };
+}
+
+// ---------------------------------------------------------------- ecossistema
+/** Mix energetico do ponto: sol, bateria e rede (modos do HCA G2). */
+export function solarDoPonto(pontoId: string) {
+  const ponto = obterPonto(pontoId)!;
+  const regiao = regiaoDoPonto(ponto);
+  const kpis = kpisDoPonto(pontoId);
+  // potencia media dedicada a recarga ao longo do dia
+  const recargaMediaKW = kpis.energiaMesKWh / Math.max(1, new Date().getDate()) / 14;
+
+  const resumo = resumoSolar(ponto, regiao, recargaMediaKW);
+
+  // Quanto da ENERGIA VENDIDA na recarga veio do sol/bateria. Separamos isso da
+  // economia total do comercio (que inclui geladeira, luz, ar) para nao misturar
+  // o resultado do negocio de recarga com a conta de luz inteira do lojista.
+  const economiaRecargaMes = Number(
+    (kpis.energiaMesKWh * resumo.autossuficiencia * regiao.custoEnergiaKWh).toFixed(2),
+  );
+
+  return {
+    resumo: { ...resumo, economiaRecargaMes },
+    mix: mixDoDia(ponto, recargaMediaKW),
+  };
+}
+
+/** Consolidado de solar na rede — quantos pontos ja sao clientes do ecossistema. */
+export function solarDaRede() {
+  const comSolar = base.pontos.filter((p) => p.temSolar);
+  const comBateria = base.pontos.filter((p) => p.temBateria);
+  const potenciaFV = comSolar.reduce((t, p) => t + p.potenciaFVkWp, 0);
+
+  let economiaRecarga = 0;
+  let economiaTotal = 0;
+  let co2 = 0;
+  for (const p of base.pontos) {
+    const s = solarDoPonto(p.id).resumo;
+    economiaRecarga += s.economiaRecargaMes;
+    economiaTotal += s.economiaMes;
+    co2 += s.co2EvitadoMesKg;
+  }
+
+  return {
+    pontosComSolar: comSolar.length,
+    pontosComBateria: comBateria.length,
+    pontosSemSolar: base.pontos.length - comSolar.length,
+    potenciaFVkWp: Number(potenciaFV.toFixed(1)),
+    economiaRecargaMes: Number(economiaRecarga.toFixed(2)),
+    economiaTotalMes: Number(economiaTotal.toFixed(2)),
+    co2EvitadoMesKg: Number(co2.toFixed(1)),
   };
 }

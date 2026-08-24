@@ -2,10 +2,10 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import {
-  kpisDaRede, desempenhoPorRegiao, serieDiaria, rankingPontos, base, noMesAtual,
+  kpisDaRede, desempenhoPorRegiao, serieDiaria, rankingPontos, base, noMesAtual, solarDaRede,
 } from '../../domain/db';
 import { REGRAS, MODELOS_CARREGADOR } from '../../domain/catalogo';
-import { Card, KPI, Tabela, Badge, Bar, brl, num, Nota, tipBRL } from '../../ui/kit';
+import { Card, KPI, Tabela, Badge, Bar, brl, num, Nota, ChartTip } from '../../ui/kit';
 
 export default function Visao() {
   const k = kpisDaRede();
@@ -23,6 +23,7 @@ export default function Visao() {
   const potenciaInstalada = base.carregadores.reduce(
     (t, c) => t + MODELOS_CARREGADOR[c.modelo].potenciaKW, 0,
   );
+  const solar = solarDaRede();
 
   return (
     <div className="stack">
@@ -61,7 +62,7 @@ export default function Visao() {
               <CartesianGrid stroke="#eef1f6" vertical={false} />
               <XAxis dataKey="dia" tick={{ fontSize: 10 }} stroke="#7a8798" minTickGap={24} />
               <YAxis tick={{ fontSize: 10 }} stroke="#7a8798" />
-              <Tooltip formatter={tipBRL} />
+              <Tooltip content={<ChartTip fmt={brl} />} />
               <Area type="monotone" dataKey="faturamento" stroke="#e4002b" fill="url(#gr)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
@@ -94,6 +95,42 @@ export default function Visao() {
              accent={k.carregadoresOffline ? 'red' : 'green'}
              foot="sem telemetria — não aceitam sessão" />
       </div>
+
+      <Card
+        title="Ecossistema GoodWe na rede"
+        sub="Cada ponto é também um cliente potencial de inversor, bateria e solar"
+      >
+        <div className="grid g4">
+          <div>
+            <div className="kpi-label">Pontos com geração própria</div>
+            <div className="kpi-value sm kpi-accent-solar">
+              {solar.pontosComSolar}<span className="tiny muted">/{base.pontos.length}</span>
+            </div>
+            <div className="tiny muted">{num(solar.potenciaFVkWp, 1)} kWp instalados</div>
+          </div>
+          <div>
+            <div className="kpi-label">Com bateria</div>
+            <div className="kpi-value sm kpi-accent-teal">{solar.pontosComBateria}</div>
+            <div className="tiny muted">modo FV + Bateria ativo</div>
+          </div>
+          <div>
+            <div className="kpi-label">Solar na energia vendida</div>
+            <div className="kpi-value sm kpi-accent-green">{brl(solar.economiaRecargaMes)}</div>
+            <div className="tiny muted">economia no custo da recarga, por mês</div>
+          </div>
+          <div>
+            <div className="kpi-label">Oportunidade aberta</div>
+            <div className="kpi-value sm kpi-accent-red">{solar.pontosSemSolar}</div>
+            <div className="tiny muted">pontos ainda sem solar — leads qualificados</div>
+          </div>
+        </div>
+        <div className="sep" />
+        <div className="tiny muted">
+          A franquia de recarga funciona como canal de aquisição: cada comércio que entra na rede
+          instala carga elétrica nova e vira candidato natural a inversor, bateria e geração solar
+          GoodWe. Também são <b>{num(solar.co2EvitadoMesKg, 1)} kg de CO₂</b> evitados por mês.
+        </div>
+      </Card>
 
       <Card title="Ranking de pontos" sub="Desempenho de cada unidade no mês">
         <div className="scroll-y">

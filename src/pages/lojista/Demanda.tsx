@@ -6,13 +6,15 @@ import {
   demandaDoPonto, obterPonto, carregadoresDoPonto, obterSessao, obterVeiculo, obterMotorista,
 } from '../../domain/db';
 import { cargaComercioNaHora } from '../../domain/engine/demanda';
-import { Card, KPI, LoadBar, Tabela, Badge, Nota, num, pct, Vazio, Bar, tipKW, EstadoBadge } from '../../ui/kit';
+import { geracaoSolarKW } from '../../domain/engine/solar';
+import { Card, KPI, LoadBar, Tabela, Badge, Nota, num, pct, Vazio, Bar, ChartTip, EstadoBadge } from '../../ui/kit';
 
 export default function Demanda() {
   const { pontoId } = useApp();
   const ponto = obterPonto(pontoId)!;
   const d = demandaDoPonto(pontoId);
   const carregadores = carregadoresDoPonto(pontoId);
+  const solarAgoraKW = geracaoSolarKW(ponto, new Date().getHours());
 
   // projeção da carga do comércio ao longo do dia vs. limite
   const projecao = Array.from({ length: 24 }, (_, h) => ({
@@ -28,8 +30,11 @@ export default function Demanda() {
              foot={`${ponto.limiteCorrenteA} A · disjuntor do comércio`} />
         <KPI label="Carga do comércio" value={`${num(d.cargaComercioKW, 1)} kW`}
              foot="geladeiras, luzes, climatização" />
-        <KPI label="Disponível p/ recarga" value={`${num(d.disponivelParaRecargaKW, 1)} kW`} accent="teal"
-             foot="já com margem de segurança de 8%" />
+        <KPI label="Disponível p/ recarga" value={`${num(d.disponivelParaRecargaKW + solarAgoraKW, 1)} kW`}
+             accent="teal"
+             foot={solarAgoraKW > 0
+               ? `inclui ${num(solarAgoraKW, 1)} kW de geração solar`
+               : 'já com margem de segurança de 8%'} />
         <KPI label="Uso da entrada" value={pct(d.utilizacaoEntrada)}
              accent={d.utilizacaoEntrada > 0.85 ? 'red' : 'green'}
              foot={d.emRestricao ? 'operando em restrição' : 'dentro do limite'} />
@@ -41,7 +46,17 @@ export default function Demanda() {
           comercioKW={d.cargaComercioKW}
           recargaKW={d.demandaConcedidaKW}
           limiteKW={ponto.limitePotenciaKW}
+          solarKW={solarAgoraKW}
         />
+        {solarAgoraKW > 0 && (
+          <div style={{ marginTop: 11 }}>
+            <Nota titulo="O sol está ajudando agora" tom="amber">
+              A geração fotovoltaica entrega <b>{num(solarAgoraKW, 1)} kW</b> neste momento. Isso
+              reduz o que o ponto puxa da rede e <b>libera folga na entrada elétrica</b> — na
+              prática, mais carros carregando em potência cheia no horário de pico.
+            </Nota>
+          </div>
+        )}
         {d.emRestricao && (
           <div style={{ marginTop: 12 }}>
             <Nota titulo="Potência sendo limitada" tom="amber">
@@ -120,7 +135,7 @@ export default function Demanda() {
             <CartesianGrid stroke="#eef1f6" vertical={false} />
             <XAxis dataKey="hora" tick={{ fontSize: 10 }} stroke="#7a8798" minTickGap={20} />
             <YAxis tick={{ fontSize: 10 }} stroke="#7a8798" unit=" kW" />
-            <Tooltip formatter={tipKW} />
+            <Tooltip content={<ChartTip fmt={(v) => `${num(v, 1)} kW`} />} />
             <ReferenceLine y={ponto.limitePotenciaKW} stroke="#e4002b" strokeDasharray="4 3"
                            label={{ value: 'limite', fontSize: 10, fill: '#e4002b', position: 'right' }} />
             <Area type="monotone" dataKey="comercio" stroke="#9aa7b8" fill="#dfe5ec" strokeWidth={2}

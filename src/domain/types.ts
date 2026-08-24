@@ -86,6 +86,11 @@ export interface Ponto {
   cargaBaseKW: number;
   precoBaseKWh: number;
   ativo: boolean;
+  /** ecossistema GoodWe instalado no ponto (inversor + FV, opcionalmente bateria) */
+  temSolar: boolean;
+  potenciaFVkWp: number;
+  temBateria: boolean;
+  capacidadeBateriaKWh: number;
   inauguradoEm: string;
   lat: number;
   lng: number;

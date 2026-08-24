@@ -119,3 +119,16 @@ export const CURVA_DEMANDA_HORA = [
   0.02, 0.01, 0.01, 0.01, 0.01, 0.02, 0.05, 0.12, 0.25, 0.38, 0.5, 0.68,
   0.82, 0.75, 0.6, 0.55, 0.62, 0.85, 1.0, 0.92, 0.7, 0.45, 0.22, 0.08,
 ];
+
+/**
+ * Geração solar típica ao longo do dia (0–23h), normalizada pelo pico.
+ * O HCA G2 tem os modos "Prioridade Solar" e "FV + Bateria" — quando há
+ * geração, a recarga puxa menos da rede e sobra mais potência na entrada.
+ */
+export const CURVA_SOLAR_HORA = [
+  0, 0, 0, 0, 0, 0.02, 0.10, 0.26, 0.45, 0.64, 0.80, 0.93,
+  1.0, 0.97, 0.88, 0.72, 0.53, 0.32, 0.14, 0.03, 0, 0, 0, 0,
+];
+
+/** Fator médio de emissão do SIN brasileiro (kg CO2 por kWh). */
+export const FATOR_CO2_KG_KWH = 0.0385;

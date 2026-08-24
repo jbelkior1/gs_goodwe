@@ -54,14 +54,19 @@ export function Card({
 
 // ------------------------------------------------------------------ kpi
 export function KPI({
-  label, value, foot, accent, sm,
+  label, value, foot, accent, sm, trend,
 }: {
   label: string; value: ReactNode; foot?: ReactNode;
-  accent?: 'red' | 'teal' | 'green'; sm?: boolean;
+  accent?: 'red' | 'teal' | 'green' | 'solar'; sm?: boolean;
+  /** variação percentual vs. período anterior (ex.: 0.12 = +12%) */
+  trend?: number;
 }) {
   return (
-    <div className="card">
-      <div className="kpi-label">{label}</div>
+    <div className={`card kpi-card ${accent ? `on-${accent}` : ''}`}>
+      <div className="row between">
+        <div className="kpi-label">{label}</div>
+        {trend !== undefined && <Trend valor={trend} />}
+      </div>
       <div className={`kpi-value ${sm ? 'sm' : ''} ${accent ? `kpi-accent-${accent}` : ''}`}>
         {value}
       </div>
@@ -70,8 +75,19 @@ export function KPI({
   );
 }
 
+/** Seta de variação vs. período anterior. */
+export function Trend({ valor }: { valor: number }) {
+  const dir = valor > 0.005 ? 'up' : valor < -0.005 ? 'down' : 'flat';
+  const seta = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '—';
+  return (
+    <span className={`trend ${dir}`}>
+      {seta} {Math.abs(valor * 100).toFixed(0)}%
+    </span>
+  );
+}
+
 // ------------------------------------------------------------------ badge
-type Tom = 'green' | 'red' | 'teal' | 'amber' | 'gray';
+type Tom = 'green' | 'red' | 'teal' | 'amber' | 'gray' | 'solar';
 
 export function Badge({
   children, tom = 'gray', dot, pulse,
@@ -125,15 +141,20 @@ export function Bar({ valor, tom = 'var(--teal)', thick }: { valor: number; tom?
  * quanto é recarga, e onde está o limite do disjuntor.
  */
 export function LoadBar({
-  comercioKW, recargaKW, limiteKW,
-}: { comercioKW: number; recargaKW: number; limiteKW: number }) {
+  comercioKW, recargaKW, limiteKW, solarKW = 0,
+}: { comercioKW: number; recargaKW: number; limiteKW: number; solarKW?: number }) {
   const pc = Math.min(100, (comercioKW / limiteKW) * 100);
   const pr = Math.min(100 - pc, (recargaKW / limiteKW) * 100);
+  const ps = Math.min(100 - pc - pr, (solarKW / limiteKW) * 100);
   return (
     <div>
       <div className="load-bar">
         <div className="load-seg comercio" style={{ width: `${pc}%` }} />
         <div className="load-seg recarga" style={{ left: `${pc}%`, width: `${pr}%` }} />
+        {ps > 0 && (
+          <div className="load-seg solar" style={{ left: `${pc + pr}%`, width: `${ps}%` }}
+               title="Potência coberta pelo sol" />
+        )}
         <div className="load-limit" style={{ left: '92%' }} title="Margem de segurança (92%)" />
       </div>
       <div className="row wrap tiny muted" style={{ marginTop: 6, gap: 14 }}>
@@ -145,6 +166,12 @@ export function LoadBar({
           <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--teal)' }} />
           Recarga {num(recargaKW, 1)} kW
         </span>
+        {solarKW > 0 && (
+          <span className="row" style={{ gap: 5 }}>
+            <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--solar)' }} />
+            Sol {num(solarKW, 1)} kW
+          </span>
+        )}
         <span className="row" style={{ gap: 5 }}>
           <span style={{ width: 2, height: 11, background: 'var(--red)' }} />
           Limite {num(limiteKW, 1)} kW
@@ -216,3 +243,31 @@ export const tipBRL = (v: unknown): string => brl(Number(v ?? 0));
 export const tipKW = (v: unknown): string => `${num(Number(v ?? 0), 1)} kW`;
 export const tipKWh = (v: unknown): string => `${num(Number(v ?? 0), 1)} kWh`;
 export const tipPct = (v: unknown): string => `${num(Number(v ?? 0), 1)}%`;
+
+// ------------------------------------------------- tooltip customizado (Recharts)
+interface ItemTip { name?: string; value?: unknown; color?: string; dataKey?: string | number }
+
+/**
+ * Tooltip escuro no padrão do sistema. `fmt` decide como formatar o número.
+ * Uso: <Tooltip content={<ChartTip fmt={brl} />} />
+ */
+export function ChartTip({
+  active, payload, label, fmt = (v: number) => num(v, 1), sufixo = '',
+}: {
+  active?: boolean; payload?: ItemTip[]; label?: unknown;
+  fmt?: (v: number) => string; sufixo?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="chart-tip">
+      {label !== undefined && <div className="tip-label">{String(label)}</div>}
+      {payload.map((p, i) => (
+        <div className="tip-row" key={i}>
+          <span className="tip-key" style={{ background: p.color ?? '#fff' }} />
+          <span>{p.name ?? p.dataKey}</span>
+          <span className="tip-val">{fmt(Number(p.value ?? 0))}{sufixo}</span>
+        </div>
+      ))}
+    </div>
+  );
+}

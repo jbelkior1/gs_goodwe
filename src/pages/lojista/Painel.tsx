@@ -4,10 +4,10 @@ import {
 import { useApp } from '../../app/estado';
 import {
   kpisDoPonto, serieDiaria, perfilHorario, obterPonto, economiaDoPonto,
-  sessoesAtivas, inteligenciaDoPonto, carregadoresDoPonto,
+  sessoesAtivas, inteligenciaDoPonto, carregadoresDoPonto, solarDoPonto,
 } from '../../domain/db';
 import { REGRAS } from '../../domain/catalogo';
-import { Card, KPI, Nota, brl, num, Badge, Bar, tipBRL } from '../../ui/kit';
+import { Card, KPI, Nota, brl, num, pct, Badge, Bar, ChartTip } from '../../ui/kit';
 
 export default function Painel() {
   const { pontoId } = useApp();
@@ -19,11 +19,20 @@ export default function Painel() {
   const ativas = sessoesAtivas(pontoId);
   const carregadores = carregadoresDoPonto(pontoId);
   const { resumo } = inteligenciaDoPonto(pontoId);
+  const solar = solarDoPonto(pontoId);
+
+  // variação vs. mês anterior (mesma janela de dias), para as setas de tendência
+  const metade = Math.floor(serie.length / 2);
+  const somaFat = (arr: typeof serie) => arr.reduce((t, d) => t + d.faturamento, 0);
+  const anterior = somaFat(serie.slice(0, metade));
+  const atual = somaFat(serie.slice(metade));
+  const tendencia = anterior > 0 ? (atual - anterior) / anterior : 0;
 
   return (
     <div className="stack">
       <div className="grid g4">
         <KPI label="Faturamento do mês" value={brl(kpis.faturamentoMes)} accent="red"
+             trend={tendencia}
              foot={`${kpis.sessoesMes} sessões · ticket ${brl(kpis.ticketMedio)}`} />
         <KPI label="Energia entregue" value={`${num(kpis.energiaMesKWh)} kWh`} accent="teal"
              foot={`custo ${brl(kpis.custoEnergiaMes)}`} />
@@ -54,7 +63,7 @@ export default function Painel() {
               <CartesianGrid stroke="#eef1f6" vertical={false} />
               <XAxis dataKey="dia" tick={{ fontSize: 10 }} stroke="#7a8798" minTickGap={24} />
               <YAxis tick={{ fontSize: 10 }} stroke="#7a8798" />
-              <Tooltip formatter={tipBRL} />
+              <Tooltip content={<ChartTip fmt={brl} />} />
               <Area type="monotone" dataKey="faturamento" stroke="#e4002b" fill="url(#gf)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
@@ -101,7 +110,7 @@ export default function Painel() {
               <CartesianGrid stroke="#eef1f6" vertical={false} />
               <XAxis dataKey="hora" tick={{ fontSize: 10 }} stroke="#7a8798" tickFormatter={(h) => `${h}h`} />
               <YAxis tick={{ fontSize: 10 }} stroke="#7a8798" />
-              <Tooltip labelFormatter={(h) => `${h}h`} />
+              <Tooltip content={<ChartTip fmt={(v) => `${v} sessões`} />} />
               <RBar dataKey="sessoes" fill="#0f8b8d" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -111,6 +120,67 @@ export default function Painel() {
           <p className="tiny">{resumo}</p>
         </Card>
       </div>
+
+      <Card
+        title="Ecossistema GoodWe no ponto"
+        sub="Modos Prioridade Solar e FV + Bateria do HCA G2 — quanto da energia vem do sol"
+        action={
+          solar.resumo.temEcossistema ? (
+            <div className="pill-row">
+              <Badge tom="solar">☀ {num(solar.resumo.potenciaFVkWp, 1)} kWp</Badge>
+              {solar.resumo.capacidadeBateriaKWh > 0 && (
+                <Badge tom="teal">🔋 {num(solar.resumo.capacidadeBateriaKWh)} kWh</Badge>
+              )}
+            </div>
+          ) : <Badge tom="gray">sem geração própria</Badge>
+        }
+      >
+        {solar.resumo.temEcossistema ? (
+          <div className="grid g-2-1">
+            <ResponsiveContainer width="100%" height={210}>
+              <AreaChart data={solar.mix.map((m) => ({ ...m, rotulo: `${m.hora}h` }))}>
+                <CartesianGrid stroke="#eff2f7" vertical={false} />
+                <XAxis dataKey="rotulo" tick={{ fontSize: 10 }} stroke="#8593a5" minTickGap={16} />
+                <YAxis tick={{ fontSize: 10 }} stroke="#8593a5" unit=" kW" />
+                <Tooltip content={<ChartTip fmt={(v) => `${num(v, 1)} kW`} />} />
+                <Area type="monotone" dataKey="solarKW" stackId="1" name="Solar"
+                      stroke="#f0a202" fill="#ffd98a" strokeWidth={2} />
+                <Area type="monotone" dataKey="baterialKW" stackId="1" name="Bateria"
+                      stroke="#0d8b8d" fill="#a8e0e1" strokeWidth={2} />
+                <Area type="monotone" dataKey="redeKW" stackId="1" name="Rede"
+                      stroke="#93a2b5" fill="#dde3ea" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+
+            <div className="stack" style={{ gap: 11 }}>
+              <div>
+                <div className="kpi-label">Autossuficiência</div>
+                <div className="kpi-value sm kpi-accent-solar">{pct(solar.resumo.autossuficiencia)}</div>
+                <div className="tiny muted">da energia do ponto vem de sol e bateria</div>
+              </div>
+              <div>
+                <div className="kpi-label">Economia na energia vendida</div>
+                <div className="kpi-value sm kpi-accent-green">{brl(solar.resumo.economiaRecargaMes)}</div>
+                <div className="tiny muted">
+                  parte da recarga que veio do sol · a conta de luz inteira do comércio economiza{' '}
+                  {brl(solar.resumo.economiaMes)}/mês
+                </div>
+              </div>
+              <div>
+                <div className="kpi-label">CO₂ evitado</div>
+                <div className="kpi-value sm">{num(solar.resumo.co2EvitadoMesKg, 1)} kg</div>
+                <div className="tiny muted">por mês (fator médio do SIN)</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <Nota titulo="Oportunidade: este ponto ainda não tem geração própria" tom="amber">
+            Instalar inversor e painéis GoodWe aqui reduziria o custo do kWh vendido e liberaria
+            potência na entrada elétrica em horário de pico — menos pausa na recarga e mais margem
+            para o franqueado. É a porta de entrada natural para o ecossistema GoodWe.
+          </Nota>
+        )}
+      </Card>
     </div>
   );
 }
