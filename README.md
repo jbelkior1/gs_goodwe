@@ -21,15 +21,15 @@ do ChargeGrid.
 | Pedido da GoodWe | Onde está no sistema |
 |---|---|
 | Gerenciamento inteligente de **demanda de potência** | `Lojista › Controle de demanda` |
-| Sistema de **cobrança das recargas** | `Motorista › Pagamento` + `Lojista › Financeiro` |
-| Gestão inteligente da recarga **com interface para o usuário** | `Motorista › Recarga ao vivo` |
+| Sistema de **cobrança das recargas** | `Motorista › Recarga e pagamento` + `Lojista › Tarifas e financeiro` |
+| Gestão inteligente da recarga **com interface para o usuário** | `Motorista › Recarga e pagamento` |
 
 | Pilar ChargeGrid | Onde está |
 |---|---|
 | Controle de Demanda | `Lojista › Controle de demanda` (motor em `engine/demanda.ts`) |
-| Protocolos Abertos | `Rede › Saúde da frota` (Modbus; OCPP não suportado na linha HCA) |
-| Tarifação e Pagamento | `Lojista › Tarifação` + `Motorista › Pagamento` (`engine/tarifa.ts`) |
-| IA Aplicada | `Lojista › Inteligência` + `Rede › IA e previsões` (`engine/ia.ts`) |
+| Protocolos Abertos | `Rede › Visão da rede` (Modbus; OCPP não suportado na linha HCA) |
+| Tarifação e Pagamento | `Lojista › Tarifas e financeiro` + `Motorista › Recarga e pagamento` (`engine/tarifa.ts`) |
+| IA Aplicada | `Rede › Homologação` (score de viabilidade) + resumo no `Painel` (`engine/ia.ts`) |
 
 ## Abas por persona (7 telas)
 
