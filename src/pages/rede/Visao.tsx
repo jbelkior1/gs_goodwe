@@ -1,11 +1,10 @@
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
-import { useNavigate } from 'react-router-dom';
 import {
-  kpisDaRede, desempenhoPorRegiao, serieDiaria, rankingPontos, base,
+  kpisDaRede, desempenhoPorRegiao, serieDiaria, rankingPontos, base, noMesAtual,
 } from '../../domain/db';
-import { REGRAS } from '../../domain/catalogo';
+import { REGRAS, MODELOS_CARREGADOR } from '../../domain/catalogo';
 import { Card, KPI, Tabela, Badge, Bar, brl, num, Nota, tipBRL } from '../../ui/kit';
 
 export default function Visao() {
@@ -13,9 +12,17 @@ export default function Visao() {
   const regioes = desempenhoPorRegiao();
   const serie = serieDiaria(null, 30);
   const ranking = rankingPontos();
-  const nav = useNavigate();
 
   const maxFat = Math.max(...regioes.map((r) => r.faturamento), 1);
+
+  // ---- receita da franqueadora e frota (abas de royalties e frota, embutidas aqui)
+  const cobrancasMes = base.cobrancas.filter((c) => noMesAtual(c.criadaEm) && c.status === 'PAGO');
+  const recorrente =
+    cobrancasMes.reduce((t, c) => t + c.royaltyGoodWe + c.fundoMarketing, 0) +
+    base.pontos.filter((p) => p.ativo).length * REGRAS.plataformaMes;
+  const potenciaInstalada = base.carregadores.reduce(
+    (t, c) => t + MODELOS_CARREGADOR[c.modelo].potenciaKW, 0,
+  );
 
   return (
     <div className="stack">
@@ -76,12 +83,22 @@ export default function Visao() {
         </Card>
       </div>
 
-      <Card title="Top pontos da rede" sub="Ranking por faturamento no mês"
-            action={<button className="btn sm" onClick={() => nav('/rede/pontos')}>Ver todos</button>}>
+      <div className="grid g4">
+        <KPI label="Recorrente GoodWe/mês" value={brl(recorrente)} sm accent="red"
+             foot="royalties 6% + fundo 2% + plataforma" />
+        <KPI label="Projeção anual" value={brl(recorrente * 12)} sm accent="green"
+             foot="mantendo a base atual" />
+        <KPI label="Potência instalada" value={`${num(potenciaInstalada)} kW`} sm accent="teal"
+             foot={`${k.carregadoresTotal} carregadores na rede`} />
+        <KPI label="Carregadores offline" value={k.carregadoresOffline} sm
+             accent={k.carregadoresOffline ? 'red' : 'green'}
+             foot="sem telemetria — não aceitam sessão" />
+      </div>
+
+      <Card title="Ranking de pontos" sub="Desempenho de cada unidade no mês">
+        <div className="scroll-y">
         <Tabela cabecalho={['#', 'Ponto', 'Formato', 'Região', '#Sessões', '#Energia', '#Faturamento', 'Uso/dia']}>
-          {ranking.slice(0, 8).map((r, i) => {
-            const regiao = base.pontos.find((p) => p.id === r.ponto.id);
-            void regiao;
+          {ranking.map((r, i) => {
             const ok = r.kpis.horasUsoDia >= REGRAS.limiarViabilidadeHoras;
             return (
               <tr key={r.ponto.id}>
@@ -99,6 +116,7 @@ export default function Visao() {
             );
           })}
         </Tabela>
+        </div>
       </Card>
     </div>
   );

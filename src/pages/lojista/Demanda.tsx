@@ -6,7 +6,7 @@ import {
   demandaDoPonto, obterPonto, carregadoresDoPonto, obterSessao, obterVeiculo, obterMotorista,
 } from '../../domain/db';
 import { cargaComercioNaHora } from '../../domain/engine/demanda';
-import { Card, KPI, LoadBar, Tabela, Badge, Nota, num, pct, Vazio, Bar, tipKW } from '../../ui/kit';
+import { Card, KPI, LoadBar, Tabela, Badge, Nota, num, pct, Vazio, Bar, tipKW, EstadoBadge } from '../../ui/kit';
 
 export default function Demanda() {
   const { pontoId } = useApp();
@@ -51,6 +51,29 @@ export default function Demanda() {
             </Nota>
           </div>
         )}
+      </Card>
+
+      <Card title="Vagas do ponto" sub="Estado de cada carregador agora">
+        <div className="grid g4">
+          {carregadores.map((c) => {
+            const aloc = d.alocacoes.find((a) => a.carregadorId === c.id);
+            return (
+              <div key={c.id} className="card" style={{ boxShadow: 'none' }}>
+                <div className="row between">
+                  <span className="strong">{c.apelido}</span>
+                  <EstadoBadge estado={c.estado} />
+                </div>
+                <div className="tiny muted" style={{ marginTop: 2 }}>{c.modelo}</div>
+                <div className="kpi-value sm" style={{ marginTop: 6 }}>
+                  {num(aloc?.potenciaConcedidaKW ?? 0, 1)} kW
+                </div>
+                <div className="tiny muted">
+                  {aloc ? `de ${num(aloc.potenciaSolicitadaKW, 1)} kW pedidos` : 'sem sessão'}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </Card>
 
       <Card title="Alocação por sessão"

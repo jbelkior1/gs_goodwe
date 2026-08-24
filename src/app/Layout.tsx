@@ -9,9 +9,7 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: string; 
       grupo: 'App do motorista',
       itens: [
         { to: '/motorista', ico: '🗺️', label: 'Onde carregar' },
-        { to: '/motorista/recarga', ico: '⚡', label: 'Recarga ao vivo' },
-        { to: '/motorista/pagamento', ico: '💳', label: 'Pagamento' },
-        { to: '/motorista/historico', ico: '🧾', label: 'Histórico' },
+        { to: '/motorista/recarga', ico: '⚡', label: 'Recarga e pagamento' },
       ],
     },
   ],
@@ -21,16 +19,7 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: string; 
       itens: [
         { to: '/lojista', ico: '📊', label: 'Painel' },
         { to: '/lojista/demanda', ico: '🔌', label: 'Controle de demanda' },
-        { to: '/lojista/carregadores', ico: '🅿️', label: 'Carregadores' },
-        { to: '/lojista/sessoes', ico: '📋', label: 'Sessões' },
-      ],
-    },
-    {
-      grupo: 'Comercial',
-      itens: [
-        { to: '/lojista/tarifas', ico: '🏷️', label: 'Tarifação' },
-        { to: '/lojista/financeiro', ico: '💰', label: 'Financeiro' },
-        { to: '/lojista/inteligencia', ico: '🧠', label: 'Inteligência' },
+        { to: '/lojista/financeiro', ico: '💰', label: 'Tarifas e financeiro' },
       ],
     },
   ],
@@ -39,16 +28,7 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: string; 
       grupo: 'Rede GoodWe',
       itens: [
         { to: '/rede', ico: '🌐', label: 'Visão da rede' },
-        { to: '/rede/pontos', ico: '📍', label: 'Pontos e franqueados' },
         { to: '/rede/homologacao', ico: '✅', label: 'Homologação' },
-      ],
-    },
-    {
-      grupo: 'Operação',
-      itens: [
-        { to: '/rede/frota', ico: '🛰️', label: 'Saúde da frota' },
-        { to: '/rede/royalties', ico: '🏦', label: 'Royalties' },
-        { to: '/rede/ia', ico: '🧠', label: 'IA e previsões' },
       ],
     },
   ],
@@ -56,22 +36,12 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: string; 
 
 const TITULOS: Record<string, { t: string; s: string }> = {
   '/motorista': { t: 'Onde carregar', s: 'Pontos da rede Ponto W disponíveis agora' },
-  '/motorista/recarga': { t: 'Recarga ao vivo', s: 'Acompanhe a sessão em tempo real' },
-  '/motorista/pagamento': { t: 'Pagamento', s: 'Feche a conta da recarga por Pix' },
-  '/motorista/historico': { t: 'Histórico', s: 'Suas recargas e recibos' },
+  '/motorista/recarga': { t: 'Recarga e pagamento', s: 'Acompanhe a sessão e feche a conta por Pix' },
   '/lojista': { t: 'Painel da unidade', s: 'Como o ponto está performando neste mês' },
   '/lojista/demanda': { t: 'Controle de demanda', s: 'Distribuição de potência e proteção da entrada elétrica' },
-  '/lojista/carregadores': { t: 'Carregadores', s: 'Estado e operação de cada vaga' },
-  '/lojista/sessoes': { t: 'Sessões', s: 'Todas as recargas do ponto' },
-  '/lojista/tarifas': { t: 'Tarifação', s: 'Preço dinâmico por faixa horária' },
-  '/lojista/financeiro': { t: 'Financeiro', s: 'Cobranças, repasses e royalties' },
-  '/lojista/inteligencia': { t: 'Inteligência', s: 'Previsões e recomendações da IA' },
+  '/lojista/financeiro': { t: 'Tarifas e financeiro', s: 'Preço dinâmico, cobranças e resultado da unidade' },
   '/rede': { t: 'Visão da rede', s: 'Todos os pontos Ponto W no Brasil' },
-  '/rede/pontos': { t: 'Pontos e franqueados', s: 'Ranking e desempenho por unidade' },
   '/rede/homologacao': { t: 'Homologação de pontos', s: 'Análise de viabilidade dos candidatos' },
-  '/rede/frota': { t: 'Saúde da frota', s: 'Carregadores, firmware e comunicação' },
-  '/rede/royalties': { t: 'Royalties', s: 'Receita recorrente da franqueadora' },
-  '/rede/ia': { t: 'IA e previsões', s: 'O motor de decisão da rede' },
 };
 
 export default function Layout() {
@@ -80,7 +50,10 @@ export default function Layout() {
   const navigate = useNavigate();
   const ponto = obterPonto(pontoId);
 
-  const titulo = TITULOS[location.pathname] ?? { t: 'Ponto W', s: '' };
+  const titulo = TITULOS[location.pathname]
+    ?? (location.pathname.startsWith('/motorista/recarga')
+      ? TITULOS['/motorista/recarga']
+      : { t: 'Ponto W', s: '' });
 
   const trocarPersona = (p: Persona) => {
     setPersona(p);
@@ -167,7 +140,11 @@ export default function Layout() {
                 {ponto.ativo ? 'Operando' : 'Inativo'}
               </Badge>
             )}
-            {persona === 'rede' && <Badge tom="teal" dot pulse>{base.pontos.filter(p => p.ativo).length} pontos ativos</Badge>}
+            {persona === 'rede' && (
+              <Badge tom="teal" dot pulse>
+                {base.pontos.filter((p) => p.ativo).length} pontos ativos
+              </Badge>
+            )}
           </div>
         </header>
 

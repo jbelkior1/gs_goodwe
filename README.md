@@ -31,36 +31,26 @@ do ChargeGrid.
 | Tarifação e Pagamento | `Lojista › Tarifação` + `Motorista › Pagamento` (`engine/tarifa.ts`) |
 | IA Aplicada | `Lojista › Inteligência` + `Rede › IA e previsões` (`engine/ia.ts`) |
 
-## Abas por persona
+## Abas por persona (7 telas)
 
 ### 🚗 Motorista
 | Aba | Função |
 |---|---|
-| Onde carregar | Lista pontos com vaga livre, preço do kWh agora e potência |
-| Recarga ao vivo | SoC, potência, tempo, custo correndo, curva CC/CV da sessão |
-| Pagamento | Pix com QR dinâmico, recibo e repartição transparente do valor |
-| Histórico | Recargas anteriores, energia e gasto acumulado |
+| Onde carregar | Pontos com vaga livre, preço do kWh agora e potência |
+| Recarga e pagamento | SoC, potência, curva CC/CV, encerrar e pagar por Pix com a repartição do valor |
 
 ### 🏪 Lojista (franqueado)
 | Aba | Função |
 |---|---|
-| Painel | Faturamento, energia, líquido, uso/dia vs. limiar de viabilidade, payback |
-| Controle de demanda | Distribui potência entre sessões e protege o disjuntor do comércio |
-| Carregadores | Estado de cada vaga, sessão em curso, firmware, limite aplicado |
-| Sessões | Todas as recargas com filtro por período e busca |
-| Tarifação | Preço por faixa horária e composição do preço dinâmico |
-| Financeiro | Cobranças, repartição (energia/royalty/fundo/gateway) e resultado |
-| Inteligência | Previsão de ocupação, recomendações e anomalias |
+| Painel | Faturamento, energia, líquido, uso/dia vs. limiar de viabilidade, payback e resumo da IA |
+| Controle de demanda | Distribui potência entre sessões, estado das vagas e proteção do disjuntor |
+| Tarifas e financeiro | Preço dinâmico por faixa, cobranças, repartição e resultado da unidade |
 
 ### 🛰️ GoodWe (franqueadora)
 | Aba | Função |
 |---|---|
-| Visão da rede | KPIs consolidados, faturamento, desempenho por região |
-| Pontos e franqueados | Ranking, payback e pontos abaixo do limiar |
+| Visão da rede | KPIs, faturamento por região, ranking de pontos, royalties e saúde da frota |
 | Homologação | Score de viabilidade da IA que aprova ou reprova um ponto novo |
-| Saúde da frota | Carregadores, potência instalada, offline, firmware |
-| Royalties | Receita recorrente da franqueadora e detalhamento por unidade |
-| IA e previsões | Curva da rede, recomendações consolidadas, motor de decisão |
 
 ## Arquitetura
 

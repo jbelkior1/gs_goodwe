@@ -1,13 +1,16 @@
 import { useMemo } from 'react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
+  BarChart, Bar as RBar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 import { useApp } from '../../app/estado';
 import {
   cobrancasDoPonto, noMesAtual, kpisDoPonto, obterSessao, obterMotorista, economiaDoPonto,
+  tarifaAtual, obterPonto, regiaoDoPonto, carregadoresDoPonto, sessoesAtivas,
 } from '../../domain/db';
+import { calcularTarifa, fatorHorario } from '../../domain/engine/tarifa';
 import { REGRAS } from '../../domain/catalogo';
-import { Card, KPI, Tabela, EstadoBadge, brl, num, dataHora, Vazio, Nota, tipBRL } from '../../ui/kit';
+import { Card, KPI, Tabela, EstadoBadge, brl, num, dataHora, Vazio, Nota, tipBRL, Badge } from '../../ui/kit';
 
 export default function Financeiro() {
   const { pontoId } = useApp();
@@ -42,6 +45,21 @@ export default function Financeiro() {
 
   const falhas = cobrancas.filter((c) => c.status === 'FALHOU').length;
 
+  // ---- tarifa dinâmica (aba de tarifação, agora embutida aqui)
+  const ponto = obterPonto(pontoId)!;
+  const regiao = regiaoDoPonto(ponto);
+  const tarifa = tarifaAtual(pontoId);
+  const totalVagas = carregadoresDoPonto(pontoId).length;
+  const ocupacao = totalVagas ? sessoesAtivas(pontoId).length / totalVagas : 0;
+  const horaAgora = new Date().getHours();
+  const faixas = Array.from({ length: 24 }, (_, h) => ({
+    hora: h,
+    rotulo: `${h}h`,
+    preco: calcularTarifa(ponto, regiao, h, ocupacao).precoFinalKWh,
+    fator: fatorHorario(h),
+    agora: h === horaAgora,
+  }));
+
   return (
     <div className="stack">
       <div className="grid g4">
@@ -54,6 +72,41 @@ export default function Financeiro() {
         <KPI label="Líquido do comércio" value={brl(kpis.liquidoMes)} accent="green"
              foot={`já descontada a plataforma (${brl(REGRAS.plataformaMes)}/mês)`} />
       </div>
+
+      <Card title="Tarifa dinâmica" sub="A IA calcula; o motorista vê o preço antes de iniciar e ele fica travado">
+        <div className="grid g-1-2">
+          <div>
+            <div className="row between">
+              <div>
+                <div className="kpi-label">Preço agora</div>
+                <div className="kpi-value kpi-accent-red">{brl(tarifa.precoFinalKWh)}
+                  <span className="tiny muted">/kWh</span></div>
+              </div>
+              <div className="right">
+                <div className="kpi-label">Margem</div>
+                <div className="kpi-value sm kpi-accent-green">{brl(tarifa.margemKWh)}</div>
+                <div className="tiny muted">custo {brl(tarifa.custoEnergiaKWh)}</div>
+              </div>
+            </div>
+            <div className="pill-row" style={{ marginTop: 10 }}>
+              {tarifa.explicacao.map((e, i) => <Badge key={i} tom="gray">{e}</Badge>)}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={150}>
+            <BarChart data={faixas}>
+              <CartesianGrid stroke="#eef1f6" vertical={false} />
+              <XAxis dataKey="rotulo" tick={{ fontSize: 9 }} stroke="#7a8798" minTickGap={14} />
+              <YAxis tick={{ fontSize: 9 }} stroke="#7a8798" width={34} />
+              <Tooltip formatter={tipBRL} />
+              <RBar dataKey="preco" radius={[3, 3, 0, 0]}>
+                {faixas.map((f) => (
+                  <Cell key={f.hora} fill={f.agora ? '#e4002b' : f.fator > 1 ? '#0f8b8d' : '#c8d3df'} />
+                ))}
+              </RBar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
 
       <div className="grid g-1-2">
         <Card title="Para onde vai o faturamento" sub="Repartição do mês">
