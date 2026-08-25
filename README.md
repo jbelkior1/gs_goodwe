@@ -6,7 +6,23 @@ Plataforma de gestão de recarga elétrica comercial. Projeto do **EV Challenge 
 > **Tese do produto:** o carregador prende o cliente 1–2 h no local. O que se vende
 > não é kWh — é **permanência**, que vira movimento e venda dentro do comércio.
 
-## Rodando
+## 🔗 Sistema no ar
+
+**https://jbelkior1.github.io/gs_goodwe/**
+
+Abre direto no painel do lojista. Troque de perfil (Motorista · Lojista · GoodWe) pela
+barra lateral. Funciona no celular. O deploy é automático a cada push na `main`.
+
+Links diretos para a apresentação:
+
+| Tela | Link |
+|---|---|
+| Painel do lojista | [`#/lojista`](https://jbelkior1.github.io/gs_goodwe/#/lojista) |
+| Controle de demanda | [`#/lojista/demanda`](https://jbelkior1.github.io/gs_goodwe/#/lojista/demanda) |
+| Recarga do motorista | [`#/motorista/recarga`](https://jbelkior1.github.io/gs_goodwe/#/motorista/recarga) |
+| Homologação (IA) | [`#/rede/homologacao`](https://jbelkior1.github.io/gs_goodwe/#/rede/homologacao) |
+
+## Rodando localmente
 
 ```bash
 npm install
