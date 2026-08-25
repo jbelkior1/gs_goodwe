@@ -6,75 +6,75 @@
 <title>Ponto W — a IA explica o negócio</title>
 <style>
   :root{--red:#E4002B;--red2:#ff5c7a;--ink:#0b0e13;--teal:#17b3b5;--green:#22c55e;
-        --mut:#8b98ab;--line:rgba(255,255,255,.12)}
+        --gold:#f5b301;--mut:#8b98ab;--line:rgba(255,255,255,.12)}
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;background:var(--ink);color:#fff;overflow:hidden;
     font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif}
   body::before{content:"";position:fixed;inset:0;
     background:radial-gradient(70% 55% at 80% 0%,rgba(228,0,43,.20),transparent 65%);pointer-events:none}
 
-  .stage{position:relative;height:100vh;display:grid;place-items:center;padding:4vh 5vw 14vh}
-  .scene{position:absolute;inset:4vh 5vw 14vh;display:grid;place-content:center;justify-items:center;
-    gap:2.2vh;opacity:0;transform:translateY(22px);transition:opacity .55s ease,transform .55s ease;
+  .stage{position:relative;height:100vh}
+  .scene{position:absolute;inset:4vh 5vw 13vh;display:grid;place-content:center;justify-items:center;
+    gap:2.4vh;opacity:0;transform:translateY(20px);transition:opacity .42s ease,transform .42s ease;
     pointer-events:none;text-align:center}
   .scene.on{opacity:1;transform:none}
 
   .kick{font-size:clamp(11px,1.15vw,15px);letter-spacing:.3em;text-transform:uppercase;
     color:var(--red2);font-weight:700}
-  h1{font-size:clamp(30px,5.6vw,74px);font-weight:800;letter-spacing:-.03em;line-height:1.02}
+  h1{font-size:clamp(28px,5.2vw,70px);font-weight:800;letter-spacing:-.03em;line-height:1.03}
   h1 em{font-style:normal;color:var(--red)}
-  .sub{font-size:clamp(14px,1.7vw,24px);color:#c3cddb;font-weight:300;max-width:22ch;line-height:1.35}
+  .sub{font-size:clamp(13px,1.6vw,23px);color:#c3cddb;font-weight:300;max-width:34ch;line-height:1.35}
+  .fonte{font-size:clamp(9px,.95vw,12px);color:#6b7a8f;letter-spacing:.04em}
 
   .row{display:flex;gap:clamp(10px,2vw,30px);flex-wrap:wrap;justify-content:center}
   .card{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:16px;
-    padding:clamp(12px,1.9vw,26px) clamp(14px,2.2vw,32px);min-width:clamp(140px,19vw,260px);
-    opacity:0;transform:translateY(16px) scale(.97);transition:all .5s cubic-bezier(.2,.7,.3,1)}
+    padding:clamp(12px,1.8vw,26px) clamp(14px,2.1vw,32px);min-width:clamp(132px,18vw,250px);
+    opacity:0;transform:translateY(14px) scale(.97);transition:all .4s cubic-bezier(.2,.7,.3,1)}
   .on .card{opacity:1;transform:none}
-  .on .card:nth-child(2){transition-delay:.18s}
-  .on .card:nth-child(3){transition-delay:.36s}
-  .card .big{font-size:clamp(22px,3.4vw,46px);font-weight:800;letter-spacing:-.03em}
-  .card .lb{font-size:clamp(10px,1.05vw,14px);color:var(--mut);text-transform:uppercase;
+  .on .card:nth-child(2){transition-delay:.13s}
+  .on .card:nth-child(3){transition-delay:.26s}
+  .card .big{font-size:clamp(21px,3.2vw,44px);font-weight:800;letter-spacing:-.03em}
+  .card .lb{font-size:clamp(10px,1.02vw,13.5px);color:var(--mut);text-transform:uppercase;
     letter-spacing:.11em;font-weight:700;margin-top:.6vh}
-  .card.red .big{color:var(--red)} .card.teal .big{color:var(--teal)} .card.green .big{color:var(--green)}
+  .card.red .big{color:var(--red)} .card.teal .big{color:var(--teal)}
+  .card.green .big{color:var(--green)} .card.gold .big{color:var(--gold)}
 
-  /* cena 3 — as duas caixas */
-  .box{border-radius:18px;padding:clamp(14px,2.2vw,30px);min-width:clamp(150px,22vw,320px);
+  .box{border-radius:18px;padding:clamp(14px,2.1vw,30px);min-width:clamp(150px,21vw,310px);
     border:2px solid var(--line);background:rgba(255,255,255,.04)}
-  .box.tax{border-color:var(--red)}
-  .box.free{border-color:var(--green)}
-  .box .t{font-size:clamp(13px,1.5vw,20px);font-weight:700;margin-bottom:.8vh}
-  .box .v{font-size:clamp(24px,3.6vw,50px);font-weight:800;letter-spacing:-.03em}
+  .box.tax{border-color:var(--red)} .box.free{border-color:var(--green)}
+  .box .t{font-size:clamp(12px,1.4vw,19px);font-weight:700;margin-bottom:.8vh}
+  .box .v{font-size:clamp(24px,3.5vw,48px);font-weight:800;letter-spacing:-.03em}
   .box.tax .v{color:var(--red)} .box.free .v{color:var(--green)}
-  .box .n{font-size:clamp(10px,1.1vw,14px);color:var(--mut);margin-top:.6vh}
+  .box .n{font-size:clamp(10px,1.05vw,13.5px);color:var(--mut);margin-top:.6vh}
 
-  /* cena 4 — medidor */
-  .gauge{width:min(62vw,560px)}
-  .track{height:clamp(14px,2.1vh,22px);border-radius:20px;background:rgba(255,255,255,.09);
+  .gauge{width:min(60vw,540px)}
+  .track{height:clamp(13px,2vh,20px);border-radius:20px;background:rgba(255,255,255,.09);
     position:relative;overflow:hidden}
   .fill{position:absolute;inset:0;width:0;border-radius:20px;
-    background:linear-gradient(90deg,var(--red),#ff8a5c,var(--green));transition:width 1.9s cubic-bezier(.2,.7,.3,1)}
+    background:linear-gradient(90deg,var(--red),#ff8a5c,var(--green));
+    transition:width 1.4s cubic-bezier(.2,.7,.3,1)}
   .on .fill{width:78%}
   .limiar{position:absolute;top:-6px;bottom:-6px;left:46%;width:2px;background:#fff;opacity:.85}
-  .glabels{display:flex;justify-content:space-between;font-size:clamp(10px,1.1vw,14px);
+  .glabels{display:flex;justify-content:space-between;font-size:clamp(10px,1.05vw,13.5px);
     color:var(--mut);margin-top:1.1vh}
 
-  /* cena 5 — pontos multiplicando */
-  .dots{display:grid;grid-template-columns:repeat(8,1fr);gap:clamp(6px,1vw,14px);
-    width:min(58vw,520px)}
-  .dots i{aspect-ratio:1;border-radius:50%;background:var(--red);opacity:0;transform:scale(.3)}
-  .on .dots i{animation:pop .45s cubic-bezier(.2,.7,.3,1) forwards}
-  @keyframes pop{to{opacity:1;transform:none}}
+  /* fecho: a frase de efeito em tres tempos */
+  .tri{display:grid;gap:1.2vh;justify-items:center}
+  .tri div{font-size:clamp(17px,2.9vw,40px);font-weight:700;letter-spacing:-.02em;
+    opacity:0;transform:translateY(12px);transition:all .42s cubic-bezier(.2,.7,.3,1)}
+  .on .tri div{opacity:1;transform:none}
+  .on .tri div:nth-child(2){transition-delay:.75s}
+  .on .tri div:nth-child(3){transition-delay:1.5s}
 
-  /* rodapé: legenda + progresso */
-  .foot{position:fixed;left:0;right:0;bottom:0;padding:2.2vh 5vw 2.6vh;
-    background:linear-gradient(180deg,transparent,rgba(0,0,0,.75) 45%)}
-  .cap{font-size:clamp(13px,1.5vw,21px);color:#e7edf5;min-height:2.6em;line-height:1.4;
-    max-width:60ch;margin:0 auto 1.4vh;text-align:center;opacity:.96}
+  .foot{position:fixed;left:0;right:0;bottom:0;padding:2vh 5vw 2.4vh;
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.78) 45%)}
+  .cap{font-size:clamp(12px,1.45vw,20px);color:#e7edf5;min-height:2.5em;line-height:1.4;
+    max-width:62ch;margin:0 auto 1.2vh;text-align:center}
   .bar{height:3px;background:rgba(255,255,255,.14);border-radius:3px;overflow:hidden}
   .bar>span{display:block;height:100%;width:0;background:var(--red)}
-  .hint{position:fixed;top:2.2vh;right:2.5vw;font-size:11px;color:#6b7a8f;letter-spacing:.04em}
+  .hint{position:fixed;top:2vh;right:2.4vw;font-size:11px;color:#5f6d80;letter-spacing:.04em}
   .badge-ia{display:inline-flex;align-items:center;gap:.6em;border:1px solid var(--line);
-    border-radius:30px;padding:.5em 1.1em;font-size:clamp(10px,1.1vw,14px);color:#cbd6e4}
+    border-radius:30px;padding:.5em 1.1em;font-size:clamp(10px,1.05vw,13.5px);color:#cbd6e4}
   .badge-ia b{color:var(--red)}
   .pulse{width:7px;height:7px;border-radius:50%;background:var(--teal);
     animation:blink 1.4s ease-in-out infinite}
@@ -85,57 +85,64 @@
 <div class="hint">espaço = pausa · ← → = cenas · R = reiniciar</div>
 
 <div class="stage">
-  <!-- 1 -->
+  <!-- 1 · 0,0 – 4,2 -->
   <section class="scene" data-i="0">
     <span class="badge-ia"><i class="pulse"></i> IA do <b>Ponto&nbsp;W</b></span>
     <h1>Como isso<br>vira <em>negócio</em>?</h1>
     <p class="sub">Franquia.</p>
   </section>
 
-  <!-- 2 -->
+  <!-- 2 · 4,2 – 9,4 -->
   <section class="scene" data-i="1">
     <div class="kick">Cada lado entra com o que tem</div>
     <div class="row">
       <div class="card red"><div class="big">GoodWe</div>
-        <div class="lb">carregador · plataforma · marca · suporte</div></div>
+        <div class="lb">carregador · plataforma · marca</div></div>
       <div class="card teal"><div class="big">Comércio</div>
-        <div class="lb">o ponto · a energia · o atendimento</div></div>
+        <div class="lb">o ponto · a energia</div></div>
     </div>
   </section>
 
-  <!-- 3 -->
+  <!-- 3 · 9,4 – 14,8 -->
   <section class="scene" data-i="2">
     <div class="kick">O royalty tem fronteira</div>
     <div class="row">
       <div class="box tax"><div class="t">Recarga</div><div class="v">6%</div>
-        <div class="n">royalty + 2% de fundo</div></div>
+        <div class="n">royalty da rede</div></div>
       <div class="box free"><div class="t">Vendas da loja</div><div class="v">0%</div>
         <div class="n">100% do franqueado</div></div>
     </div>
-    <p class="sub" style="max-width:34ch">O movimento que a recarga traz para dentro da loja
-      é todo dele.</p>
   </section>
 
-  <!-- 4 -->
+  <!-- 4 · 14,8 – 20,4 — confirmação de mercado -->
   <section class="scene" data-i="3">
+    <div class="kick">E a recarga traz gente para dentro</div>
+    <div class="row">
+      <div class="card gold"><div class="big">+4%</div><div class="lb">fluxo na loja</div></div>
+      <div class="card green"><div class="big">+5%</div><div class="lb">receita</div></div>
+      <div class="card teal"><div class="big">US$ 1.478</div><div class="lb">por comércio/ano</div></div>
+    </div>
+    <p class="fonte">Consumer Reports · Nature Communications (2024) · McKinsey</p>
+  </section>
+
+  <!-- 5 · 20,4 – 25,2 -->
+  <section class="scene" data-i="4">
     <div class="kick">Antes de assinar, a IA calcula</div>
     <div class="gauge">
       <div class="track"><div class="fill"></div><div class="limiar"></div></div>
       <div class="glabels"><span>0 h/dia</span><span>limiar 2,3 h</span><span>5 h/dia</span></div>
     </div>
-    <h1 style="font-size:clamp(22px,3.4vw,44px)">Ponto fraco a gente <em>reprova</em>.</h1>
+    <h1 style="font-size:clamp(20px,3.1vw,40px)">Ponto fraco a gente <em>reprova</em>.</h1>
   </section>
 
-  <!-- 5 -->
-  <section class="scene" data-i="4">
-    <div class="kick">O que a GoodWe ganha</div>
-    <div class="row">
-      <div class="card red"><div class="big">Royalties</div><div class="lb">receita recorrente</div></div>
-      <div class="card teal"><div class="big">Dados</div><div class="lb">telemetria que não existe hoje</div></div>
-      <div class="card green"><div class="big">Leads</div><div class="lb">carga elétrica nova</div></div>
+  <!-- 6 · 25,2 – 31,0 — fecho -->
+  <section class="scene" data-i="5">
+    <div class="tri">
+      <div>Seu comércio recebe a <span style="color:var(--red)">GoodWe</span>.</div>
+      <div>Seu cliente recebe <span style="color:var(--teal)">tempo e conforto</span>.</div>
+      <div>E o seu caixa recebe <span style="color:var(--green)">o resto</span>.</div>
     </div>
-    <div class="dots" id="dots"></div>
-    <h1 style="font-size:clamp(24px,4vw,54px)">O carregador vira <em>rede</em>.</h1>
+    <h1 style="font-size:clamp(22px,3.6vw,50px);margin-top:1.5vh">O carregador vira <em>rede</em>.</h1>
   </section>
 </div>
 
@@ -145,28 +152,21 @@
 </div>
 
 <script>
-// Linha do tempo: 34 s, para caber no bloco 5 depois da deixa da IA.
+// 31 s. Os cortes batem com ROTEIRO-NARRACAO.md, para a dublagem cair
+// exatamente em cima de cada cena.
 const T = [
-  { at: 0,  cap: 'Como isso escala? Franquia.' },
-  { at: 6,  cap: 'A GoodWe entrega o carregador, a plataforma e a marca. O comércio entra com o ponto e a energia.' },
-  { at: 13, cap: 'Royalty de 6% — só sobre a recarga. Nunca sobre as vendas da loja.' },
-  { at: 21, cap: 'E antes de assinar, a IA calcula se o ponto se paga: acima de 2,3 horas por dia.' },
-  { at: 28, cap: 'Royalties, dados e leads de energia. O carregador deixa de ser produto e vira rede.' },
+  { at: 0,    cap: 'Como isso vira negócio? Franquia.' },
+  { at: 4.2,  cap: 'A GoodWe entra com o carregador, a plataforma e a marca. O comércio, com o ponto e a energia.' },
+  { at: 9.4,  cap: 'Royalty de seis por cento — só sobre a recarga. As vendas da loja são cem por cento do franqueado.' },
+  { at: 14.8, cap: 'E a recarga traz gente para dentro: mais quatro por cento de fluxo, mais cinco por cento de receita.' },
+  { at: 20.4, cap: 'Antes de assinar, a IA calcula: acima de duas horas e vinte por dia, o ponto se paga.' },
+  { at: 25.2, cap: 'Seu comércio recebe a GoodWe. Seu cliente recebe tempo e conforto. E o seu caixa recebe o resto.' },
 ];
-const FIM = 34;
+const FIM = 31;
 
 const cenas = [...document.querySelectorAll('.scene')];
 const cap = document.getElementById('cap');
 const prog = document.getElementById('prog');
-
-// bolinhas da cena final
-const dots = document.getElementById('dots');
-for (let i = 0; i < 32; i++) {
-  const d = document.createElement('i');
-  d.style.animationDelay = (i * 45) + 'ms';
-  dots.appendChild(d);
-}
-
 let t = 0, atual = -1, rodando = true, ultimo = performance.now();
 
 function mostrar(i) {
@@ -175,35 +175,28 @@ function mostrar(i) {
   cenas.forEach((s, k) => s.classList.toggle('on', k === i));
   cap.textContent = T[i].cap;
 }
-
+function indicePorTempo() {
+  let i = 0;
+  for (let k = 0; k < T.length; k++) if (t >= T[k].at) i = k;
+  return i;
+}
 function loop(agora) {
   const dt = (agora - ultimo) / 1000;
   ultimo = agora;
   if (rodando) t = Math.min(FIM, t + dt);
-
-  let i = 0;
-  for (let k = 0; k < T.length; k++) if (t >= T[k].at) i = k;
-  mostrar(i);
+  mostrar(indicePorTempo());
   prog.style.width = (t / FIM * 100) + '%';
   requestAnimationFrame(loop);
 }
 mostrar(0);
 requestAnimationFrame(loop);
 
-// Controle manual — indispensável ao vivo: se a fala atrasar, a animação espera.
-// O índice sai sempre do tempo (t), nunca de `atual`: assim apertar a seta
-// várias vezes seguidas avança de verdade, sem depender do próximo quadro.
-function indicePorTempo() {
-  let i = 0;
-  for (let k = 0; k < T.length; k++) if (t >= T[k].at) i = k;
-  return i;
-}
+// Controle manual — ao vivo a animação não pode correr na frente da fala.
 function irPara(i) {
   i = Math.max(0, Math.min(T.length - 1, i));
   t = T[i].at;
-  // Reinicia as animações de entrada da cena forçando reflow — de propósito
-  // sem requestAnimationFrame: em aba oculta o rAF não dispara e a cena
-  // ficaria invisível.
+  // Reinicia as animações de entrada forçando reflow. De propósito sem
+  // requestAnimationFrame: em aba oculta o rAF não dispara e a cena sumiria.
   cenas.forEach((s) => s.classList.remove('on'));
   void document.body.offsetWidth;
   atual = -1;
