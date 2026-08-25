@@ -1,0 +1,93 @@
+=========================================================================
+ NARRAÇÃO — ANIMAÇÃO DO BLOCO 5 · pronto para ElevenLabs
+ Cole APENAS o bloco entre as linhas ▼▼▼ e ▲▲▲. Nada mais.
+=========================================================================
+
+CONFIGURAÇÃO NO ELEVENLABS
+  Modelo ..... Eleven Multilingual v2  (já é o que está selecionado)
+  Idioma ..... o modelo detecta o português sozinho pelo texto
+  Voz ........ troque a "Roger — Laid-Back, Casual". Ela é descontraída
+               demais para uma IA institucional. Procure por vozes
+               descritas como "confident", "narration" ou "professional".
+               Boas opções: Adam, Antoni, Daniel, Charlotte, Alice.
+  Speed ...... 0.95   (5% mais lento — dá autoridade)
+  Stability .. 50–60  (abaixo disso a voz varia demais entre frases)
+  Similarity . 75
+  Style ...... 0–20   (style alto inventa entonação e quebra o ritmo)
+
+CUSTO: 606 caracteres = 606 créditos.
+Se os seus 450 créditos forem o SALDO (e não o custo desta geração),
+use a VERSÃO CURTA lá embaixo (419 caracteres).
+
+
+=========================================================================
+ VERSÃO PRINCIPAL — 606 caracteres · ~31 segundos
+=========================================================================
+▼▼▼
+
+Como isso vira negócio? Franquia.
+
+A GoodWe entra com o carregador, a plataforma e a marca. O comércio entra com o ponto e a energia.
+
+Royalty de seis por cento... só sobre a recarga. As vendas da loja são cem por cento do franqueado.
+
+E a recarga traz gente para dentro. Mais quatro por cento de fluxo. Mais cinco por cento de receita.
+
+Antes de assinar, a inteligência calcula: acima de duas horas e vinte por dia, o ponto se paga. Ponto fraco, a gente reprova.
+
+Seu comércio recebe a GoodWe. Seu cliente recebe tempo e conforto. E o seu caixa recebe o resto.
+
+O carregador deixa de ser produto... e vira rede.
+
+▲▲▲
+
+Por que assim: no ElevenLabs a PONTUAÇÃO é o que controla o ritmo.
+As linhas em branco criam a pausa entre as cenas, o ponto final segura
+um instante, e as reticências ("...") dão a respirada antes da virada.
+É mais estável do que usar tags de pausa.
+
+
+=========================================================================
+ VERSÃO CURTA — 419 caracteres · ~22 segundos (se faltar crédito)
+=========================================================================
+▼▼▼
+
+Como isso vira negócio? Franquia.
+
+A GoodWe entra com o carregador e a plataforma. O comércio, com o ponto e a energia.
+
+Royalty de seis por cento... só sobre a recarga. As vendas da loja são cem por cento do franqueado.
+
+E a recarga traz gente: mais quatro por cento de fluxo, mais cinco por cento de receita.
+
+Seu comércio recebe a GoodWe. Seu cliente recebe tempo e conforto. E o seu caixa recebe o resto.
+
+▲▲▲
+
+Se usar esta, ajuste os tempos no arquivo animacao.html (array T, por
+volta da linha 150) para as cenas caberem em 22 segundos.
+
+
+=========================================================================
+ SE QUISER PAUSAS EXATAS (opcional)
+=========================================================================
+O ElevenLabs aceita a tag <break time="0.7s" /> — máximo de 3 segundos.
+Mas cada tag também custa créditos, e usar muitas deixa a voz instável.
+Só vale se a pontuação não der o ritmo que você quer. Exemplo:
+
+  Royalty de seis por cento <break time="0.4s" /> só sobre a recarga.
+
+
+=========================================================================
+ DEPOIS DE GERAR
+=========================================================================
+1. Baixe o MP3.
+2. Abra animacao.html em tela cheia (F11) e toque o áudio junto.
+   Os cortes são por tempo, então casa sozinho.
+3. Se a voz ficar mais longa ou mais curta que 31 s, ajuste os seis
+   números do array T no animacao.html — um por cena.
+4. Para virar vídeo: grave a tela (Win+G ou OBS) e junte o áudio no
+   CapCut. Alinhe pela palavra "Franquia", fácil de achar na onda.
+
+LEMBRE: antes de rodar o vídeo, o integrante fala a deixa —
+"E, para fechar, quem explica onde está o dinheiro é a própria IA do Ponto W."
