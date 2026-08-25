@@ -15,13 +15,13 @@ CONFIGURAÇÃO NO ELEVENLABS
   Similarity . 75
   Style ...... 0–20   (style alto inventa entonação e quebra o ritmo)
 
-CUSTO: 606 caracteres = 606 créditos.
+CUSTO: 612 caracteres = 612 créditos.
 Se os seus 450 créditos forem o SALDO (e não o custo desta geração),
-use a VERSÃO CURTA lá embaixo (419 caracteres).
+use a VERSÃO CURTA lá embaixo (408 caracteres).
 
 
 =========================================================================
- VERSÃO PRINCIPAL — 606 caracteres · ~31 segundos
+ VERSÃO PRINCIPAL — 612 caracteres · ~31 segundos
 =========================================================================
 ▼▼▼
 
@@ -48,7 +48,7 @@ um instante, e as reticências ("...") dão a respirada antes da virada.
 
 
 =========================================================================
- VERSÃO CURTA — 419 caracteres · ~22 segundos (se faltar crédito)
+ VERSÃO CURTA — 408 caracteres · ~22 segundos (se faltar crédito)
 =========================================================================
 ▼▼▼
 
