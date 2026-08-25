@@ -118,8 +118,12 @@ export function gerarTxid(sessaoId: string): string {
   return `PONTOW${base.slice(-10).padStart(10, '0')}`;
 }
 
-/** Payload copia-e-cola do Pix (mock, formato EMV simplificado). */
+/**
+ * Payload copia-e-cola do Pix (MOCK, formato EMV simplificado).
+ * A chave e ficticia e o codigo nao e valido para pagamento real —
+ * serve so para a demonstracao da tela.
+ */
 export function gerarPixCopiaECola(txid: string, valor: number): string {
   const v = valor.toFixed(2);
-  return `00020126580014BR.GOV.BCB.PIX0136pontow@goodwe.com.br5204000053039865802BR5913PONTO W LTDA6009SAO PAULO62070503${txid}5405${v}6304ABCD`;
+  return `00020126580014BR.GOV.BCB.PIX0130pix@pontow.demo5204000053039865802BR5913PONTO W LTDA6009SAO PAULO62070503${txid}5405${v}6304ABCD`;
 }
