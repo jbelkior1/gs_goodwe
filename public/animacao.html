@@ -79,10 +79,24 @@
   .pulse{width:7px;height:7px;border-radius:50%;background:var(--teal);
     animation:blink 1.4s ease-in-out infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  #start{position:fixed;inset:0;z-index:50;display:grid;place-content:center;justify-items:center;
+    gap:1.6vh;background:rgba(11,14,19,.94);cursor:pointer;text-align:center}
+  #start.off{display:none}
+  #start .play{width:clamp(64px,7vw,92px);height:clamp(64px,7vw,92px);border-radius:50%;
+    background:var(--red);display:grid;place-items:center;font-size:clamp(24px,2.6vw,34px);
+    color:#fff;padding-left:.15em;box-shadow:0 10px 40px -10px rgba(228,0,43,.7)}
+  #start .t1{font-size:clamp(17px,2.3vw,30px);font-weight:800;letter-spacing:-.02em}
+  #start .t2{font-size:clamp(11px,1.2vw,15px);color:var(--mut)}
 </style>
 </head>
 <body>
 <div class="hint">espaço = pausa · ← → = cenas · R = reiniciar</div>
+<audio id="voz" src="narracao.mp3" preload="auto"></audio>
+<div id="start">
+  <div class="play">▶</div>
+  <div class="t1">Ponto W · a IA explica o negócio</div>
+  <div class="t2">clique para começar — 41 segundos com narração</div>
+</div>
 
 <div class="stage">
   <!-- 1 · 0,0 – 4,2 -->
@@ -155,19 +169,26 @@
 // 31 s. Os cortes batem com ROTEIRO-NARRACAO.md, para a dublagem cair
 // exatamente em cima de cada cena.
 const T = [
-  { at: 0,    cap: 'Como isso vira negócio? Franquia.' },
-  { at: 4.2,  cap: 'A GoodWe entra com o carregador, a plataforma e a marca. O comércio, com o ponto e a energia.' },
-  { at: 9.4,  cap: 'Royalty de seis por cento — só sobre a recarga. As vendas da loja são cem por cento do franqueado.' },
-  { at: 14.8, cap: 'E a recarga traz gente para dentro: mais quatro por cento de fluxo, mais cinco por cento de receita.' },
-  { at: 20.4, cap: 'Antes de assinar, a IA calcula: acima de duas horas e vinte por dia, o ponto se paga.' },
-  { at: 25.2, cap: 'Seu comércio recebe a GoodWe. Seu cliente recebe tempo e conforto. E o seu caixa recebe o resto.' },
+  { at: 0,     cap: 'Como isso vira negócio? Franquia.' },
+  { at: 2.42,  cap: 'A GoodWe entra com o carregador, a plataforma e a marca. O comércio entra com o ponto e a energia.' },
+  { at: 8.91,  cap: 'Royalty de seis por cento — só sobre a recarga. As vendas da loja são cem por cento do franqueado.' },
+  { at: 15.51, cap: 'E a recarga traz gente para dentro. Mais quatro por cento de fluxo. Mais cinco por cento de receita.' },
+  { at: 22.31, cap: 'Antes de assinar, a inteligência calcula: acima de duas horas e vinte por dia, o ponto se paga. Ponto fraco, a gente reprova.' },
+  { at: 30.72, cap: 'Seu comércio recebe a GoodWe. Seu cliente recebe tempo e conforto. E o seu caixa recebe o resto. O carregador vira rede.' },
 ];
-const FIM = 31;
+const FIM = 40.62;
 
 const cenas = [...document.querySelectorAll('.scene')];
 const cap = document.getElementById('cap');
 const prog = document.getElementById('prog');
-let t = 0, atual = -1, rodando = true, ultimo = performance.now();
+const voz = document.getElementById('voz');
+const start = document.getElementById('start');
+
+let t = 0, atual = -1, rodando = false, ultimo = performance.now();
+// A narração manda no tempo: lemos o relógio do próprio áudio, então imagem e
+// voz nunca desencontram. Se o MP3 faltar, cai no cronômetro interno.
+let temAudio = true;
+voz.addEventListener('error', () => { temAudio = false; });
 
 function mostrar(i) {
   if (i === atual) return;
@@ -183,18 +204,43 @@ function indicePorTempo() {
 function loop(agora) {
   const dt = (agora - ultimo) / 1000;
   ultimo = agora;
-  if (rodando) t = Math.min(FIM, t + dt);
+  if (temAudio && !voz.paused) t = voz.currentTime;
+  else if (rodando) t = Math.min(FIM, t + dt);
   mostrar(indicePorTempo());
-  prog.style.width = (t / FIM * 100) + '%';
+  prog.style.width = Math.min(100, t / FIM * 100) + '%';
   requestAnimationFrame(loop);
 }
+function pintar() {
+  mostrar(indicePorTempo());
+  prog.style.width = Math.min(100, t / FIM * 100) + '%';
+}
+
+// O rAF congela em aba oculta (e quando a janela é minimizada). O evento
+// timeupdate do áudio dispara de qualquer jeito, ~4x por segundo — o
+// suficiente para trocar de cena. O rAF fica só para a barra ficar fluida.
+voz.addEventListener('timeupdate', () => {
+  if (!voz.paused) { t = voz.currentTime; pintar(); }
+});
+
 mostrar(0);
 requestAnimationFrame(loop);
 
-// Controle manual — ao vivo a animação não pode correr na frente da fala.
+// O navegador só deixa tocar som depois de um gesto do usuário — daí a capa.
+function comecar() {
+  start.classList.add('off');
+  rodando = true;
+  if (temAudio) { voz.currentTime = 0; voz.play().catch(() => { temAudio = false; }); }
+}
+start.addEventListener('click', comecar);
+
+function pausar() {
+  if (temAudio) { voz.paused ? voz.play() : voz.pause(); }
+  rodando = !rodando;
+}
 function irPara(i) {
   i = Math.max(0, Math.min(T.length - 1, i));
   t = T[i].at;
+  if (temAudio) voz.currentTime = t;
   // Reinicia as animações de entrada forçando reflow. De propósito sem
   // requestAnimationFrame: em aba oculta o rAF não dispara e a cena sumiria.
   cenas.forEach((s) => s.classList.remove('on'));
@@ -203,12 +249,13 @@ function irPara(i) {
   mostrar(i);
 }
 addEventListener('keydown', (e) => {
-  if (e.code === 'Space') { e.preventDefault(); rodando = !rodando; }
+  if (start.classList.contains('off') === false) { comecar(); return; }
+  if (e.code === 'Space') { e.preventDefault(); pausar(); }
   if (e.code === 'ArrowRight') { e.preventDefault(); irPara(indicePorTempo() + 1); }
   if (e.code === 'ArrowLeft')  { e.preventDefault(); irPara(indicePorTempo() - 1); }
-  if (e.key.toLowerCase() === 'r') { irPara(0); rodando = true; }
+  if (e.key.toLowerCase() === 'r') { irPara(0); if (temAudio) voz.play(); rodando = true; }
 });
-addEventListener('click', () => { rodando = !rodando; });
+document.querySelector('.stage').addEventListener('click', pausar);
 </script>
 </body>
 </html>
