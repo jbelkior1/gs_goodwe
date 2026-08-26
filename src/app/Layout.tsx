@@ -2,14 +2,15 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp, type Persona } from './estado';
 import { base, obterPonto } from '../domain/db';
 import { Badge } from '../ui/kit';
+import { Icone, type NomeIcone } from '../ui/icones';
 
-const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: string; label: string }[] }[]> = {
+const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcone; label: string }[] }[]> = {
   motorista: [
     {
       grupo: 'App do motorista',
       itens: [
-        { to: '/motorista', ico: '🗺️', label: 'Onde carregar' },
-        { to: '/motorista/recarga', ico: '⚡', label: 'Recarga e pagamento' },
+        { to: '/motorista', ico: 'mapa', label: 'Onde carregar' },
+        { to: '/motorista/recarga', ico: 'raio', label: 'Recarga e pagamento' },
       ],
     },
   ],
@@ -17,9 +18,9 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: string; 
     {
       grupo: 'Minha unidade',
       itens: [
-        { to: '/lojista', ico: '📊', label: 'Painel' },
-        { to: '/lojista/demanda', ico: '🔌', label: 'Controle de demanda' },
-        { to: '/lojista/financeiro', ico: '💰', label: 'Tarifas e financeiro' },
+        { to: '/lojista', ico: 'painel', label: 'Painel' },
+        { to: '/lojista/demanda', ico: 'tomada', label: 'Controle de demanda' },
+        { to: '/lojista/financeiro', ico: 'dinheiro', label: 'Tarifas e financeiro' },
       ],
     },
   ],
@@ -27,8 +28,8 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: string; 
     {
       grupo: 'Rede GoodWe',
       itens: [
-        { to: '/rede', ico: '🌐', label: 'Visão da rede' },
-        { to: '/rede/homologacao', ico: '✅', label: 'Homologação' },
+        { to: '/rede', ico: 'globo', label: 'Visão da rede' },
+        { to: '/rede/homologacao', ico: 'check', label: 'Homologação' },
       ],
     },
   ],
@@ -64,26 +65,26 @@ export default function Layout() {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-logo">W</div>
+          <div className="brand-logo"><Icone nome="raio" tamanho={16} /></div>
           <div>
-            <div className="brand-name">Ponto W</div>
-            <div className="brand-sub">GoodWe · EV Challenge</div>
+            <div className="brand-name">GoodWe</div>
+            <div className="brand-sub">Torre de controle</div>
           </div>
         </div>
 
         <div className="persona-switch">
           <div className="persona-label">Perfil</div>
           {([
-            ['motorista', '🚗', 'Motorista'],
-            ['lojista', '🏪', 'Lojista'],
-            ['rede', '🛰️', 'GoodWe (rede)'],
-          ] as [Persona, string, string][]).map(([p, ico, label]) => (
+            ['motorista', 'carro', 'Motorista'],
+            ['lojista', 'loja', 'Lojista'],
+            ['rede', 'antena', 'GoodWe (rede)'],
+          ] as [Persona, NomeIcone, string][]).map(([p, ico, label]) => (
             <button
               key={p}
               className={`persona-btn ${persona === p ? 'active' : ''}`}
               onClick={() => trocarPersona(p)}
             >
-              <span className="ico">{ico}</span>
+              <span className="ico"><Icone nome={ico} tamanho={15} /></span>
               {label}
             </button>
           ))}
@@ -100,7 +101,7 @@ export default function Layout() {
                   end={item.to === '/motorista' || item.to === '/lojista' || item.to === '/rede'}
                   className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 >
-                  <span className="ico">{item.ico}</span>
+                  <span className="ico"><Icone nome={item.ico} tamanho={15} /></span>
                   {item.label}
                 </NavLink>
               ))}
@@ -109,8 +110,8 @@ export default function Layout() {
         </nav>
 
         <div className="sidebar-foot">
-          Base de demonstração · {base.sessoes.length.toLocaleString('pt-BR')} sessões
-          <br />Dados simulados (mock)
+          BASE DE DEMONSTRAÇÃO · {base.sessoes.length.toLocaleString('pt-BR')} SESSÕES
+          <br />DADOS SIMULADOS (MOCK)
         </div>
       </aside>
 

@@ -7,7 +7,10 @@ import {
 } from '../../domain/db';
 import { cargaComercioNaHora } from '../../domain/engine/demanda';
 import { geracaoSolarKW } from '../../domain/engine/solar';
-import { Card, KPI, LoadBar, Tabela, Badge, Nota, num, pct, Vazio, Bar, ChartTip, EstadoBadge } from '../../ui/kit';
+import {
+  Card, KPI, LoadBar, Tabela, Badge, Nota, num, pct, Vazio, Bar, ChartTip, EstadoBadge,
+  CHART, eixoProps, gradeProps,
+} from '../../ui/kit';
 
 export default function Demanda() {
   const { pontoId } = useApp();
@@ -132,13 +135,13 @@ export default function Demanda() {
             sub="Quanto sobra para recarga em cada horário">
         <ResponsiveContainer width="100%" height={220}>
           <AreaChart data={projecao}>
-            <CartesianGrid stroke="#eef1f6" vertical={false} />
-            <XAxis dataKey="hora" tick={{ fontSize: 10 }} stroke="#7a8798" minTickGap={20} />
-            <YAxis tick={{ fontSize: 10 }} stroke="#7a8798" unit=" kW" />
+            <CartesianGrid {...gradeProps} />
+            <XAxis dataKey="hora" {...eixoProps} minTickGap={20} />
+            <YAxis {...eixoProps} unit=" kW" />
             <Tooltip content={<ChartTip fmt={(v) => `${num(v, 1)} kW`} />} />
-            <ReferenceLine y={ponto.limitePotenciaKW} stroke="#e4002b" strokeDasharray="4 3"
-                           label={{ value: 'limite', fontSize: 10, fill: '#e4002b', position: 'right' }} />
-            <Area type="monotone" dataKey="comercio" stroke="#9aa7b8" fill="#dfe5ec" strokeWidth={2}
+            <ReferenceLine y={ponto.limitePotenciaKW} stroke={CHART.serie1} strokeDasharray="4 3"
+                           label={{ value: 'limite', fontSize: 10, fill: CHART.serie1Claro, position: 'right' }} />
+            <Area type="monotone" dataKey="comercio" stroke={CHART.neutro} fill={CHART.neutroFill} strokeWidth={2}
                   name="Carga do comércio" />
           </AreaChart>
         </ResponsiveContainer>

@@ -5,7 +5,10 @@ import {
   kpisDaRede, desempenhoPorRegiao, serieDiaria, rankingPontos, base, noMesAtual, solarDaRede,
 } from '../../domain/db';
 import { REGRAS, MODELOS_CARREGADOR } from '../../domain/catalogo';
-import { Card, KPI, Tabela, Badge, Bar, brl, num, Nota, ChartTip } from '../../ui/kit';
+import {
+  Card, KPI, Tabela, Badge, Bar, brl, num, Nota, ChartTip,
+  CHART, eixoProps, gradeProps,
+} from '../../ui/kit';
 
 export default function Visao() {
   const k = kpisDaRede();
@@ -55,15 +58,15 @@ export default function Visao() {
             <AreaChart data={serie}>
               <defs>
                 <linearGradient id="gr" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#e4002b" stopOpacity={0.32} />
-                  <stop offset="100%" stopColor="#e4002b" stopOpacity={0} />
+                  <stop offset="0%" stopColor={CHART.serie1} stopOpacity={0.4} />
+                  <stop offset="100%" stopColor={CHART.serie1} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="#eef1f6" vertical={false} />
-              <XAxis dataKey="dia" tick={{ fontSize: 10 }} stroke="#7a8798" minTickGap={24} />
-              <YAxis tick={{ fontSize: 10 }} stroke="#7a8798" />
+              <CartesianGrid {...gradeProps} />
+              <XAxis dataKey="dia" {...eixoProps} minTickGap={24} />
+              <YAxis {...eixoProps} />
               <Tooltip content={<ChartTip fmt={brl} />} />
-              <Area type="monotone" dataKey="faturamento" stroke="#e4002b" fill="url(#gr)" strokeWidth={2} />
+              <Area type="monotone" dataKey="faturamento" stroke={CHART.serie1Claro} fill="url(#gr)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>

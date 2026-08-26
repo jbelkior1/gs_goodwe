@@ -62,10 +62,11 @@ export default function Homologacao() {
                 key={h.id}
                 onClick={() => setSelecionada(h.id)}
                 style={{
-                  textAlign: 'left', border: '1px solid var(--line)', background:
-                    h.id === atual?.id ? '#fff1f3' : '#fff',
-                  borderColor: h.id === atual?.id ? 'var(--red)' : 'var(--line)',
-                  borderRadius: 10, padding: '9px 11px', cursor: 'pointer',
+                  textAlign: 'left', color: 'var(--k-text)',
+                  border: '1px solid var(--k-line)',
+                  background: h.id === atual?.id ? 'var(--k-redsoft)' : 'transparent',
+                  borderColor: h.id === atual?.id ? 'var(--k-red)' : 'var(--k-line)',
+                  borderRadius: 8, padding: '10px 12px', cursor: 'pointer',
                 }}
               >
                 <div className="row between">

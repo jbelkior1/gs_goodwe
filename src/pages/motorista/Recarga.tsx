@@ -10,7 +10,9 @@ import {
 import { repartir, gerarTxid } from '../../domain/engine/tarifa';
 import {
   Card, KPI, AnelSoC, Tabela, brl, num, duracao, hora, Nota, Vazio, EstadoBadge, Badge,
+  ChartTip, CHART, eixoProps, gradeProps,
 } from '../../ui/kit';
+import { Icone } from '../../ui/icones';
 
 export default function Recarga() {
   const { sessaoId } = useParams();
@@ -95,9 +97,10 @@ export default function Recarga() {
             <Card title="Pague com Pix">
               <div className="stack" style={{ alignItems: 'center' }}>
                 <div style={{
-                  width: 140, height: 140, borderRadius: 10, background: '#12161d',
-                  display: 'grid', placeItems: 'center', color: '#fff', fontSize: 11,
-                  letterSpacing: 1, textAlign: 'center', padding: 10,
+                  width: 150, height: 150, borderRadius: 8, background: 'var(--k-text)',
+                  display: 'grid', placeItems: 'center', color: 'var(--k-bg)', fontSize: 10,
+                  letterSpacing: '.16em', textAlign: 'center', padding: 10,
+                  boxShadow: '0 0 34px rgba(230,0,18,.34)',
                 }}>
                   QR CODE<br />PIX DINÂMICO
                 </div>
@@ -114,7 +117,7 @@ export default function Recarga() {
           {etapa === 'pago' && (
             <Card title="Pagamento confirmado">
               <div className="stack" style={{ alignItems: 'center', textAlign: 'center' }}>
-                <div style={{ fontSize: 44 }}>✅</div>
+                <Icone nome="check" tamanho={54} cor="var(--k-ok)" style={{ filter: 'drop-shadow(0 0 16px rgba(61,220,151,.4))' }} />
                 <div className="strong">Recibo emitido</div>
                 <div className="tiny muted">Sessão {sessao.id} · {brl(valor)}</div>
                 <Badge tom="green" dot>Pago via Pix</Badge>
@@ -134,15 +137,15 @@ export default function Recarga() {
           {serie.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>
               <LineChart data={serie}>
-                <CartesianGrid stroke="#eef1f6" vertical={false} />
-                <XAxis dataKey="hora" tick={{ fontSize: 11 }} stroke="#7a8798" minTickGap={30} />
-                <YAxis yAxisId="p" tick={{ fontSize: 11 }} stroke="#7a8798" unit=" kW" />
-                <YAxis yAxisId="s" orientation="right" tick={{ fontSize: 11 }} stroke="#7a8798"
+                <CartesianGrid {...gradeProps} />
+                <XAxis dataKey="hora" {...eixoProps} minTickGap={30} />
+                <YAxis yAxisId="p" {...eixoProps} unit=" kW" />
+                <YAxis yAxisId="s" orientation="right" {...eixoProps}
                        unit="%" domain={[0, 100]} />
-                <Tooltip />
-                <Line yAxisId="p" type="monotone" dataKey="potencia" stroke="#0f8b8d" strokeWidth={2}
+                <Tooltip content={<ChartTip />} />
+                <Line yAxisId="p" type="monotone" dataKey="potencia" stroke={CHART.serie2} strokeWidth={2}
                       dot={false} name="Potência" />
-                <Line yAxisId="s" type="monotone" dataKey="soc" stroke="#e4002b" strokeWidth={2}
+                <Line yAxisId="s" type="monotone" dataKey="soc" stroke={CHART.serie1Claro} strokeWidth={2}
                       dot={false} name="Bateria" />
               </LineChart>
             </ResponsiveContainer>

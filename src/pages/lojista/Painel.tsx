@@ -7,7 +7,8 @@ import {
   sessoesAtivas, inteligenciaDoPonto, carregadoresDoPonto, solarDoPonto,
 } from '../../domain/db';
 import { REGRAS } from '../../domain/catalogo';
-import { Card, KPI, Nota, brl, num, pct, Badge, Bar, ChartTip } from '../../ui/kit';
+import { Card, KPI, Nota, brl, num, pct, Badge, Bar, ChartTip, CHART, eixoProps, gradeProps } from '../../ui/kit';
+import { Icone } from '../../ui/icones';
 
 export default function Painel() {
   const { pontoId } = useApp();
@@ -56,15 +57,15 @@ export default function Painel() {
             <AreaChart data={serie}>
               <defs>
                 <linearGradient id="gf" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#e4002b" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#e4002b" stopOpacity={0} />
+                  <stop offset="0%" stopColor={CHART.serie1} stopOpacity={0.4} />
+                  <stop offset="100%" stopColor={CHART.serie1} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="#eef1f6" vertical={false} />
-              <XAxis dataKey="dia" tick={{ fontSize: 10 }} stroke="#7a8798" minTickGap={24} />
-              <YAxis tick={{ fontSize: 10 }} stroke="#7a8798" />
+              <CartesianGrid {...gradeProps} />
+              <XAxis dataKey="dia" {...eixoProps} minTickGap={24} />
+              <YAxis {...eixoProps} />
               <Tooltip content={<ChartTip fmt={brl} />} />
-              <Area type="monotone" dataKey="faturamento" stroke="#e4002b" fill="url(#gf)" strokeWidth={2} />
+              <Area type="monotone" dataKey="faturamento" stroke={CHART.serie1Claro} fill="url(#gf)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -107,11 +108,11 @@ export default function Painel() {
         <Card title="Movimento por hora" sub="Quando os clientes param aqui para carregar">
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={horario}>
-              <CartesianGrid stroke="#eef1f6" vertical={false} />
-              <XAxis dataKey="hora" tick={{ fontSize: 10 }} stroke="#7a8798" tickFormatter={(h) => `${h}h`} />
-              <YAxis tick={{ fontSize: 10 }} stroke="#7a8798" />
+              <CartesianGrid {...gradeProps} />
+              <XAxis dataKey="hora" {...eixoProps} tickFormatter={(h) => `${h}h`} />
+              <YAxis {...eixoProps} />
               <Tooltip content={<ChartTip fmt={(v) => `${v} sessões`} />} />
-              <RBar dataKey="sessoes" fill="#0f8b8d" radius={[4, 4, 0, 0]} />
+              <RBar dataKey="sessoes" fill={CHART.serie1} radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -127,9 +128,9 @@ export default function Painel() {
         action={
           solar.resumo.temEcossistema ? (
             <div className="pill-row">
-              <Badge tom="solar">☀ {num(solar.resumo.potenciaFVkWp, 1)} kWp</Badge>
+              <Badge tom="solar"><Icone nome="sol" tamanho={12} /> {num(solar.resumo.potenciaFVkWp, 1)} kWp</Badge>
               {solar.resumo.capacidadeBateriaKWh > 0 && (
-                <Badge tom="teal">🔋 {num(solar.resumo.capacidadeBateriaKWh)} kWh</Badge>
+                <Badge tom="teal"><Icone nome="bateria" tamanho={12} /> {num(solar.resumo.capacidadeBateriaKWh)} kWh</Badge>
               )}
             </div>
           ) : <Badge tom="gray">sem geração própria</Badge>
@@ -139,16 +140,16 @@ export default function Painel() {
           <div className="grid g-2-1">
             <ResponsiveContainer width="100%" height={210}>
               <AreaChart data={solar.mix.map((m) => ({ ...m, rotulo: `${m.hora}h` }))}>
-                <CartesianGrid stroke="#eff2f7" vertical={false} />
-                <XAxis dataKey="rotulo" tick={{ fontSize: 10 }} stroke="#8593a5" minTickGap={16} />
-                <YAxis tick={{ fontSize: 10 }} stroke="#8593a5" unit=" kW" />
+                <CartesianGrid {...gradeProps} />
+                <XAxis dataKey="rotulo" {...eixoProps} minTickGap={16} />
+                <YAxis {...eixoProps} unit=" kW" />
                 <Tooltip content={<ChartTip fmt={(v) => `${num(v, 1)} kW`} />} />
                 <Area type="monotone" dataKey="solarKW" stackId="1" name="Solar"
-                      stroke="#f0a202" fill="#ffd98a" strokeWidth={2} />
+                      stroke={CHART.serie3} fill="rgba(255,176,32,.28)" strokeWidth={2} />
                 <Area type="monotone" dataKey="baterialKW" stackId="1" name="Bateria"
-                      stroke="#0d8b8d" fill="#a8e0e1" strokeWidth={2} />
+                      stroke={CHART.serie2} fill="rgba(61,220,151,.22)" strokeWidth={2} />
                 <Area type="monotone" dataKey="redeKW" stackId="1" name="Rede"
-                      stroke="#93a2b5" fill="#dde3ea" strokeWidth={2} />
+                      stroke={CHART.neutro} fill={CHART.neutroFill} strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
 
