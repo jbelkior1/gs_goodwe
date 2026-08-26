@@ -25,6 +25,8 @@
   h1 em{font-style:normal;color:var(--red)}
   .sub{font-size:clamp(13px,1.6vw,23px);color:#c3cddb;font-weight:300;max-width:34ch;line-height:1.35}
   .fonte{font-size:clamp(9px,.95vw,12px);color:#6b7a8f;letter-spacing:.04em}
+  .src{font-size:clamp(9px,.92vw,11.5px);color:#7d8b9e;margin-top:.9vh;
+    padding-top:.9vh;border-top:1px solid var(--line);letter-spacing:.02em}
 
   .row{display:flex;gap:clamp(10px,2vw,30px);flex-wrap:wrap;justify-content:center}
   .card{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:16px;
@@ -132,13 +134,15 @@
 
   <!-- 4 · 14,8 – 20,4 — confirmação de mercado -->
   <section class="scene" data-i="3">
-    <div class="kick">E a recarga traz gente para dentro</div>
+    <div class="kick">Não é achismo — é o que as pesquisas mediram</div>
     <div class="row">
-      <div class="card gold"><div class="big">+4%</div><div class="lb">fluxo na loja</div></div>
-      <div class="card green"><div class="big">+5%</div><div class="lb">receita</div></div>
-      <div class="card teal"><div class="big">US$ 1.478</div><div class="lb">por comércio/ano</div></div>
+      <div class="card gold"><div class="big">+4%</div><div class="lb">fluxo na loja</div>
+        <div class="src">Consumer Reports</div></div>
+      <div class="card green"><div class="big">+5%</div><div class="lb">receita</div>
+        <div class="src">Consumer Reports</div></div>
+      <div class="card teal"><div class="big">US$ 1.478</div><div class="lb">por comércio/ano</div>
+        <div class="src">Nature Communications · 2024</div></div>
     </div>
-    <p class="fonte">Consumer Reports · Nature Communications (2024) · McKinsey</p>
   </section>
 
   <!-- 5 · 20,4 – 25,2 -->
@@ -179,7 +183,7 @@ const T = [
   { at: 0,     cap: 'Como isso vira negócio? Franquia.' },
   { at: 2.42,  cap: 'A GoodWe entra com o carregador, a plataforma e a marca. O comércio entra com o ponto e a energia.' },
   { at: 8.91,  cap: 'Royalty de seis por cento — só sobre a recarga. As vendas da loja são cem por cento do franqueado.' },
-  { at: 15.51, cap: 'E a recarga traz gente para dentro. Mais quatro por cento de fluxo. Mais cinco por cento de receita.' },
+  { at: 15.51, cap: 'E não é achismo. A Consumer Reports mediu: mais quatro por cento de fluxo, mais cinco por cento de receita. E a Nature Communications: quase mil e quinhentos dólares a mais por ano, em cada comércio vizinho.' },
   { at: 22.31, cap: 'Antes de assinar, a inteligência calcula: acima de duas horas e vinte por dia, o ponto se paga. Ponto fraco, a gente reprova.' },
   { at: 30.72, cap: 'Tecnologia da GoodWe. Conforto para o cliente. Movimento para a sua loja.' },
   { at: 37.20, cap: 'Vem ser GoodWe.' },
