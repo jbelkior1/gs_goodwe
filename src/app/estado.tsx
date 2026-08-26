@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { base } from '../domain/db';
 
-export type Persona = 'motorista' | 'lojista' | 'rede';
+export type Persona = 'motorista' | 'totem' | 'lojista' | 'rede';
 
 interface EstadoApp {
   persona: Persona;

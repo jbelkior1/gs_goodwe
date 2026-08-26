@@ -4,6 +4,8 @@ import Layout from './app/Layout';
 import Mapa from './pages/motorista/Mapa';
 import Recarga from './pages/motorista/Recarga';
 
+import Totem from './pages/totem/Totem';
+
 import Painel from './pages/lojista/Painel';
 import Demanda from './pages/lojista/Demanda';
 import Financeiro from './pages/lojista/Financeiro';
@@ -20,6 +22,8 @@ export default function App() {
         <Route path="/motorista" element={<Mapa />} />
         <Route path="/motorista/recarga" element={<Recarga />} />
         <Route path="/motorista/recarga/:sessaoId" element={<Recarga />} />
+
+        <Route path="/totem" element={<Totem />} />
 
         <Route path="/lojista" element={<Painel />} />
         <Route path="/lojista/demanda" element={<Demanda />} />
