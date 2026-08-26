@@ -79,6 +79,8 @@
   .pulse{width:7px;height:7px;border-radius:50%;background:var(--teal);
     animation:blink 1.4s ease-in-out infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  .cta{font-size:clamp(34px,7.4vw,104px);letter-spacing:-.04em}
+  .scene.fim{gap:3.2vh}
   #start{position:fixed;inset:0;z-index:50;display:grid;place-content:center;justify-items:center;
     gap:1.6vh;background:rgba(11,14,19,.94);cursor:pointer;text-align:center}
   #start.off{display:none}
@@ -152,11 +154,16 @@
   <!-- 6 · 25,2 – 31,0 — fecho -->
   <section class="scene" data-i="5">
     <div class="tri">
-      <div>Seu comércio recebe a <span style="color:var(--red)">GoodWe</span>.</div>
-      <div>Seu cliente recebe <span style="color:var(--teal)">tempo e conforto</span>.</div>
-      <div>E o seu caixa recebe <span style="color:var(--green)">o resto</span>.</div>
+      <div>Tecnologia da <span style="color:var(--red)">GoodWe</span>.</div>
+      <div><span style="color:var(--teal)">Conforto</span> para o cliente.</div>
+      <div><span style="color:var(--green)">Movimento</span> para a sua loja.</div>
     </div>
-    <h1 style="font-size:clamp(22px,3.6vw,50px);margin-top:1.5vh">O carregador vira <em>rede</em>.</h1>
+  </section>
+
+  <!-- 7 · fecho — o convite -->
+  <section class="scene fim" data-i="6">
+    <div class="kick">A rede Ponto W</div>
+    <h1 class="cta">Vem ser <em>GoodWe</em>.</h1>
   </section>
 </div>
 
@@ -174,7 +181,8 @@ const T = [
   { at: 8.91,  cap: 'Royalty de seis por cento — só sobre a recarga. As vendas da loja são cem por cento do franqueado.' },
   { at: 15.51, cap: 'E a recarga traz gente para dentro. Mais quatro por cento de fluxo. Mais cinco por cento de receita.' },
   { at: 22.31, cap: 'Antes de assinar, a inteligência calcula: acima de duas horas e vinte por dia, o ponto se paga. Ponto fraco, a gente reprova.' },
-  { at: 30.72, cap: 'Seu comércio recebe a GoodWe. Seu cliente recebe tempo e conforto. E o seu caixa recebe o resto. O carregador vira rede.' },
+  { at: 30.72, cap: 'Tecnologia da GoodWe. Conforto para o cliente. Movimento para a sua loja.' },
+  { at: 37.20, cap: 'Vem ser GoodWe.' },
 ];
 const FIM = 40.62;
 
