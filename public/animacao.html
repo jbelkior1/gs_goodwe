@@ -132,21 +132,33 @@
     </div>
   </section>
 
-  <!-- 4 · 14,8 – 20,4 — confirmação de mercado -->
+  <!-- 4a · o mecanismo -->
   <section class="scene" data-i="3">
-    <div class="kick">Cada carro parado é uma pessoa circulando na loja</div>
+    <div class="kick">E o que o comerciante ganha em troca?</div>
+    <h1 style="font-size:clamp(24px,4.2vw,58px)">Cada carro parado<br>é uma pessoa <em>circulando</em>.</h1>
+  </section>
+
+  <!-- 4b · Consumer Reports -->
+  <section class="scene" data-i="4">
+    <div class="kick">Consumer Reports mediu o efeito</div>
     <div class="row">
-      <div class="card gold"><div class="big">+4%</div><div class="lb">fluxo na loja</div>
-        <div class="src">Consumer Reports</div></div>
-      <div class="card green"><div class="big">+5%</div><div class="lb">receita</div>
-        <div class="src">Consumer Reports</div></div>
-      <div class="card teal"><div class="big">US$ 1.478</div><div class="lb">por comércio/ano</div>
-        <div class="src">Nature Communications · 2024</div></div>
+      <div class="card gold"><div class="big">+4%</div><div class="lb">fluxo na loja</div></div>
+      <div class="card green"><div class="big">+5%</div><div class="lb">receita</div></div>
+    </div>
+  </section>
+
+  <!-- 4c · Nature Communications -->
+  <section class="scene" data-i="5">
+    <div class="kick">E a Nature Communications confirma</div>
+    <div class="row">
+      <div class="card teal"><div class="big">US$ 1.478</div>
+        <div class="lb">a mais por ano, em cada comércio vizinho</div>
+        <div class="src">estudo publicado em 2024</div></div>
     </div>
   </section>
 
   <!-- 5 · 20,4 – 25,2 -->
-  <section class="scene" data-i="4">
+  <section class="scene" data-i="6">
     <div class="kick">Antes de assinar, a IA calcula</div>
     <div class="gauge">
       <div class="track"><div class="fill"></div><div class="limiar"></div></div>
@@ -156,7 +168,7 @@
   </section>
 
   <!-- 6 · 25,2 – 31,0 — fecho -->
-  <section class="scene" data-i="5">
+  <section class="scene" data-i="7">
     <div class="tri">
       <div>Tecnologia da <span style="color:var(--red)">GoodWe</span>.</div>
       <div><span style="color:var(--teal)">Conforto</span> para o cliente.</div>
@@ -165,7 +177,7 @@
   </section>
 
   <!-- 7 · fecho — o convite -->
-  <section class="scene fim" data-i="6">
+  <section class="scene fim" data-i="8">
     <div class="kick">A rede Ponto W</div>
     <h1 class="cta">Vem ser <em>GoodWe</em>.</h1>
   </section>
@@ -181,14 +193,16 @@
 // exatamente em cima de cada cena.
 const T = [
   { at: 0,     cap: 'Como isso vira negócio? Franquia.' },
-  { at: 2.42,  cap: 'A GoodWe entra com o carregador, a plataforma e a marca. O comércio entra com o ponto e a energia.' },
-  { at: 8.91,  cap: 'Royalty de seis por cento — só sobre a recarga. As vendas da loja são cem por cento do franqueado.' },
-  { at: 15.51, cap: 'E o que o comerciante ganha em troca? Cada carro parado ali é uma pessoa circulando na loja. A Consumer Reports mediu o efeito: mais quatro por cento de fluxo, mais cinco por cento de receita. E a Nature Communications confirma: quase mil e quinhentos dólares a mais por ano, em cada comércio vizinho.' },
-  { at: 22.31, cap: 'Antes de assinar, a inteligência calcula: acima de duas horas e vinte por dia, o ponto se paga. Ponto fraco, a gente reprova.' },
-  { at: 30.72, cap: 'Tecnologia da GoodWe. Conforto para o cliente. Movimento para a sua loja.' },
-  { at: 37.20, cap: 'Vem ser GoodWe.' },
+  { at: 2.40,  cap: 'A GoodWe entra com o carregador, a plataforma e a marca. O comércio entra com o ponto e a energia.' },
+  { at: 8.58,  cap: 'Royalty de seis por cento — só sobre a recarga. As vendas da loja são cem por cento do franqueado.' },
+  { at: 15.05, cap: 'E o que o comerciante ganha em troca? Cada carro parado ali é uma pessoa circulando na loja.' },
+  { at: 20.59, cap: 'A Consumer Reports mediu o efeito: mais quatro por cento de fluxo, mais cinco por cento de receita.' },
+  { at: 27.07, cap: 'E a Nature Communications confirma: quase mil e quinhentos dólares a mais por ano, em cada comércio vizinho.' },
+  { at: 33.60, cap: 'Antes de assinar, a inteligência calcula: acima de duas horas e vinte por dia, o ponto se paga. Ponto fraco, a gente reprova.' },
+  { at: 41.53, cap: 'Tecnologia da GoodWe. Conforto para o cliente. Movimento para a sua loja.' },
+  { at: 46.89, cap: 'Vem ser GoodWe.' },
 ];
-const FIM = 40.62;
+const FIM = 48.25;
 
 const cenas = [...document.querySelectorAll('.scene')];
 const cap = document.getElementById('cap');
