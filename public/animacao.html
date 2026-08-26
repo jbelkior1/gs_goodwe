@@ -94,7 +94,7 @@
 </style>
 </head>
 <body>
-<div class="hint">espaço = pausa · ← → = cenas · R = reiniciar</div>
+<div class="hint">espaço = pausa · ← → = cenas · R = reiniciar · <b>+ −</b> velocidade <span id="vel">1.12×</span> <span id="durx"></span></div>
 <audio id="voz" src="narracao.mp3" preload="auto"></audio>
 <div id="start">
   <div class="play">▶</div>
@@ -216,6 +216,23 @@ let t = 0, atual = -1, rodando = false, ultimo = performance.now();
 let temAudio = true;
 voz.addEventListener('error', () => { temAudio = false; });
 
+// Acelera a locução sem subir o tom (o navegador preserva o pitch).
+// Como os cortes de cena são lidos de voz.currentTime, que continua no
+// tempo do áudio, a sincronia se mantém em qualquer velocidade.
+let vel = 1.12;
+function aplicarVel() {
+  voz.preservesPitch = true;
+  voz.mozPreservesPitch = true;
+  voz.webkitPreservesPitch = true;
+  voz.playbackRate = vel;
+  const el = document.getElementById('vel');
+  const dx = document.getElementById('durx');
+  if (el) el.textContent = vel.toFixed(2) + '×';
+  if (dx && voz.duration) dx.textContent = '· ' + (voz.duration / vel).toFixed(1) + 's';
+}
+voz.addEventListener('loadedmetadata', aplicarVel);
+aplicarVel();
+
 function mostrar(i) {
   if (i === atual) return;
   atual = i;
@@ -280,6 +297,8 @@ addEventListener('keydown', (e) => {
   if (e.code === 'ArrowRight') { e.preventDefault(); irPara(indicePorTempo() + 1); }
   if (e.code === 'ArrowLeft')  { e.preventDefault(); irPara(indicePorTempo() - 1); }
   if (e.key.toLowerCase() === 'r') { irPara(0); if (temAudio) voz.play(); rodando = true; }
+  if (e.key === '+' || e.key === '=') { vel = Math.min(1.5, vel + 0.02); aplicarVel(); }
+  if (e.key === '-' || e.key === '_') { vel = Math.max(1.0, vel - 0.02); aplicarVel(); }
 });
 document.querySelector('.stage').addEventListener('click', pausar);
 </script>
