@@ -606,13 +606,13 @@ select.btn option { background: var(--k-panel); color: var(--k-text); }
 
 .cena3d {
   position: relative;
-  perspective: 1700px; perspective-origin: 50% 42%;
+  --escala: min(1, calc((100vh - 200px) / 742)); zoom: var(--escala); perspective: 1700px; perspective-origin: 50% 42%;
   display: flex; justify-content: center;
   padding: 8px 0 40px;
 }
 .totem3d {
-  --alt: min(742px, calc(100vh - 250px));
-  --larg: calc(var(--alt) * 1080 / 1920);
+  --alt: 742px;
+  --larg: 424px;
   --prof: 74px;
   position: relative;
   width: var(--larg); height: var(--alt);
@@ -1147,7 +1147,7 @@ select.btn option { background: var(--k-panel); color: var(--k-text); }
   .mv-chat { height: auto; min-height: calc(100vh - 320px); }
 
   /* o totem também vira tela cheia no celular, sem o gabinete */
-  .cena3d { perspective: none; padding: 0; }
+  .cena3d { perspective: none; padding: 0; zoom: 1; }
   .totem3d { width: 100%; height: auto; transform: none !important; }
   .t3d-face, .t3d-base, .t3d-piso, .t3d-camera, .t3d-marca { display: none; }
   .t3d-frente {
@@ -1167,8 +1167,12 @@ select.btn option { background: var(--k-panel); color: var(--k-text); }
 /* telas muito baixas (celular deitado, netbook): a moldura encolhe junto */
 @media (max-height: 720px) and (min-width: 781px) {
   .celular { height: calc(100vh - 176px); }
-  .totem3d { --alt: calc(100vh - 236px); }
+  
 }
+
+
+
+
 
 
 

@@ -54,17 +54,14 @@ export function MapaRede({
     <div className={`mapa ${compacto ? 'mapa-compacto' : ''}`}>
       <svg viewBox={`0 0 ${L} ${L}`} className="mapa-svg" preserveAspectRatio="xMidYMid meet">
         <defs>
-          <radialGradient id="mapaBrilho" cx="50%" cy="40%" r="60%">
-            <stop offset="0%" stopColor="rgba(230,0,18,.16)" />
-            <stop offset="100%" stopColor="transparent" />
-          </radialGradient>
+          
           <pattern id="mapaGrade" width="6.25" height="6.25" patternUnits="userSpaceOnUse">
             <path d="M6.25 0H0V6.25" fill="none" stroke="rgba(244,242,238,.05)" strokeWidth=".2" />
           </pattern>
         </defs>
 
         <rect width={L} height={L} fill="url(#mapaGrade)" />
-        <rect width={L} height={L} fill="url(#mapaBrilho)" />
+        <rect width={L} height={L} fill="transparent" />
         <path d={CONTORNO} className="mapa-contorno" />
 
         {/* rotas entre as praças, para dar leitura de rede e não de pontos soltos */}
@@ -127,3 +124,5 @@ export function MapaRede({
     </div>
   );
 }
+
+

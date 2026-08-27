@@ -234,7 +234,7 @@ export function AnelSoC({ soc, tamanho = 120 }: { soc: number; tamanho?: number 
         <circle
           cx={tamanho / 2} cy={tamanho / 2} r={raio} fill="none" stroke={cor} strokeWidth={7}
           strokeLinecap="round" strokeDasharray={`${preenchido} ${circ}`}
-          style={{ filter: `drop-shadow(0 0 8px ${cor === CHART.serie1 ? 'rgba(230,0,18,.7)' : 'transparent'})` }}
+          
         />
         <circle cx={tamanho / 2} cy={tamanho / 2} r={raio - 11} fill="none"
                 stroke="rgba(230,0,18,.16)" strokeWidth={1} strokeDasharray="2 5" />
@@ -315,3 +315,4 @@ export function ChartTip({
     </div>
   );
 }
+
