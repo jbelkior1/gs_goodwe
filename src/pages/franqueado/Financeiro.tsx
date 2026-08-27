@@ -10,7 +10,10 @@ import {
 } from '../../domain/db';
 import { calcularTarifa, fatorHorario } from '../../domain/engine/tarifa';
 import { REGRAS } from '../../domain/catalogo';
-import { Card, KPI, Tabela, EstadoBadge, brl, num, dataHora, Vazio, Nota, tipBRL, Badge } from '../../ui/kit';
+import {
+  Card, KPI, Tabela, EstadoBadge, brl, num, dataHora, Vazio, Nota, tipBRL, Badge,
+  CHART, eixoProps, gradeProps,
+} from '../../ui/kit';
 
 export default function Financeiro() {
   const { pontoId } = useApp();
@@ -36,11 +39,11 @@ export default function Financeiro() {
   );
 
   const pizza = [
-    { nome: 'Fica com o comércio', valor: Number(totais.liquido.toFixed(2)), cor: '#14884a' },
-    { nome: 'Custo de energia', valor: Number(totais.energia.toFixed(2)), cor: '#9aa7b8' },
-    { nome: 'Royalties GoodWe', valor: Number(totais.royalty.toFixed(2)), cor: '#e4002b' },
-    { nome: 'Fundo de marketing', valor: Number(totais.fundo.toFixed(2)), cor: '#f2849b' },
-    { nome: 'Gateway', valor: Number(totais.gateway.toFixed(2)), cor: '#c8d3df' },
+    { nome: 'Fica com o comércio', valor: Number(totais.liquido.toFixed(2)), cor: CHART.serie2 },
+    { nome: 'Custo de energia', valor: Number(totais.energia.toFixed(2)), cor: CHART.neutro },
+    { nome: 'Royalties GoodWe', valor: Number(totais.royalty.toFixed(2)), cor: CHART.serie1 },
+    { nome: 'Fundo de marketing', valor: Number(totais.fundo.toFixed(2)), cor: CHART.serie1Claro },
+    { nome: 'Gateway', valor: Number(totais.gateway.toFixed(2)), cor: CHART.serie3 },
   ];
 
   const falhas = cobrancas.filter((c) => c.status === 'FALHOU').length;
@@ -94,13 +97,13 @@ export default function Financeiro() {
           </div>
           <ResponsiveContainer width="100%" height={150}>
             <BarChart data={faixas}>
-              <CartesianGrid stroke="#eef1f6" vertical={false} />
-              <XAxis dataKey="rotulo" tick={{ fontSize: 9 }} stroke="#7a8798" minTickGap={14} />
-              <YAxis tick={{ fontSize: 9 }} stroke="#7a8798" width={34} />
+              <CartesianGrid {...gradeProps} />
+              <XAxis dataKey="rotulo" {...eixoProps} minTickGap={14} />
+              <YAxis {...eixoProps} width={34} />
               <Tooltip formatter={tipBRL} />
-              <RBar dataKey="preco" radius={[3, 3, 0, 0]}>
+              <RBar dataKey="preco" radius={[2, 2, 0, 0]}>
                 {faixas.map((f) => (
-                  <Cell key={f.hora} fill={f.agora ? '#e4002b' : f.fator > 1 ? '#0f8b8d' : '#c8d3df'} />
+                  <Cell key={f.hora} fill={f.agora ? CHART.serie1 : f.fator > 1 ? CHART.serie1Claro : CHART.neutro} />
                 ))}
               </RBar>
             </BarChart>

@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// O site é publicado em https://<usuario>.github.io/gs_goodwe/, então os
-// assets precisam sair com esse prefixo. Em desenvolvimento continua na raiz.
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/gs_goodwe/' : '/',
+// O app roda em dois lugares: no Railway na raiz do domínio, e no GitHub
+// Pages sob /gs_goodwe/. O caminho vem do ambiente para não precisar de dois
+// builds diferentes — sem a variável, assume a raiz.
+export default defineConfig(() => ({
+  base: process.env.VITE_BASE ?? '/',
   plugins: [react()],
 }))

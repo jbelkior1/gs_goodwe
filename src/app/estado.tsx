@@ -1,12 +1,13 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { base } from '../domain/db';
 
-export type Persona = 'motorista' | 'lojista' | 'rede';
+/** Os quatro inquilinos da plataforma — cada um com seu endereço próprio. */
+export type Persona = 'motorista' | 'totem' | 'franqueado' | 'goodwe';
 
 interface EstadoApp {
   persona: Persona;
   setPersona: (p: Persona) => void;
-  /** ponto que o lojista está operando */
+  /** ponto que o franqueado está operando */
   pontoId: string;
   setPontoId: (id: string) => void;
   /** motorista "logado" no app */
@@ -19,7 +20,7 @@ interface EstadoApp {
 const Ctx = createContext<EstadoApp | null>(null);
 
 export function ProvedorEstado({ children }: { children: ReactNode }) {
-  const [persona, setPersona] = useState<Persona>('lojista');
+  const [persona, setPersona] = useState<Persona>('franqueado');
   // começa no ponto com mais movimento, para a demo abrir cheia de dados
   const [pontoId, setPontoId] = useState<string>(() => {
     const ativos = base.pontos.filter((p) => p.ativo);

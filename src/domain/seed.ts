@@ -125,8 +125,10 @@ export function gerarBase(seed = 20260819): BaseDados {
         };
       })(),
       inauguradoEm: iso(new Date(agora.getTime() - r.int(100, 800) * 86400000)),
-      lat: Number(r.float(-30, -8).toFixed(4)),
-      lng: Number(r.float(-51, -35).toFixed(4)),
+      // o ponto fica dentro da própria zona da região, com um deslocamento
+      // pequeno — assim o mapa do app agrupa os pontos nas cidades certas
+      lat: Number((regiao.lat + r.float(-0.055, 0.055)).toFixed(4)),
+      lng: Number((regiao.lng + r.float(-0.055, 0.055)).toFixed(4)),
     };
     pontos.push(ponto);
 

@@ -10,17 +10,38 @@ Plataforma de gestão de recarga elétrica comercial. Projeto do **EV Challenge 
 
 **https://jbelkior1.github.io/gs_goodwe/**
 
-Abre direto no painel do lojista. Troque de perfil (Motorista · Lojista · GoodWe) pela
-barra lateral. Funciona no celular. O deploy é automático a cada push na `main`.
+A porta de entrada é o **portal**: escolha por qual dos quatro painéis entrar. Cada um
+tem endereço próprio, então dá para abrir direto no aparelho de cada público. Funciona
+no celular — aberto num celular de verdade, o app do motorista ocupa a tela inteira.
+O deploy é automático a cada push na `main`.
 
-Links diretos para a apresentação:
+| Painel | Quem usa | Endereço |
+|---|---|---|
+| Portal | escolha do painel | [`/`](https://jbelkior1.github.io/gs_goodwe/) |
+| Motorista | quem dirige o elétrico | [`/motorista`](https://jbelkior1.github.io/gs_goodwe/motorista) |
+| Totem | quem chega sem o app | [`/totem`](https://jbelkior1.github.io/gs_goodwe/totem) |
+| Franqueado | o comércio que hospeda | [`/franqueado`](https://jbelkior1.github.io/gs_goodwe/franqueado) |
+| GoodWe | a franqueadora | [`/goodwe`](https://jbelkior1.github.io/gs_goodwe/goodwe) |
 
-| Tela | Link |
-|---|---|
-| Painel do lojista | [`#/lojista`](https://jbelkior1.github.io/gs_goodwe/#/lojista) |
-| Controle de demanda | [`#/lojista/demanda`](https://jbelkior1.github.io/gs_goodwe/#/lojista/demanda) |
-| Recarga do motorista | [`#/motorista/recarga`](https://jbelkior1.github.io/gs_goodwe/#/motorista/recarga) |
-| Homologação (IA) | [`#/rede/homologacao`](https://jbelkior1.github.io/gs_goodwe/#/rede/homologacao) |
+Os endereços antigos (`/lojista`, `/rede`) continuam funcionando — redirecionam para os novos.
+
+## 🚂 Deploy no Railway
+
+O projeto já vem pronto para o Railway: `railway.json` define o build e o start, e
+`server.js` serve o `dist/` na porta que o Railway injeta em `PORT`, com fallback de
+SPA (toda rota desconhecida cai no `index.html`, para `/totem` e `/franqueado`
+funcionarem em acesso direto e no F5). Não há dependência extra — o servidor usa só o
+`node:http`.
+
+Para publicar:
+
+1. No Railway, **New Project → Deploy from GitHub repo** e escolha este repositório.
+2. Não é preciso configurar nada: o build roda `npm ci && npm run build` e o start roda
+   `npm start`. Deixe `VITE_BASE` **em branco** (o Railway serve na raiz do domínio).
+3. Em **Settings → Networking**, gere o domínio público.
+
+A cada push na branch conectada o Railway refaz o deploy sozinho — é assim que dá para
+ir acompanhando as atualizações.
 
 ## Rodando localmente
 

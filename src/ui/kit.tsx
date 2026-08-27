@@ -1,6 +1,43 @@
 import type { ReactNode, CSSProperties } from 'react';
+import { Icone } from './icones';
 
 /** Componentes compartilhados por todas as telas do Ponto W. */
+
+// ------------------------------------------------------------------ paleta
+/**
+ * Paleta de dado do padrão GoodWe/ChargeGrid.
+ *
+ * O padrão trabalha com quatro cores de série (vermelho, verde, âmbar e o
+ * marfim neutro) sobre a base grafite. Todo gráfico do produto puxa daqui —
+ * nenhuma tela declara hexadecimal solto.
+ */
+export const CHART = {
+  bg: '#0a0a0b',
+  painel: '#121215',
+  texto: '#f4f2ee',
+  dim: 'rgba(244,242,238,.54)',
+  dim2: 'rgba(244,242,238,.34)',
+  grade: 'rgba(244,242,238,.06)',
+  eixo: 'rgba(244,242,238,.20)',
+  /** série principal — sempre o vermelho da marca */
+  serie1: '#e60012',
+  serie1Claro: '#ff3b45',
+  serie2: '#3ddc97',
+  serie3: '#ffb020',
+  serie4: '#f4f2ee',
+  neutro: 'rgba(244,242,238,.28)',
+  neutroFill: 'rgba(244,242,238,.10)',
+} as const;
+
+/** Props comuns de eixo/grade — mantém todos os gráficos idênticos. */
+export const eixoProps = {
+  tick: { fontSize: 10, fill: CHART.dim2 },
+  stroke: CHART.eixo,
+  tickLine: false,
+  axisLine: { stroke: CHART.grade },
+} as const;
+
+export const gradeProps = { stroke: CHART.grade, vertical: false } as const;
 
 // ------------------------------------------------------------------ formato
 export const brl = (v: number): string =>
@@ -78,10 +115,11 @@ export function KPI({
 /** Seta de variação vs. período anterior. */
 export function Trend({ valor }: { valor: number }) {
   const dir = valor > 0.005 ? 'up' : valor < -0.005 ? 'down' : 'flat';
-  const seta = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '—';
+  const seta = dir === 'up' ? 'setaCima' : dir === 'down' ? 'setaBaixo' : 'traco';
   return (
     <span className={`trend ${dir}`}>
-      {seta} {Math.abs(valor * 100).toFixed(0)}%
+      <Icone nome={seta} tamanho={12} />
+      {Math.abs(valor * 100).toFixed(0)}%
     </span>
   );
 }
@@ -128,7 +166,7 @@ export function EstadoBadge({ estado }: { estado: string }) {
 }
 
 // ------------------------------------------------------------------ barras
-export function Bar({ valor, tom = 'var(--teal)', thick }: { valor: number; tom?: string; thick?: boolean }) {
+export function Bar({ valor, tom, thick }: { valor: number; tom?: string; thick?: boolean }) {
   return (
     <div className={`bar ${thick ? 'thick' : ''}`}>
       <span style={{ width: `${Math.min(100, Math.max(0, valor * 100))}%`, background: tom }} />
@@ -159,11 +197,11 @@ export function LoadBar({
       </div>
       <div className="row wrap tiny muted" style={{ marginTop: 6, gap: 14 }}>
         <span className="row" style={{ gap: 5 }}>
-          <span style={{ width: 9, height: 9, borderRadius: 2, background: '#9aa7b8' }} />
+          <span style={{ width: 9, height: 9, borderRadius: 2, background: 'rgba(244,242,238,.30)' }} />
           Comércio {num(comercioKW, 1)} kW
         </span>
         <span className="row" style={{ gap: 5 }}>
-          <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--teal)' }} />
+          <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--k-red)' }} />
           Recarga {num(recargaKW, 1)} kW
         </span>
         {solarKW > 0 && (
@@ -186,19 +224,25 @@ export function AnelSoC({ soc, tamanho = 120 }: { soc: number; tamanho?: number 
   const raio = tamanho / 2 - 9;
   const circ = 2 * Math.PI * raio;
   const preenchido = (Math.min(100, Math.max(0, soc)) / 100) * circ;
-  const cor = soc >= 80 ? 'var(--green)' : soc >= 40 ? 'var(--teal)' : 'var(--amber)';
+  // o padrão usa o vermelho da marca no anel; verde e âmbar só sinalizam estado
+  const cor = soc >= 80 ? CHART.serie2 : soc >= 40 ? CHART.serie1 : CHART.serie3;
   return (
     <div style={{ position: 'relative', width: tamanho, height: tamanho }}>
       <svg width={tamanho} height={tamanho} className="gauge-ring">
-        <circle cx={tamanho / 2} cy={tamanho / 2} r={raio} fill="none" stroke="var(--line-2)" strokeWidth={9} />
+        <circle cx={tamanho / 2} cy={tamanho / 2} r={raio} fill="none"
+                stroke="rgba(244,242,238,.08)" strokeWidth={7} />
         <circle
-          cx={tamanho / 2} cy={tamanho / 2} r={raio} fill="none" stroke={cor} strokeWidth={9}
+          cx={tamanho / 2} cy={tamanho / 2} r={raio} fill="none" stroke={cor} strokeWidth={7}
           strokeLinecap="round" strokeDasharray={`${preenchido} ${circ}`}
+          style={{ filter: `drop-shadow(0 0 8px ${cor === CHART.serie1 ? 'rgba(230,0,18,.7)' : 'transparent'})` }}
         />
+        <circle cx={tamanho / 2} cy={tamanho / 2} r={raio - 11} fill="none"
+                stroke="rgba(230,0,18,.16)" strokeWidth={1} strokeDasharray="2 5" />
       </svg>
       <div style={{
         position: 'absolute', inset: 0, display: 'grid', placeItems: 'center',
-        fontWeight: 800, fontSize: tamanho * 0.24, letterSpacing: '-1px',
+        fontWeight: 500, fontSize: tamanho * 0.24, letterSpacing: '-.035em',
+        fontVariantNumeric: 'tabular-nums',
       }}>
         {Math.round(soc)}%
       </div>

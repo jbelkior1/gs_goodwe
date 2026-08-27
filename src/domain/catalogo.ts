@@ -46,20 +46,20 @@ export const MODELOS_CARREGADOR: Record<TipoCarregador, ModeloCarregador> = {
 
 /** Regiões com tarifa de energia realista por distribuidora (R$/kWh com impostos). */
 export const REGIOES: Regiao[] = [
-  { id: 'r-sp-pinheiros', uf: 'SP', cidade: 'São Paulo', zona: 'Pinheiros', custoEnergiaKWh: 0.85, densidadeEV: 0.95 },
-  { id: 'r-sp-moema', uf: 'SP', cidade: 'São Paulo', zona: 'Moema', custoEnergiaKWh: 0.85, densidadeEV: 0.9 },
-  { id: 'r-sp-tatuape', uf: 'SP', cidade: 'São Paulo', zona: 'Tatuapé', custoEnergiaKWh: 0.85, densidadeEV: 0.62 },
-  { id: 'r-sp-campinas', uf: 'SP', cidade: 'Campinas', zona: 'Cambuí', custoEnergiaKWh: 0.82, densidadeEV: 0.7 },
-  { id: 'r-rj-barra', uf: 'RJ', cidade: 'Rio de Janeiro', zona: 'Barra da Tijuca', custoEnergiaKWh: 1.12, densidadeEV: 0.78 },
-  { id: 'r-rj-botafogo', uf: 'RJ', cidade: 'Rio de Janeiro', zona: 'Botafogo', custoEnergiaKWh: 1.12, densidadeEV: 0.66 },
-  { id: 'r-mg-savassi', uf: 'MG', cidade: 'Belo Horizonte', zona: 'Savassi', custoEnergiaKWh: 0.91, densidadeEV: 0.6 },
-  { id: 'r-pr-batel', uf: 'PR', cidade: 'Curitiba', zona: 'Batel', custoEnergiaKWh: 0.78, densidadeEV: 0.64 },
-  { id: 'r-sc-centro', uf: 'SC', cidade: 'Florianópolis', zona: 'Centro', custoEnergiaKWh: 0.76, densidadeEV: 0.58 },
-  { id: 'r-rs-moinhos', uf: 'RS', cidade: 'Porto Alegre', zona: 'Moinhos de Vento', custoEnergiaKWh: 0.74, densidadeEV: 0.55 },
-  { id: 'r-df-asa-sul', uf: 'DF', cidade: 'Brasília', zona: 'Asa Sul', custoEnergiaKWh: 0.83, densidadeEV: 0.72 },
-  { id: 'r-ba-ondina', uf: 'BA', cidade: 'Salvador', zona: 'Ondina', custoEnergiaKWh: 0.94, densidadeEV: 0.4 },
-  { id: 'r-pe-boaviagem', uf: 'PE', cidade: 'Recife', zona: 'Boa Viagem', custoEnergiaKWh: 0.89, densidadeEV: 0.42 },
-  { id: 'r-go-setor-bueno', uf: 'GO', cidade: 'Goiânia', zona: 'Setor Bueno', custoEnergiaKWh: 0.8, densidadeEV: 0.45 },
+  { id: 'r-sp-pinheiros', uf: 'SP', cidade: 'São Paulo', zona: 'Pinheiros', custoEnergiaKWh: 0.85, densidadeEV: 0.95, lat: -23.5646, lng: -46.696 },
+  { id: 'r-sp-moema', uf: 'SP', cidade: 'São Paulo', zona: 'Moema', custoEnergiaKWh: 0.85, densidadeEV: 0.9, lat: -23.6021, lng: -46.6669 },
+  { id: 'r-sp-tatuape', uf: 'SP', cidade: 'São Paulo', zona: 'Tatuapé', custoEnergiaKWh: 0.85, densidadeEV: 0.62, lat: -23.5405, lng: -46.5766 },
+  { id: 'r-sp-campinas', uf: 'SP', cidade: 'Campinas', zona: 'Cambuí', custoEnergiaKWh: 0.82, densidadeEV: 0.7, lat: -22.8983, lng: -47.0498 },
+  { id: 'r-rj-barra', uf: 'RJ', cidade: 'Rio de Janeiro', zona: 'Barra da Tijuca', custoEnergiaKWh: 1.12, densidadeEV: 0.78, lat: -23.0045, lng: -43.365 },
+  { id: 'r-rj-botafogo', uf: 'RJ', cidade: 'Rio de Janeiro', zona: 'Botafogo', custoEnergiaKWh: 1.12, densidadeEV: 0.66, lat: -22.9519, lng: -43.1841 },
+  { id: 'r-mg-savassi', uf: 'MG', cidade: 'Belo Horizonte', zona: 'Savassi', custoEnergiaKWh: 0.91, densidadeEV: 0.6, lat: -19.9386, lng: -43.9333 },
+  { id: 'r-pr-batel', uf: 'PR', cidade: 'Curitiba', zona: 'Batel', custoEnergiaKWh: 0.78, densidadeEV: 0.64, lat: -25.4372, lng: -49.2879 },
+  { id: 'r-sc-centro', uf: 'SC', cidade: 'Florianópolis', zona: 'Centro', custoEnergiaKWh: 0.76, densidadeEV: 0.58, lat: -27.5954, lng: -48.548 },
+  { id: 'r-rs-moinhos', uf: 'RS', cidade: 'Porto Alegre', zona: 'Moinhos de Vento', custoEnergiaKWh: 0.74, densidadeEV: 0.55, lat: -30.0244, lng: -51.205 },
+  { id: 'r-df-asa-sul', uf: 'DF', cidade: 'Brasília', zona: 'Asa Sul', custoEnergiaKWh: 0.83, densidadeEV: 0.72, lat: -15.8267, lng: -47.9021 },
+  { id: 'r-ba-ondina', uf: 'BA', cidade: 'Salvador', zona: 'Ondina', custoEnergiaKWh: 0.94, densidadeEV: 0.4, lat: -13.0069, lng: -38.5069 },
+  { id: 'r-pe-boaviagem', uf: 'PE', cidade: 'Recife', zona: 'Boa Viagem', custoEnergiaKWh: 0.89, densidadeEV: 0.42, lat: -8.129, lng: -34.9026 },
+  { id: 'r-go-setor-bueno', uf: 'GO', cidade: 'Goiânia', zona: 'Setor Bueno', custoEnergiaKWh: 0.8, densidadeEV: 0.45, lat: -16.705, lng: -49.2703 },
 ];
 
 /** Modelos elétricos com presença real no Brasil. */

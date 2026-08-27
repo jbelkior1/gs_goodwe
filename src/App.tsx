@@ -1,35 +1,65 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import Layout from './app/Layout';
+
+import Portal from './pages/portal/Portal';
 
 import Mapa from './pages/motorista/Mapa';
 import Recarga from './pages/motorista/Recarga';
+import Assistente from './pages/motorista/Assistente';
 
-import Painel from './pages/lojista/Painel';
-import Demanda from './pages/lojista/Demanda';
-import Financeiro from './pages/lojista/Financeiro';
+import Totem from './pages/totem/Totem';
 
-import Visao from './pages/rede/Visao';
-import Homologacao from './pages/rede/Homologacao';
+import Painel from './pages/franqueado/Painel';
+import Demanda from './pages/franqueado/Demanda';
+import Financeiro from './pages/franqueado/Financeiro';
+
+import Visao from './pages/goodwe/Visao';
+import Homologacao from './pages/goodwe/Homologacao';
+
+/** Mantém vivo o endereço antigo (/lojista, /rede) apontando para o novo. */
+function Redireciona({ de, para }: { de: string; para: string }) {
+  const { pathname, search } = useLocation();
+  return <Navigate to={pathname.replace(de, para) + search} replace />;
+}
+
+/** /motorista/recarga/:sessaoId — a tela lê o parâmetro por conta própria. */
+function RecargaComSessao() {
+  useParams();
+  return <Recarga />;
+}
 
 export default function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Navigate to="/lojista" replace />} />
+      {/* porta de entrada: escolha do painel */}
+      <Route path="/" element={<Portal />} />
 
+      <Route element={<Layout />}>
+        {/* motorista — app de celular */}
         <Route path="/motorista" element={<Mapa />} />
         <Route path="/motorista/recarga" element={<Recarga />} />
-        <Route path="/motorista/recarga/:sessaoId" element={<Recarga />} />
+        <Route path="/motorista/recarga/:sessaoId" element={<RecargaComSessao />} />
+        <Route path="/motorista/assistente" element={<Assistente />} />
 
-        <Route path="/lojista" element={<Painel />} />
-        <Route path="/lojista/demanda" element={<Demanda />} />
-        <Route path="/lojista/financeiro" element={<Financeiro />} />
+        {/* totem — quiosque do eletroposto */}
+        <Route path="/totem" element={<Totem />} />
 
-        <Route path="/rede" element={<Visao />} />
-        <Route path="/rede/homologacao" element={<Homologacao />} />
+        {/* franqueado — o comércio que hospeda o ponto */}
+        <Route path="/franqueado" element={<Painel />} />
+        <Route path="/franqueado/demanda" element={<Demanda />} />
+        <Route path="/franqueado/financeiro" element={<Financeiro />} />
 
-        <Route path="*" element={<Navigate to="/lojista" replace />} />
+        {/* goodwe — a franqueadora */}
+        <Route path="/goodwe" element={<Visao />} />
+        <Route path="/goodwe/homologacao" element={<Homologacao />} />
       </Route>
+
+      <Route path="/lojista/*" element={<Redireciona de="/lojista" para="/franqueado" />} />
+      <Route path="/lojista" element={<Navigate to="/franqueado" replace />} />
+      <Route path="/rede/*" element={<Redireciona de="/rede" para="/goodwe" />} />
+      <Route path="/rede" element={<Navigate to="/goodwe" replace />} />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
