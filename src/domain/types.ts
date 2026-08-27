@@ -16,6 +16,9 @@ export interface Regiao {
   custoEnergiaKWh: number;
   /** índice 0–1 de densidade de veículos elétricos na região */
   densidadeEV: number;
+  /** coordenada real da zona — o mapa do app posiciona os pontos a partir daqui */
+  lat: number;
+  lng: number;
 }
 
 // ---------------------------------------------------------------- hardware

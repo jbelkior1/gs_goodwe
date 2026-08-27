@@ -25,6 +25,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_BASE: /gs_goodwe/
+      # o Pages nao tem fallback de SPA; o 404 com o mesmo conteudo cobre as
+      # rotas reais (/totem, /franqueado, ...) em acesso direto
+      - run: cp dist/index.html dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

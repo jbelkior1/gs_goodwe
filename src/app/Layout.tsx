@@ -1,9 +1,10 @@
 import { useEffect, type ReactNode } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp, type Persona } from './estado';
 import { base, obterPonto } from '../domain/db';
 import { Badge } from '../ui/kit';
 import { Icone, type NomeIcone } from '../ui/icones';
+import { Totem3D } from '../ui/Totem3D';
 
 const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcone; label: string }[] }[]> = {
   motorista: [
@@ -12,69 +13,76 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcon
       itens: [
         { to: '/motorista', ico: 'mapa', label: 'Onde carregar' },
         { to: '/motorista/recarga', ico: 'raio', label: 'Recarga e pagamento' },
+        { to: '/motorista/assistente', ico: 'chat', label: 'Falar com o Volt' },
       ],
     },
   ],
   totem: [
     {
       grupo: 'Totem do eletroposto',
-      itens: [
-        { to: '/totem', ico: 'pulso', label: 'Tela do totem' },
-      ],
+      itens: [{ to: '/totem', ico: 'pulso', label: 'Tela do totem' }],
     },
   ],
-  lojista: [
+  franqueado: [
     {
       grupo: 'Minha unidade',
       itens: [
-        { to: '/lojista', ico: 'painel', label: 'Painel' },
-        { to: '/lojista/demanda', ico: 'tomada', label: 'Controle de demanda' },
-        { to: '/lojista/financeiro', ico: 'dinheiro', label: 'Tarifas e financeiro' },
+        { to: '/franqueado', ico: 'painel', label: 'Painel' },
+        { to: '/franqueado/demanda', ico: 'tomada', label: 'Controle de demanda' },
+        { to: '/franqueado/financeiro', ico: 'dinheiro', label: 'Tarifas e financeiro' },
       ],
     },
   ],
-  rede: [
+  goodwe: [
     {
       grupo: 'Rede GoodWe',
       itens: [
-        { to: '/rede', ico: 'globo', label: 'Visão da rede' },
-        { to: '/rede/homologacao', ico: 'check', label: 'Homologação' },
+        { to: '/goodwe', ico: 'globo', label: 'Visão da rede' },
+        { to: '/goodwe/homologacao', ico: 'check', label: 'Homologação' },
       ],
     },
   ],
 };
 
 const TITULOS: Record<string, { t: string; s: string }> = {
-  '/motorista': { t: 'Onde carregar', s: 'Pontos da rede Ponto W disponíveis agora' },
+  '/motorista': { t: 'Onde carregar', s: 'Pontos da rede disponíveis agora' },
   '/motorista/recarga': { t: 'Recarga e pagamento', s: 'Acompanhe a sessão e feche a conta por Pix' },
+  '/motorista/assistente': { t: 'Volt', s: 'O assistente da rede no seu bolso' },
   '/totem': { t: 'Totem do eletroposto', s: 'Autoatendimento com o assistente Volt' },
-  '/lojista': { t: 'Painel da unidade', s: 'Como o ponto está performando neste mês' },
-  '/lojista/demanda': { t: 'Controle de demanda', s: 'Distribuição de potência e proteção da entrada elétrica' },
-  '/lojista/financeiro': { t: 'Tarifas e financeiro', s: 'Preço dinâmico, cobranças e resultado da unidade' },
-  '/rede': { t: 'Visão da rede', s: 'Todos os pontos Ponto W no Brasil' },
-  '/rede/homologacao': { t: 'Homologação de pontos', s: 'Análise de viabilidade dos candidatos' },
+  '/franqueado': { t: 'Painel da unidade', s: 'Como o ponto está performando neste mês' },
+  '/franqueado/demanda': { t: 'Controle de demanda', s: 'Distribuição de potência e proteção da entrada elétrica' },
+  '/franqueado/financeiro': { t: 'Tarifas e financeiro', s: 'Preço dinâmico, cobranças e resultado da unidade' },
+  '/goodwe': { t: 'Visão da rede', s: 'Todos os pontos Ponto W no Brasil' },
+  '/goodwe/homologacao': { t: 'Homologação de pontos', s: 'Análise de viabilidade dos candidatos' },
+};
+
+const ROTULO: Record<Persona, { nome: string; ico: NomeIcone; sub: string }> = {
+  motorista: { nome: 'Motorista', ico: 'carro', sub: 'App · celular' },
+  totem: { nome: 'Totem', ico: 'raio', sub: 'Quiosque' },
+  franqueado: { nome: 'Franqueado', ico: 'loja', sub: 'Painel da unidade' },
+  goodwe: { nome: 'GoodWe', ico: 'antena', sub: 'Torre de controle' },
 };
 
 /** A rota manda: abrir /totem direto tem de trazer o totem junto. */
 function personaDaRota(pathname: string): Persona | null {
   if (pathname.startsWith('/totem')) return 'totem';
   if (pathname.startsWith('/motorista')) return 'motorista';
-  if (pathname.startsWith('/lojista')) return 'lojista';
-  if (pathname.startsWith('/rede')) return 'rede';
+  if (pathname.startsWith('/franqueado')) return 'franqueado';
+  if (pathname.startsWith('/goodwe')) return 'goodwe';
   return null;
 }
 
 const ROTA_INICIAL: Record<Persona, string> = {
   motorista: '/motorista',
   totem: '/totem',
-  lojista: '/lojista',
-  rede: '/rede',
+  franqueado: '/franqueado',
+  goodwe: '/goodwe',
 };
 
 /**
- * Cada persona vê o produto no aparelho em que ele roda de verdade:
- * o motorista dentro de uma moldura retangular de celular, o atendimento
- * dentro do totem físico do eletroposto, e a operação em tela cheia.
+ * Cada inquilino vê o produto no aparelho em que ele roda de verdade: o
+ * motorista dentro de uma moldura de celular, o atendimento dentro do totem,
+ * e a operação em tela cheia. No celular de verdade a moldura desaparece.
  */
 function Moldura({ persona, children }: { persona: Persona; children: ReactNode }) {
   if (persona === 'motorista') {
@@ -91,15 +99,7 @@ function Moldura({ persona, children }: { persona: Persona; children: ReactNode 
   if (persona === 'totem') {
     return (
       <div className="palco palco-totem">
-        <div className="totem">
-          <div className="totem-cabeca">
-            <div className="totem-visor">{children}</div>
-          </div>
-          <div className="totem-coluna">
-            <span className="totem-coluna-marca">GOODWE</span>
-          </div>
-          <div className="totem-base" />
-        </div>
+        <Totem3D>{children}</Totem3D>
         <div className="palco-nota meta">TOTEM DO ELETROPOSTO · 1080 × 1920</div>
       </div>
     );
@@ -131,31 +131,27 @@ export default function Layout() {
   };
 
   return (
-    <div className="app">
+    <div className={`app app-${personaAtual}`}>
       <aside className="sidebar">
-        <div className="brand">
+        <Link to="/" className="brand" title="Voltar para a escolha de painel">
           <div className="brand-logo"><Icone nome="raio" tamanho={16} /></div>
-          <div>
+          <div className="brand-txt">
             <div className="brand-name">GoodWe</div>
-            <div className="brand-sub">Torre de controle</div>
+            <div className="brand-sub">{ROTULO[personaAtual].sub}</div>
           </div>
-        </div>
+          <span className="brand-voltar"><Icone nome="casa" tamanho={14} /></span>
+        </Link>
 
         <div className="persona-switch">
-          <div className="persona-label">Perfil</div>
-          {([
-            ['motorista', 'carro', 'Motorista'],
-            ['totem', 'raio', 'Totem'],
-            ['lojista', 'loja', 'Lojista'],
-            ['rede', 'antena', 'GoodWe (rede)'],
-          ] as [Persona, NomeIcone, string][]).map(([p, ico, label]) => (
+          <div className="persona-label">Painel</div>
+          {(Object.keys(ROTULO) as Persona[]).map((p) => (
             <button
               key={p}
               className={`persona-btn ${personaAtual === p ? 'active' : ''}`}
               onClick={() => trocarPersona(p)}
             >
-              <span className="ico"><Icone nome={ico} tamanho={15} /></span>
-              {label}
+              <span className="ico"><Icone nome={ROTULO[p].ico} tamanho={15} /></span>
+              {ROTULO[p].nome}
             </button>
           ))}
         </div>
@@ -168,7 +164,7 @@ export default function Layout() {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={item.to === '/motorista' || item.to === '/lojista' || item.to === '/rede'}
+                  end={item.to === ROTA_INICIAL[personaAtual]}
                   className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 >
                   <span className="ico"><Icone nome={item.ico} tamanho={15} /></span>
@@ -187,12 +183,12 @@ export default function Layout() {
 
       <div className="main">
         <header className="topbar">
-          <div>
+          <div className="topbar-tit">
             <h1>{titulo.t}</h1>
             <div className="sub">{titulo.s}</div>
           </div>
           <div className="topbar-actions">
-            {personaAtual === 'lojista' && (
+            {personaAtual === 'franqueado' && (
               <select
                 className="btn"
                 value={pontoId}
@@ -206,15 +202,13 @@ export default function Layout() {
                 ))}
               </select>
             )}
-            {personaAtual === 'lojista' && ponto && (
+            {personaAtual === 'franqueado' && ponto && (
               <Badge tom={ponto.ativo ? 'green' : 'amber'} dot>
                 {ponto.ativo ? 'Operando' : 'Inativo'}
               </Badge>
             )}
-            {personaAtual === 'totem' && (
-              <Badge tom="red" dot pulse>totem em operação</Badge>
-            )}
-            {personaAtual === 'rede' && (
+            {personaAtual === 'totem' && <Badge tom="red" dot pulse>totem em operação</Badge>}
+            {personaAtual === 'goodwe' && (
               <Badge tom="teal" dot pulse>
                 {base.pontos.filter((p) => p.ativo).length} pontos ativos
               </Badge>

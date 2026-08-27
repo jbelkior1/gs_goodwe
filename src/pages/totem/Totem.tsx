@@ -1,17 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AreaChart, Area, ResponsiveContainer, YAxis } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 import { useApp } from '../../app/estado';
 import {
-  obterPonto, carregadoresDoPonto, sessoesAtivas, tarifaAtual, solarDoPonto,
+  carregadoresDoPonto, obterPonto, sessoesAtivas, solarDoPonto, tarifaAtual,
 } from '../../domain/db';
 import { responderVolt, saudacaoVolt, type ContextoVolt } from '../../domain/engine/assistente';
-import { brl, num, CHART, AnelSoC } from '../../ui/kit';
+import { brl, num, CHART } from '../../ui/kit';
 import { Icone } from '../../ui/icones';
 import { Volt, type EstadoVolt } from '../../ui/Volt';
 
 interface Mensagem { de: 'volt' | 'motorista'; texto: string }
 
-/** Tela que roda dentro do totem do eletroposto: painel da recarga + o Volt. */
+/**
+ * Tela que roda dentro do totem.
+ *
+ * O layout é uma grade de linhas explícitas com `overflow: hidden`: painel,
+ * indicadores, curva e rodapé têm altura própria e a conversa fica com a
+ * sobra. Assim nada se sobrepõe nem empurra o rodapé para fora, em qualquer
+ * altura de tela — só o histórico da conversa rola, por natureza.
+ */
 export default function Totem() {
   const { pontoId } = useApp();
   const ponto = obterPonto(pontoId)!;
@@ -19,34 +26,31 @@ export default function Totem() {
   const solar = solarDoPonto(pontoId);
   const tarifa = tarifaAtual(pontoId);
 
-  // semente: uma sessão real da base; se o ponto estiver vazio, abre uma demo
   const semente = sessoesAtivas(pontoId)[0];
   const precoKWh = semente?.tarifaAplicadaKWh ?? tarifa.precoFinalKWh;
 
   const [soc, setSoc] = useState(() => semente?.socAtual ?? 38);
   const [kw, setKw] = useState(() => semente?.potenciaAtualKW ?? 21.4);
   const [kwh, setKwh] = useState(() => semente?.energiaKWh ?? 6.2);
-  // a curva já abre com histórico: rampa de partida + oscilação, como no equipamento
+  const [relogio, setRelogio] = useState(() => new Date());
   const [curva, setCurva] = useState<{ t: number; kw: number }[]>(() => {
-    const base = semente?.potenciaAtualKW ?? 21.4;
-    return Array.from({ length: 28 }, (_, i) => ({
+    const p = semente?.potenciaAtualKW ?? 21.4;
+    return Array.from({ length: 32 }, (_, i) => ({
       t: i,
-      kw: Math.max(2, base * Math.min(1, (i + 3) / 9) + Math.sin(i / 2.1) * (base * 0.09)),
+      kw: Math.max(2, p * Math.min(1, (i + 3) / 9) + Math.sin(i / 2.1) * (p * 0.09)),
     }));
   });
-  const [relogio, setRelogio] = useState(() => new Date());
 
-  // telemetria ao vivo: a potência oscila e cai depois dos 80% (curva CC/CV)
+  // telemetria ao vivo: a potência cai depois dos 80% (curva CC/CV do carro)
   useEffect(() => {
     const id = setInterval(() => {
       setRelogio(new Date());
       setSoc((s) => (s >= 99 ? 24 : s + 0.35));
       setKw((p) => {
         const teto = soc > 80 ? 12 : soc > 60 ? 24 : 34;
-        const alvo = Math.min(teto, Math.max(5, p + (Math.random() - 0.5) * 3.2));
-        return alvo;
+        return Math.min(teto, Math.max(5, p + (Math.random() - 0.5) * 3.2));
       });
-      setKwh((e) => e + kw / 3600 * 4);
+      setKwh((e) => e + (kw / 3600) * 4);
       setCurva((c) => [...c.slice(1), { t: (c[c.length - 1]?.t ?? 0) + 1, kw }]);
     }, 1000);
     return () => clearInterval(id);
@@ -55,6 +59,7 @@ export default function Totem() {
   const custo = kwh * precoKWh;
   const minutosRestantes = Math.max(1, Math.round(((80 - soc) / 100) * 62));
   const vagasLivres = carregadores.filter((c) => c.estado === 'DISPONIVEL').length;
+  const socLimitado = Math.min(100, Math.max(0, soc));
 
   const contexto: ContextoVolt = useMemo(() => ({
     ponto,
@@ -77,7 +82,7 @@ export default function Totem() {
   const [estadoVolt, setEstadoVolt] = useState<EstadoVolt>('ocioso');
   const fim = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { fim.current?.scrollIntoView({ behavior: 'smooth' }); }, [mensagens, estadoVolt]);
+  useEffect(() => { fim.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [mensagens, estadoVolt]);
 
   const perguntar = (texto: string) => {
     const pergunta = texto.trim();
@@ -87,7 +92,6 @@ export default function Totem() {
     setSugestoes([]);
     setEstadoVolt('pensando');
 
-    // pequena pausa: o totem "pensando" deixa a conversa legível
     window.setTimeout(() => {
       const r = responderVolt(pergunta, contexto);
       setMensagens((m) => [...m, { de: 'volt', texto: r.texto }]);
@@ -98,120 +102,144 @@ export default function Totem() {
   };
 
   const horaFmt = relogio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const raio = 62;
+  const circ = 2 * Math.PI * raio;
 
   return (
-    <div className="totem-tela">
+    <div className="tt">
       {/* ------------------------------------------------------ cabeçalho */}
-      <header className="totem-topo">
-        <span className="totem-marca">GOODWE</span>
-        <span className="totem-divisor" />
-        <span className="totem-eyebrow">Autoatendimento</span>
-        <span className="meta" style={{ marginLeft: 'auto' }}>{horaFmt}</span>
+      <header className="tt-topo">
+        <span className="tt-marca">GOODWE</span>
+        <span className="tt-tag">Autoatendimento</span>
+        <span className="tt-hora meta">{horaFmt}</span>
       </header>
 
-      {/* ------------------------------------------------------- painel */}
-      <section className="totem-dash">
-        <div className="totem-anel">
-          <AnelSoC soc={soc} tamanho={118} />
-          <div className="totem-anel-legenda">
-            <span className="kpi-label">Bateria</span>
-            <span className="tiny muted">{minutosRestantes} min até 80%</span>
+      {/* ------------------------------------------ painel principal */}
+      <section className="tt-hero">
+        <div className="tt-anel">
+          <svg viewBox="0 0 150 150" className="tt-anel-svg">
+            <circle cx="75" cy="75" r={raio} className="tt-anel-trilho" />
+            <circle
+              cx="75" cy="75" r={raio} className="tt-anel-carga"
+              strokeDasharray={`${(socLimitado / 100) * circ} ${circ}`}
+            />
+            <circle cx="75" cy="75" r={raio - 13} className="tt-anel-pontilhado" />
+          </svg>
+          <div className="tt-anel-centro">
+            <span className="tt-anel-num">{Math.round(soc)}<small>%</small></span>
+            <span className="tt-anel-cap">bateria</span>
           </div>
         </div>
 
-        <div className="totem-metricas">
-          <div className="totem-metrica">
-            <span className="kpi-label">Potência</span>
-            <span className="totem-num">{num(kw, 1)}<small> kW</small></span>
+        <div className="tt-hero-dados">
+          <div className="tt-hero-linha">
+            <span className="tt-rotulo">Potência agora</span>
+            <span className="tt-grande">{num(kw, 1)}<small>kW</small></span>
           </div>
-          <div className="totem-metrica">
-            <span className="kpi-label">Entregue</span>
-            <span className="totem-num">{num(kwh, 1)}<small> kWh</small></span>
+          <div className="tt-hero-sep" />
+          <div className="tt-hero-linha">
+            <span className="tt-rotulo">Total a pagar</span>
+            <span className="tt-grande tt-acento">{brl(custo)}</span>
           </div>
-          <div className="totem-metrica">
-            <span className="kpi-label">A pagar</span>
-            <span className="totem-num acento">{brl(custo)}</span>
-          </div>
-          <div className="totem-metrica">
-            <span className="kpi-label">Preço travado</span>
-            <span className="totem-num">{brl(precoKWh)}<small>/kWh</small></span>
+          <div className="tt-eta">
+            <Icone nome="relogio" tamanho={13} />
+            {minutosRestantes} min até 80%
           </div>
         </div>
       </section>
 
-      <section className="totem-curva">
-        <div className="row between">
-          <span className="kpi-label">Curva de carga · tempo real</span>
+      {/* ------------------------------------------------- indicadores */}
+      <section className="tt-tiles">
+        <div className="tt-tile">
+          <span className="tt-rotulo">Entregue</span>
+          <span className="tt-medio">{num(kwh, 1)}<small>kWh</small></span>
+        </div>
+        <div className="tt-tile">
+          <span className="tt-rotulo">Preço/kWh</span>
+          <span className="tt-medio">{brl(precoKWh)}</span>
+        </div>
+        <div className="tt-tile">
+          <span className="tt-rotulo">Vagas</span>
+          <span className="tt-medio">{vagasLivres}<small>/{carregadores.length}</small></span>
+        </div>
+        <div className="tt-tile">
+          <span className="tt-rotulo">Solar</span>
+          <span className="tt-medio tt-solar">
+            {Math.round(solar.resumo.autossuficiencia * 100)}<small>%</small>
+          </span>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------- curva */}
+      <section className="tt-curva">
+        <div className="tt-curva-topo">
+          <span className="tt-rotulo">Curva de carga</span>
           <span className="live-tag"><span className="dot pulse" />ao vivo</span>
         </div>
-        <ResponsiveContainer width="100%" height={74}>
-          <AreaChart data={curva} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="totemGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={CHART.serie1} stopOpacity={0.45} />
-                <stop offset="100%" stopColor={CHART.serie1} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <YAxis hide domain={[0, (max: number) => Math.max(12, max * 1.5)]} />
-            <Area type="monotone" dataKey="kw" stroke={CHART.serie1Claro} strokeWidth={2}
-                  fill="url(#totemGrad)" isAnimationActive={false} />
-          </AreaChart>
-        </ResponsiveContainer>
-        <div className="row between meta">
-          <span>{vagasLivres}/{carregadores.length} VAGAS LIVRES</span>
-          <span>{Math.round(solar.resumo.autossuficiencia * 100)}% SOL + BATERIA</span>
+        <div className="tt-curva-graf">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={curva} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="ttGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={CHART.serie1} stopOpacity={0.5} />
+                  <stop offset="100%" stopColor={CHART.serie1} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <YAxis hide domain={[0, (max: number) => Math.max(12, max * 1.45)]} />
+              <Area type="monotone" dataKey="kw" stroke={CHART.serie1Claro} strokeWidth={2}
+                    fill="url(#ttGrad)" isAnimationActive={false} />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       </section>
 
-      {/* --------------------------------------------------------- volt */}
-      <section className="totem-chat">
-        <div className="totem-volt">
-          <Volt estado={estadoVolt} tamanho={78} />
-          <div>
-            <div className="totem-volt-nome">Volt</div>
-            <div className="tiny muted">
-              {estadoVolt === 'pensando' ? 'consultando a sessão…' : 'assistente do eletroposto'}
-            </div>
+      {/* --------------------------------------------------------- Volt */}
+      <section className="tt-chat">
+        <div className="tt-chat-topo">
+          <Volt estado={estadoVolt} tamanho={46} />
+          <div className="tt-chat-id">
+            <span className="tt-chat-nome">Volt</span>
+            <span className="tt-chat-estado">
+              {estadoVolt === 'pensando' ? 'consultando a sessão…' : 'pergunte o que quiser'}
+            </span>
           </div>
         </div>
 
-        <div className="totem-mensagens">
+        <div className="tt-mensagens">
           {mensagens.map((m, i) => (
-            <div key={i} className={`totem-balao ${m.de}`}>{m.texto}</div>
+            <div key={i} className={`tt-balao ${m.de}`}>{m.texto}</div>
           ))}
           {estadoVolt === 'pensando' && (
-            <div className="totem-balao volt totem-digitando"><span /><span /><span /></div>
+            <div className="tt-balao volt tt-digitando"><span /><span /><span /></div>
           )}
           <div ref={fim} />
         </div>
 
-        {sugestoes.length > 0 && (
-          <div className="pill-row totem-sugestoes">
-            {sugestoes.map((s) => (
-              <button key={s} className="chip" onClick={() => perguntar(s)}>{s}</button>
-            ))}
-          </div>
-        )}
-
-        <form
-          className="totem-entrada"
-          onSubmit={(e) => { e.preventDefault(); perguntar(rascunho); }}
-        >
-          <input
-            value={rascunho}
-            onChange={(e) => setRascunho(e.target.value)}
-            placeholder="Pergunte ao Volt…"
-            aria-label="Pergunte ao Volt"
-          />
-          <button type="submit" className="btn primary" aria-label="Enviar pergunta">
-            <Icone nome="raio" tamanho={14} />
-          </button>
-        </form>
+        <div className="tt-acoes">
+          {sugestoes.length > 0 && (
+            <div className="tt-sugestoes">
+              {sugestoes.slice(0, 3).map((s) => (
+                <button key={s} className="chip" onClick={() => perguntar(s)}>{s}</button>
+              ))}
+            </div>
+          )}
+          <form className="tt-entrada" onSubmit={(e) => { e.preventDefault(); perguntar(rascunho); }}>
+            <input
+              value={rascunho}
+              onChange={(e) => setRascunho(e.target.value)}
+              placeholder="Pergunte ao Volt…"
+              aria-label="Pergunte ao Volt"
+            />
+            <button type="submit" className="btn primary" aria-label="Enviar pergunta">
+              <Icone nome="setaDireita" tamanho={15} />
+            </button>
+          </form>
+        </div>
       </section>
 
-      <footer className="totem-rodape meta">
-        <span className="totem-rodape-ponto">{ponto.nome.toUpperCase()} · {carregadores.length} CONECTORES</span>
-        <span>PONTO W</span>
+      <footer className="tt-rodape meta">
+        <span className="tt-rodape-ponto">{ponto.nome.toUpperCase()}</span>
+        <span>{ponto.formato.toUpperCase()} · {carregadores.length} CONECTORES</span>
       </footer>
     </div>
   );

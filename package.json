@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js"
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -24,5 +25,8 @@
     "tsx": "^4.23.12",
     "typescript": "~6.0.2",
     "vite": "^8.2.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

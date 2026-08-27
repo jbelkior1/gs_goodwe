@@ -188,8 +188,8 @@ const INTENCOES: Intencao[] = [
 export function saudacaoVolt(c: ContextoVolt): RespostaVolt {
   return {
     texto:
-      `Oi! Sou o Volt. Sua recarga está em ${Math.round(c.sessao.socAtual)}% e deve terminar em ` +
-      `${Math.max(1, Math.round(c.minutosRestantes))} minutos. Em que posso ajudar?`,
+      `Oi! Sua recarga está em ${Math.round(c.sessao.socAtual)}% — faltam ` +
+      `${Math.max(1, Math.round(c.minutosRestantes))} min. Em que posso ajudar?`,
     sugestoes: ['Quanto falta?', 'Quanto vou pagar?', 'Como eu pago?', 'Isso é seguro?'],
   };
 }

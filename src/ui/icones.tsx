@@ -12,7 +12,8 @@ import type { CSSProperties } from 'react';
 export type NomeIcone =
   | 'mapa' | 'raio' | 'painel' | 'tomada' | 'dinheiro' | 'globo' | 'check'
   | 'carro' | 'loja' | 'antena' | 'sol' | 'bateria' | 'alerta' | 'relogio'
-  | 'setaCima' | 'setaBaixo' | 'traco' | 'qr' | 'pulso';
+  | 'setaCima' | 'setaBaixo' | 'setaDireita' | 'traco' | 'qr' | 'pulso'
+  | 'chat' | 'mapaLupa' | 'fechar' | 'casa';
 
 const D: Record<NomeIcone, string> = {
   // pino de mapa
@@ -44,6 +45,13 @@ const D: Record<NomeIcone, string> = {
   // relógio
   relogio: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M12 7.5V12l3 2',
   setaCima: 'M12 19V5 M6 11l6-6 6 6',
+  setaDireita: 'M5 12h14 M13 6l6 6-6 6',
+  // balão de conversa
+  chat: 'M4 5.5h16v11h-9l-4.5 3.5v-3.5H4v-11Z',
+  // mapa dobrado
+  mapaLupa: 'M9 4 3.5 6.2v13.3L9 17.3l6 2.2 5.5-2.2V4L15 6.2 9 4Z M9 4v13.3 M15 6.2v13.3',
+  fechar: 'M6 6l12 12 M18 6 6 18',
+  casa: 'M4 10.5 12 4l8 6.5V20H4v-9.5Z M9.5 20v-6h5v6',
   setaBaixo: 'M12 5v14 M6 13l6 6 6-6',
   traco: 'M5 12h14',
   // qr code

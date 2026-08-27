@@ -1,84 +1,102 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pontosParaMotorista, sessoesAtivas } from '../../domain/db';
-import { Card, Badge, brl, num, Vazio } from '../../ui/kit';
+import { Badge, brl, num, Vazio } from '../../ui/kit';
+import { Icone } from '../../ui/icones';
+import { MapaRede } from '../../ui/MapaRede';
+
+type Filtro = 'todos' | 'livres' | 'baratos';
+
+const FILTROS: [Filtro, string][] = [
+  ['todos', 'Todos'],
+  ['livres', 'Com vaga'],
+  ['baratos', 'Menor preço'],
+];
 
 export default function Mapa() {
-  const [filtro, setFiltro] = useState<'todos' | 'livres' | 'baratos'>('todos');
+  const [filtro, setFiltro] = useState<Filtro>('todos');
+  const [selecionado, setSelecionado] = useState<string | null>(null);
   const nav = useNavigate();
-  let lista = pontosParaMotorista();
 
-  if (filtro === 'livres') lista = lista.filter((p) => p.vagasLivres > 0);
-  if (filtro === 'baratos') lista = [...lista].sort((a, b) => a.precoAgora - b.precoAgora);
+  const todos = useMemo(() => pontosParaMotorista(), []);
+  const lista = useMemo(() => {
+    if (filtro === 'livres') return todos.filter((p) => p.vagasLivres > 0);
+    if (filtro === 'baratos') return [...todos].sort((a, b) => a.precoAgora - b.precoAgora);
+    return todos;
+  }, [todos, filtro]);
 
   const ativa = sessoesAtivas()[0];
 
   return (
-    <div className="stack">
+    <div className="app-motorista-tela">
       {ativa && (
-        <Card>
-          <div className="row between wrap">
-            <div>
-              <span className="live-tag"><span className="dot pulse" /> Você tem uma recarga em andamento</span>
-              <div className="tiny muted">Acompanhe o progresso em tempo real.</div>
-            </div>
-            <button className="btn primary" onClick={() => nav(`/motorista/recarga/${ativa.id}`)}>
-              Ver recarga
-            </button>
-          </div>
-        </Card>
+        <button className="mv-sessao" onClick={() => nav(`/motorista/recarga/${ativa.id}`)}>
+          <span className="mv-sessao-esq">
+            <span className="live-tag"><span className="dot pulse" />recarga em andamento</span>
+            <span className="mv-sessao-txt">
+              {Math.round(ativa.socAtual)}% · {num(ativa.potenciaAtualKW, 1)} kW · {brl(ativa.custoAcumulado)}
+            </span>
+          </span>
+          <Icone nome="setaDireita" tamanho={16} />
+        </button>
       )}
 
-      <div className="row wrap">
-        {([['todos', 'Todos'], ['livres', 'Com vaga livre'], ['baratos', 'Menor preço']] as const).map(
-          ([k, label]) => (
-            <button key={k} className={`chip ${filtro === k ? 'on' : ''}`} onClick={() => setFiltro(k)}>
-              {label}
-            </button>
-          ),
-        )}
-        <span className="tiny muted">{lista.length} pontos</span>
+      <MapaRede
+        pontos={lista}
+        selecionado={selecionado ?? undefined}
+        aoSelecionar={(id) => setSelecionado(id === selecionado ? null : id)}
+      />
+
+      <div className="mv-filtros">
+        {FILTROS.map(([k, label]) => (
+          <button key={k} className={`chip ${filtro === k ? 'on' : ''}`} onClick={() => setFiltro(k)}>
+            {label}
+          </button>
+        ))}
+        <span className="mv-conta meta">{lista.length} PONTOS</span>
       </div>
 
       {lista.length === 0 ? (
-        <Vazio>Nenhum ponto encontrado com esse filtro.</Vazio>
+        <Vazio>Nenhum ponto com esse filtro.</Vazio>
       ) : (
-        <div className="grid g3">
+        <div className="mv-lista">
           {lista.map(({ ponto, regiao, vagasLivres, totalVagas, precoAgora, potenciaKW }) => (
-            <Card key={ponto.id}>
-              <div className="row between">
-                <div className="card-title">{ponto.nome}</div>
+            <article
+              key={ponto.id}
+              className={`mv-item ${selecionado === ponto.id ? 'on' : ''}`}
+              onPointerEnter={() => setSelecionado(ponto.id)}
+            >
+              <header className="mv-item-topo">
+                <span className="mv-item-nome">{ponto.nome}</span>
                 <Badge tom={vagasLivres > 0 ? 'green' : 'amber'} dot>
-                  {vagasLivres > 0 ? `${vagasLivres} livre${vagasLivres > 1 ? 's' : ''}` : 'Fila'}
+                  {vagasLivres > 0 ? `${vagasLivres} livre${vagasLivres > 1 ? 's' : ''}` : 'fila'}
                 </Badge>
-              </div>
-              <div className="tiny muted" style={{ marginTop: 2 }}>
-                {ponto.segmento} · {regiao.zona}, {regiao.cidade}/{regiao.uf}
+              </header>
+
+              <div className="mv-item-local">
+                <Icone nome="mapa" tamanho={12} />
+                {regiao.zona}, {regiao.cidade}/{regiao.uf} · {ponto.segmento}
               </div>
 
-              <div className="sep" />
-              <div className="row between">
-                <div>
-                  <div className="kpi-label">Preço agora</div>
-                  <div className="kpi-value sm kpi-accent-red">{brl(precoAgora)}<span className="tiny muted">/kWh</span></div>
-                </div>
-                <div className="right">
-                  <div className="kpi-label">Potência</div>
-                  <div className="kpi-value sm">{num(potenciaKW)} kW</div>
-                </div>
+              <div className="mv-item-num">
+                <span className="mv-num">
+                  <span className="tt-rotulo">Preço agora</span>
+                  <span className="mv-num-val acento">{brl(precoAgora)}<small>/kWh</small></span>
+                </span>
+                <span className="mv-num">
+                  <span className="tt-rotulo">Potência</span>
+                  <span className="mv-num-val">{num(potenciaKW)}<small>kW</small></span>
+                </span>
+                <span className="mv-num">
+                  <span className="tt-rotulo">Vagas</span>
+                  <span className="mv-num-val">{totalVagas}<small>Tipo 2</small></span>
+                </span>
               </div>
 
-              <div className="tiny muted" style={{ marginTop: 8 }}>
-                {totalVagas} vaga{totalVagas > 1 ? 's' : ''} · Tipo 2 · pagamento por Pix
-              </div>
-              <button
-                className="btn primary"
-                style={{ width: '100%', justifyContent: 'center', marginTop: 10 }}
-                onClick={() => nav('/motorista/recarga')}
-              >
+              <button className="btn primary mv-item-btn" onClick={() => nav('/motorista/recarga')}>
                 Carregar aqui
               </button>
-            </Card>
+            </article>
           ))}
         </div>
       )}
