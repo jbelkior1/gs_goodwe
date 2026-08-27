@@ -11,7 +11,6 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcon
     {
       grupo: 'App do motorista',
       itens: [
-        { to: '/motorista', ico: 'mapa', label: 'Onde carregar' },
         { to: '/motorista/recarga', ico: 'raio', label: 'Recarga e pagamento' },
         { to: '/motorista/assistente', ico: 'chat', label: 'Falar com o Volt' },
       ],
@@ -73,7 +72,7 @@ function personaDaRota(pathname: string): Persona | null {
 }
 
 const ROTA_INICIAL: Record<Persona, string> = {
-  motorista: '/motorista',
+  motorista: '/motorista/recarga',
   totem: '/totem',
   franqueado: '/franqueado',
   goodwe: '/goodwe',

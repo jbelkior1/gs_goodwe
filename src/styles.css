@@ -611,8 +611,8 @@ select.btn option { background: var(--k-panel); color: var(--k-text); }
   padding: 8px 0 40px;
 }
 .totem3d {
-  --larg: 424px;
   --alt: min(742px, calc(100vh - 250px));
+  --larg: calc(var(--alt) * 1080 / 1920);
   --prof: 74px;
   position: relative;
   width: var(--larg); height: var(--alt);

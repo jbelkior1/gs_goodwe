@@ -3,7 +3,6 @@ import Layout from './app/Layout';
 
 import Portal from './pages/portal/Portal';
 
-import Mapa from './pages/motorista/Mapa';
 import Recarga from './pages/motorista/Recarga';
 import Assistente from './pages/motorista/Assistente';
 
@@ -36,7 +35,7 @@ export default function App() {
 
       <Route element={<Layout />}>
         {/* motorista — app de celular */}
-        <Route path="/motorista" element={<Mapa />} />
+        <Route path="/motorista" element={<Navigate to="/motorista/recarga" replace />} />
         <Route path="/motorista/recarga" element={<Recarga />} />
         <Route path="/motorista/recarga/:sessaoId" element={<RecargaComSessao />} />
         <Route path="/motorista/assistente" element={<Assistente />} />
