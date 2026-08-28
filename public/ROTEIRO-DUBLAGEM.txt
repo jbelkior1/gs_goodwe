@@ -23,8 +23,9 @@ O comerciante compra a franquia... [pausa] e leva o pacote:
 os carregadores, o ambiente, o suporte... e a marca GoodWe
 na fachada.
 
-E a GoodWe lucra como toda franquia: [pausa] seis por cento de
-royalty, dois de marketing... só sobre a recarga. Da loja, nada.
+E a rede lucra como toda franquia: [pausa] taxa de entrada...
+seis por cento de royalty sobre a recarga... e dois por cento
+para o fundo que divulga a rede inteira. [pausa] Da loja, nada.
 
 E o melhor: enquanto o carro carrega na vaga... [pausa] o dono dele
 está comprando dentro da loja.
@@ -40,14 +41,15 @@ Vem ser GoodWe.
  Bloco 1  →  "Como isso vira negócio?" gigante
  Bloco 2  →  o pacote do franqueado: 4 cards entrando um a um
              (carregadores · ambiente · suporte · a marca)
- Bloco 3  →  como a rede lucra: 6% royalty + 2% marketing,
-             e o selo verde "Vendas da loja: 0% para a rede"
+ Bloco 3  →  as 3 fontes de receita da franqueadora: taxa de
+             entrada · 6% royalty (recarga) · 2% fundo de marketing
+             (divulga a rede) + selo verde "Vendas da loja: 0%"
  Bloco 4  →  cascata: carro na vaga → cliente na loja → venda no caixa
  Bloco 5  →  as três linhas entrando uma a uma
  Bloco 6  →  "Vem ser GoodWe." gigante
 
 DICA DE ÊNFASE: as palavras que carregam o argumento são
-  "compra a franquia" · "a marca GoodWe" · "seis por cento" · "nada" ·
+  "compra a franquia" · "a marca GoodWe" · "royalty" · "rede inteira" · "nada" ·
   "comprando dentro da loja" · "Vem ser GoodWe"
 
 -------------------------------------------------------------------------
