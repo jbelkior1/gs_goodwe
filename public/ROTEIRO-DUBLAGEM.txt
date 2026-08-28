@@ -33,7 +33,7 @@ está comprando dentro da loja.
 Tecnologia da GoodWe. [pausa] Conforto para o cliente. [pausa]
 Movimento para a sua loja.
 
-E isso não ficou no papel... [pausa] vem ver funcionando.
+Mas como isso funciona? [pausa] Vamos entender, na prática.
 
 -------------------------------------------------------------------------
  O QUE APARECE NA TELA ENQUANTO VOCÊ FALA
@@ -46,7 +46,7 @@ E isso não ficou no papel... [pausa] vem ver funcionando.
              (divulga a rede) + selo verde "Vendas da loja: 0%"
  Bloco 4  →  cascata: carro na vaga → cliente na loja → venda no caixa
  Bloco 5  →  as três linhas entrando uma a uma
- Bloco 6  →  "E isso não ficou no papel" + botão de ligar pulsando
+ Bloco 6  →  "Como isso funciona?" + botão de ligar pulsando
              (gancho: o próximo integrante levanta o aparelho)
 
 DICA DE ÊNFASE: as palavras que carregam o argumento são
