@@ -13,6 +13,7 @@ import {
   ChartTip, CHART, eixoProps, gradeProps,
 } from '../../ui/kit';
 import { Icone } from '../../ui/icones';
+import { CenaCarro3D } from '../../ui/CenaCarro3D';
 
 export default function Recarga() {
   const { sessaoId } = useParams();
@@ -42,7 +43,7 @@ export default function Recarga() {
       <div className="grid g-2-1">
         <Card>
           <div className="row between wrap" style={{ alignItems: 'center', gap: 20 }}>
-            <div className="row" style={{ alignItems: 'center', gap: 15 }}><AnelSoC soc={sessao.socAtual} tamanho={150} /><Icone nome="carro" tamanho={54} cor="var(--k-dim2)" /></div>
+            <div className="row" style={{ alignItems: 'center', gap: 15 }}><AnelSoC soc={sessao.socAtual} tamanho={150} /><CenaCarro3D /></div>
             <div style={{ flex: 1, minWidth: 200 }}>
               <div className="row" style={{ gap: 8 }}>
                 <EstadoBadge estado={etapa === 'pago' ? 'FATURADO' : sessao.estado} />

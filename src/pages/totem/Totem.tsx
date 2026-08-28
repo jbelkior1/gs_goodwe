@@ -8,6 +8,7 @@ import { responderVolt, saudacaoVolt, type ContextoVolt } from '../../domain/eng
 import { gerarTxid } from '../../domain/engine/tarifa';
 import { brl, num, CHART, Badge } from '../../ui/kit';
 import { Icone } from '../../ui/icones';
+import { CenaCarro3D } from '../../ui/CenaCarro3D';
 import { Volt, type EstadoVolt } from '../../ui/Volt';
 
 interface Mensagem { de: 'volt' | 'motorista'; texto: string }
@@ -132,6 +133,8 @@ export default function Totem() {
             <span className="tt-anel-cap">bateria</span>
           </div>
         </div>
+
+        <CenaCarro3D />
 
         <div className="tt-hero-dados">
           <div className="tt-hero-linha">
