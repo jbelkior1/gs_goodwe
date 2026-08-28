@@ -259,7 +259,7 @@ export default function Totem() {
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + import.meta.env.BASE_URL + 'seja-goodwe')}`}
                   alt="QR Code Pix"
-                  style={{ width: 150, height: 150, borderRadius: 8 }}
+                  style={{ width: 150, height: 150, borderRadius: 8, flexShrink: 0, objectFit: 'contain', backgroundColor: '#fff', padding: 10 }}
                 />
                 <div className="tiny muted" style={{ marginTop: 10 }}>txid {gerarTxid(semente?.id ?? '123')}</div>
                 <div className="kpi-value kpi-accent-red" style={{ margin: '10px 0' }}>{brl(custo)}</div>
