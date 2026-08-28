@@ -730,7 +730,7 @@ select.btn option { background: var(--k-panel); color: var(--k-text); }
 .tt {
   flex: 1; min-width: 0; min-height: 0; overflow: hidden;
   display: grid;
-  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto;
 }
 /* itens de grade nascem com min-width:auto e não encolhem abaixo do
    min-content — sem isto um rótulo comprido estica a tela inteira */

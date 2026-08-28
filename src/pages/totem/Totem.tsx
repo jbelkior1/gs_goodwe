@@ -118,7 +118,7 @@ export default function Totem() {
       </header>
 
       {/* ------------------------------------------ painel principal */}
-      <section className="tt-hero">
+      <section className="tt-hero" style={{ justifyContent: 'center' }}>
         <div className="tt-anel">
           <svg viewBox="0 0 150 150" className="tt-anel-svg">
             <circle cx="75" cy="75" r={raio} className="tt-anel-trilho" />
@@ -135,27 +135,27 @@ export default function Totem() {
         </div>
 
         <CenaCarro3D />
+      </section>
 
-        <div className="tt-hero-dados">
-          <div className="tt-hero-linha">
-            <span className="tt-rotulo">Potência agora</span>
-            <span className="tt-grande">{num(kw, 1)}<small>kW</small></span>
-          </div>
-          <div className="tt-hero-sep" />
-          <div className="tt-hero-linha">
-            <span className="tt-rotulo">Total a pagar</span>
-            <span className="tt-grande tt-acento">{brl(custo)}</span>
-          </div>
-          {etapa === 'carregando' ? (
-            <button className="btn primary" style={{ marginTop: 8, justifyContent: 'center' }} onClick={() => setEtapa('pagando')}>
-              Encerrar e Pagar
-            </button>
-          ) : (
-            <div className="tt-eta" style={{ justifyContent: 'center', marginTop: 8 }}>
-              Sessão encerrada
-            </div>
-          )}
+      <section className="tt-resumo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderBottom: '1px solid var(--k-line)' }}>
+        <div>
+          <span className="tt-rotulo">Potência agora</span>
+          <div className="tt-grande">{num(kw, 1)}<small>kW</small></div>
         </div>
+        <div style={{ width: 1, height: 30, background: 'var(--k-line)' }} />
+        <div>
+          <span className="tt-rotulo">Total a pagar</span>
+          <div className="tt-grande tt-acento">{brl(custo)}</div>
+        </div>
+        {etapa === 'carregando' ? (
+          <button className="btn primary" onClick={() => setEtapa('pagando')}>
+            Encerrar e Pagar
+          </button>
+        ) : (
+          <div className="tt-eta">
+            Sessão encerrada
+          </div>
+        )}
       </section>
 
       {/* ------------------------------------------------- indicadores */}
@@ -250,7 +250,7 @@ export default function Totem() {
           </section>
         </>
       ) : (
-        <section style={{ gridRow: '4 / 6', display: 'flex', flexDirection: 'column', padding: '20px 24px', overflowY: 'auto' }}>
+        <section style={{ gridRow: '5 / 7', display: 'flex', flexDirection: 'column', padding: '20px 24px', overflowY: 'auto' }}>
           {etapa === 'pagando' && (
               <div className="stack" style={{ alignItems: 'center', background: 'var(--k-panel)', padding: 30, borderRadius: 16 }}>
                 <h2 style={{ fontSize: 18, marginBottom: 10 }}>Pague com Pix</h2>
