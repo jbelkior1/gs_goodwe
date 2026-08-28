@@ -97,14 +97,11 @@ export default function Recarga() {
           {etapa === 'pagando' && (
             <Card title="Pague com Pix">
               <div className="stack" style={{ alignItems: 'center' }}>
-                <div style={{
-                  width: 150, height: 150, borderRadius: 8, background: 'var(--k-text)',
-                  display: 'grid', placeItems: 'center', color: 'var(--k-bg)', fontSize: 10,
-                  letterSpacing: '.16em', textAlign: 'center', padding: 10,
-                  boxShadow: '0 0 34px rgba(230,0,18,.34)',
-                }}>
-                  QR CODE<br />PIX DINÂMICO
-                </div>
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + import.meta.env.BASE_URL + 'seja-goodwe')}`}
+                  alt="QR Code Pix"
+                  style={{ width: 150, height: 150, borderRadius: 8 }}
+                />
                 <div className="tiny muted">txid {gerarTxid(sessao.id)}</div>
                 <div className="kpi-value kpi-accent-red">{brl(valor)}</div>
                 <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }}

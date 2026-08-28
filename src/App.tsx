@@ -27,6 +27,14 @@ function RecargaComSessao() {
   return <Recarga />;
 }
 
+function SejaGoodwe() {
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100vh', background: 'var(--k-bg)' }}>
+      <h1 style={{ fontSize: '4rem', color: 'var(--k-text)', textAlign: 'center' }}>Seja Goodwe!!</h1>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <Routes>
@@ -52,6 +60,8 @@ export default function App() {
         <Route path="/goodwe" element={<Visao />} />
         <Route path="/goodwe/homologacao" element={<Homologacao />} />
       </Route>
+
+      <Route path="/seja-goodwe" element={<SejaGoodwe />} />
 
       <Route path="/lojista/*" element={<Redireciona de="/lojista" para="/franqueado" />} />
       <Route path="/lojista" element={<Navigate to="/franqueado" replace />} />

@@ -256,13 +256,11 @@ export default function Totem() {
           {etapa === 'pagando' && (
               <div className="stack" style={{ alignItems: 'center', background: 'var(--k-panel)', padding: 30, borderRadius: 16 }}>
                 <h2 style={{ fontSize: 18, marginBottom: 10 }}>Pague com Pix</h2>
-                <div style={{
-                  width: 150, height: 150, borderRadius: 8, background: 'var(--k-text)',
-                  display: 'grid', placeItems: 'center', color: 'var(--k-bg)', fontSize: 10,
-                  letterSpacing: '.16em', textAlign: 'center', padding: 10,
-                }}>
-                  QR CODE<br />PIX DINÂMICO
-                </div>
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + import.meta.env.BASE_URL + 'seja-goodwe')}`}
+                  alt="QR Code Pix"
+                  style={{ width: 150, height: 150, borderRadius: 8 }}
+                />
                 <div className="tiny muted" style={{ marginTop: 10 }}>txid {gerarTxid(semente?.id ?? '123')}</div>
                 <div className="kpi-value kpi-accent-red" style={{ margin: '10px 0' }}>{brl(custo)}</div>
                 <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }}
