@@ -79,6 +79,17 @@
   .card .lb{font-size:clamp(10px,1.05vw,14px);color:var(--mut);text-transform:uppercase;
     letter-spacing:.1em;font-weight:700;margin-top:1vh;line-height:1.6}
   .card.red .big{color:var(--red2)} .card.teal .big{color:#6fe3e4}
+  .card.gold::before{background:linear-gradient(90deg,var(--gold),#ffd166)}
+  .card.gold .big{color:var(--gold)}
+  .pacote{display:grid;grid-template-columns:repeat(2,minmax(clamp(150px,20vw,290px),auto));
+    gap:clamp(10px,1.6vw,22px)}
+  .pacote .card{min-width:0;padding:clamp(13px,1.8vw,24px) clamp(15px,2vw,30px)}
+  .pacote .card .big{font-size:clamp(16px,2.2vw,30px)}
+  .on .pacote .card:nth-child(2){transition-delay:.18s}
+  .on .pacote .card:nth-child(3){transition-delay:.36s;animation-delay:1.8s}
+  .on .pacote .card:nth-child(4){transition-delay:.54s;animation-delay:2.1s}
+  .lucro .card .big{font-size:clamp(26px,4vw,54px)}
+  .lucro .card .big small{font-size:.45em;font-weight:700;color:var(--mut);letter-spacing:0}
 
   /* ---------- cena 3: o sistema da franquia (fluxo animado) ---------- */
   .troca{display:grid;grid-template-columns:auto minmax(160px,30vw) auto;align-items:center;
@@ -199,29 +210,29 @@
     <p class="sub">Franquia.</p>
   </section>
 
-  <!-- 2 · cada lado entra com o que tem -->
+  <!-- 2 · o comerciante compra a franquia e leva o pacote -->
   <section class="scene" data-i="1">
-    <div class="kick">Cada lado entra com o que tem</div>
-    <div class="row">
-      <div class="card red"><div class="big">GoodWe</div>
-        <div class="lb">carregador · plataforma · marca</div></div>
-      <div class="card teal"><div class="big">Comerciante</div>
-        <div class="lb">o ponto · a energia</div></div>
+    <div class="kick">O comerciante compra a franquia</div>
+    <div class="pacote">
+      <div class="card red"><div class="big">Carregadores</div>
+        <div class="lb">linha GoodWe HCA</div></div>
+      <div class="card teal"><div class="big">Ambiente</div>
+        <div class="lb">projeto pronto do ponto</div></div>
+      <div class="card teal"><div class="big">Suporte</div>
+        <div class="lb">manutenção e plataforma</div></div>
+      <div class="card red"><div class="big">A marca</div>
+        <div class="lb">GoodWe na fachada</div></div>
     </div>
   </section>
 
-  <!-- 3 · como o sistema funciona -->
+  <!-- 3 · como a GoodWe lucra -->
   <section class="scene" data-i="2">
-    <div class="kick">Como o sistema funciona</div>
-    <div class="troca">
-      <div class="no loja"><div class="t">Comerciante</div><div class="s">opera o ponto</div></div>
-      <div class="canal">
-        <div class="rot top">royalty · 6% só da recarga →</div>
-        <div class="fluxo-l ida"></div>
-        <div class="fluxo-l volta"></div>
-        <div class="rot bot">← plataforma · suporte · manutenção</div>
-      </div>
-      <div class="no rede"><div class="t">Rede GoodWe</div><div class="s">franqueadora</div></div>
+    <div class="kick">E como a GoodWe lucra? Como toda franquia</div>
+    <div class="row lucro">
+      <div class="card red"><div class="big">6% <small>royalty</small></div>
+        <div class="lb">só sobre a recarga</div></div>
+      <div class="card gold"><div class="big">2% <small>marketing</small></div>
+        <div class="lb">divulga a rede toda</div></div>
     </div>
     <div class="selo0">Vendas da loja: <b>0%</b> para a rede — é tudo do comerciante</div>
   </section>
@@ -265,9 +276,9 @@
 // pelas pausas do áudio real (ROTEIRO-DUBLAGEM.txt).
 const T = [
   { at: 0,    cap: 'Como isso vira negócio? Franquia.' },
-  { at: 4,    cap: 'A GoodWe entra com o carregador, a plataforma e a marca. O comerciante, com o ponto e a energia.' },
-  { at: 11,   cap: 'De cada recarga, seis por cento viram royalty para a rede. Das vendas da loja... nada. Cem por cento do comerciante.' },
-  { at: 18.5, cap: 'Enquanto o carro carrega na vaga, o dono está comprando dentro da loja.' },
+  { at: 4,    cap: 'O comerciante compra a franquia e leva o pacote: carregadores, ambiente, suporte... e a marca GoodWe na fachada.' },
+  { at: 11.5, cap: 'E a GoodWe lucra como toda franquia: seis por cento de royalty, dois de marketing — só sobre a recarga. Da loja, nada.' },
+  { at: 19,   cap: 'Enquanto o carro carrega na vaga, o dono está comprando dentro da loja.' },
   { at: 24,   cap: 'Tecnologia da GoodWe. Conforto para o cliente. Movimento para a sua loja.' },
   { at: 27.5, cap: 'Vem ser GoodWe.' },
 ];

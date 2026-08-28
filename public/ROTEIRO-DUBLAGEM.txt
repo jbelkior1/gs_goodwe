@@ -19,12 +19,12 @@ COMO GRAVAR (importante para eu conseguir sincronizar)
 
 Como isso vira negócio? [pausa] Franquia.
 
-A GoodWe entra com o carregador, a plataforma e a marca. [pausa]
-O comerciante entra com o ponto e a energia.
+O comerciante compra a franquia... [pausa] e leva o pacote:
+os carregadores, o ambiente, o suporte... e a marca GoodWe
+na fachada.
 
-Funciona assim: de cada recarga, seis por cento viram royalty
-para a rede. [pausa] Das vendas da loja... nada. Cem por cento
-do comerciante.
+E a GoodWe lucra como toda franquia: [pausa] seis por cento de
+royalty, dois de marketing... só sobre a recarga. Da loja, nada.
 
 E o melhor: enquanto o carro carrega na vaga... [pausa] o dono dele
 está comprando dentro da loja.
@@ -38,16 +38,16 @@ Vem ser GoodWe.
  O QUE APARECE NA TELA ENQUANTO VOCÊ FALA
 -------------------------------------------------------------------------
  Bloco 1  →  "Como isso vira negócio?" gigante
- Bloco 2  →  dois cards: GoodWe × Comerciante
- Bloco 3  →  diagrama do sistema: royalty 6% fluindo do comerciante
-             para a rede, e plataforma/suporte voltando; selo verde
-             "Vendas da loja: 0% para a rede"
+ Bloco 2  →  o pacote do franqueado: 4 cards entrando um a um
+             (carregadores · ambiente · suporte · a marca)
+ Bloco 3  →  como a rede lucra: 6% royalty + 2% marketing,
+             e o selo verde "Vendas da loja: 0% para a rede"
  Bloco 4  →  cascata: carro na vaga → cliente na loja → venda no caixa
  Bloco 5  →  as três linhas entrando uma a uma
  Bloco 6  →  "Vem ser GoodWe." gigante
 
 DICA DE ÊNFASE: as palavras que carregam o argumento são
-  "seis por cento" · "só da recarga" · "nada" ·
+  "compra a franquia" · "a marca GoodWe" · "seis por cento" · "nada" ·
   "comprando dentro da loja" · "Vem ser GoodWe"
 
 -------------------------------------------------------------------------
