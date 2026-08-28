@@ -22,9 +22,9 @@ Como isso vira negócio? [pausa] Franquia.
 A GoodWe entra com o carregador, a plataforma e a marca. [pausa]
 O comerciante entra com o ponto e a energia.
 
-Na prática: numa recarga de vinte reais... [pausa] um e vinte vai
-para a rede. O resto — e tudo que o cliente gastar na loja — é do
-comerciante.
+Funciona assim: de cada recarga, seis por cento viram royalty
+para a rede. [pausa] Das vendas da loja... nada. Cem por cento
+do comerciante.
 
 E o melhor: enquanto o carro carrega na vaga... [pausa] o dono dele
 está comprando dentro da loja.
@@ -39,14 +39,15 @@ Vem ser GoodWe.
 -------------------------------------------------------------------------
  Bloco 1  →  "Como isso vira negócio?" gigante
  Bloco 2  →  dois cards: GoodWe × Comerciante
- Bloco 3  →  R$ 20,00 se dividindo na barra: R$ 1,20 (vermelho)
-             e R$ 18,80 (verde), com os valores CONTANDO na tela
+ Bloco 3  →  diagrama do sistema: royalty 6% fluindo do comerciante
+             para a rede, e plataforma/suporte voltando; selo verde
+             "Vendas da loja: 0% para a rede"
  Bloco 4  →  cascata: carro na vaga → cliente na loja → venda no caixa
  Bloco 5  →  as três linhas entrando uma a uma
  Bloco 6  →  "Vem ser GoodWe." gigante
 
 DICA DE ÊNFASE: as palavras que carregam o argumento são
-  "vinte reais" · "um e vinte" · "tudo que o cliente gastar" ·
+  "seis por cento" · "só da recarga" · "nada" ·
   "comprando dentro da loja" · "Vem ser GoodWe"
 
 -------------------------------------------------------------------------
