@@ -1,7 +1,9 @@
+import carroPng from '../assets/carro-totem.png';
+
 export function CenaCarro3D() {
   return (
     <img 
-      src="/carro-totem.png" 
+      src={carroPng}
       alt="Carro elétrico carregando no totem"
       style={{ 
         width: 150,
