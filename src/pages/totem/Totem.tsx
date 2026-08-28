@@ -5,7 +5,8 @@ import {
   carregadoresDoPonto, obterPonto, sessoesAtivas, solarDoPonto, tarifaAtual,
 } from '../../domain/db';
 import { responderVolt, saudacaoVolt, type ContextoVolt } from '../../domain/engine/assistente';
-import { brl, num, CHART } from '../../ui/kit';
+import { gerarTxid } from '../../domain/engine/tarifa';
+import { brl, num, CHART, Badge } from '../../ui/kit';
 import { Icone } from '../../ui/icones';
 import { Volt, type EstadoVolt } from '../../ui/Volt';
 
@@ -21,6 +22,7 @@ interface Mensagem { de: 'volt' | 'motorista'; texto: string }
  */
 export default function Totem() {
   const { pontoId } = useApp();
+  const [etapa, setEtapa] = useState<'carregando' | 'pagando' | 'pago'>('carregando');
   const ponto = obterPonto(pontoId)!;
   const carregadores = carregadoresDoPonto(pontoId);
   const solar = solarDoPonto(pontoId);
@@ -141,10 +143,15 @@ export default function Totem() {
             <span className="tt-rotulo">Total a pagar</span>
             <span className="tt-grande tt-acento">{brl(custo)}</span>
           </div>
-          <div className="tt-eta">
-            <Icone nome="relogio" tamanho={13} />
-            {minutosRestantes} min até 80%
-          </div>
+          {etapa === 'carregando' ? (
+            <button className="btn primary" style={{ marginTop: 8, justifyContent: 'center' }} onClick={() => setEtapa('pagando')}>
+              Encerrar e Pagar
+            </button>
+          ) : (
+            <div className="tt-eta" style={{ justifyContent: 'center', marginTop: 8 }}>
+              Sessão encerrada
+            </div>
+          )}
         </div>
       </section>
 
@@ -244,3 +251,4 @@ export default function Totem() {
     </div>
   );
 }
+
