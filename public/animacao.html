@@ -168,6 +168,16 @@
     -webkit-text-fill-color:transparent;animation:reluzir 2.6s linear infinite}
   @keyframes reluzir{to{background-position:-220% 0}}
   .cta-sub{margin-top:.6vh}
+  .liga{display:inline-flex;align-items:center;gap:.8em;margin-top:1vh;
+    font-size:clamp(15px,2vw,26px);font-weight:700;color:#c3cddb}
+  .power{position:relative;width:1.5em;height:1.5em;border-radius:50%;
+    border:3px solid var(--green);flex:0 0 auto;
+    animation:ligar 1.6s ease-in-out infinite}
+  .power::before{content:"";position:absolute;left:50%;top:-.34em;width:3px;height:.72em;
+    transform:translateX(-50%);background:var(--ink);outline:3px solid transparent}
+  .power::after{content:"";position:absolute;left:50%;top:-.3em;width:3px;height:.62em;
+    transform:translateX(-50%);background:var(--green);border-radius:3px}
+  @keyframes ligar{50%{box-shadow:0 0 26px -2px rgba(34,197,94,.7);transform:scale(1.06)}}
   .risco{height:4px;width:0;margin:1.4vh auto 0;border-radius:4px;
     background:linear-gradient(90deg,var(--red),#ff8fa3);transition:width 1s cubic-bezier(.2,.7,.3,1) .5s}
   .on .risco{width:min(34vw,330px)}
@@ -267,11 +277,11 @@
     </div>
   </section>
 
-  <!-- 6 · convite -->
+  <!-- 6 · gancho para a demo (o que vem a seguir fica em suspense) -->
   <section class="scene" data-i="5">
     <div class="kick">A rede Ponto W</div>
-    <h1 class="cta">Vem ser <em>GoodWe</em>.</h1>
-    <div class="risco"></div>
+    <h1 class="cta">E isso não ficou<br><em>no papel</em>.</h1>
+    <div class="liga"><span class="power"></span> vem ver funcionando</div>
   </section>
 </div>
 
@@ -289,7 +299,7 @@ const T = [
   { at: 11,   cap: 'A rede lucra como toda franquia: taxa de entrada, seis por cento de royalty sobre a recarga... e dois por cento para o fundo que divulga a rede inteira. Da loja, nada.' },
   { at: 20,   cap: 'Enquanto o carro carrega na vaga, o dono está comprando dentro da loja.' },
   { at: 24.5, cap: 'Tecnologia da GoodWe. Conforto para o cliente. Movimento para a sua loja.' },
-  { at: 28,   cap: 'Vem ser GoodWe.' },
+  { at: 28,   cap: 'E isso não ficou no papel... vem ver funcionando.' },
 ];
 let FIM = 31;
 
