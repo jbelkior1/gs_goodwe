@@ -1,0 +1,61 @@
+=========================================================================
+ ROTEIRO DE DUBLAGEM — animação da franquia (bloco 3 do pitch)
+ Quem grava: você. Alvo: ~30 segundos.
+=========================================================================
+
+COMO GRAVAR (importante para eu conseguir sincronizar)
+  1. Ambiente silencioso, celular a um palmo da boca.
+  2. Leia um bloco por vez. Entre um bloco e outro, faça
+     UM SEGUNDO DE SILÊNCIO — é por essas pausas que eu acho
+     os cortes de cena no áudio.
+  3. Ritmo de conversa, não de locutor. Sorria no "Vem ser GoodWe"
+     — muda o som da voz de verdade.
+  4. Grave 2 ou 3 vezes inteiras e me mande a melhor (m4a/mp3/wav,
+     tanto faz). Eu meço as pausas e sincronizo os cortes.
+
+-------------------------------------------------------------------------
+ O TEXTO  ·  [pausa] = respirada curta  ·  linha em branco = 1s de silêncio
+-------------------------------------------------------------------------
+
+Como isso vira negócio? [pausa] Franquia.
+
+A GoodWe entra com o carregador, a plataforma e a marca. [pausa]
+O comerciante entra com o ponto e a energia.
+
+Na prática: numa recarga de vinte reais... [pausa] um e vinte vai
+para a rede. O resto — e tudo que o cliente gastar na loja — é do
+comerciante.
+
+E o melhor: enquanto o carro carrega na vaga... [pausa] o dono dele
+está comprando dentro da loja.
+
+Tecnologia da GoodWe. [pausa] Conforto para o cliente. [pausa]
+Movimento para a sua loja.
+
+Vem ser GoodWe.
+
+-------------------------------------------------------------------------
+ O QUE APARECE NA TELA ENQUANTO VOCÊ FALA
+-------------------------------------------------------------------------
+ Bloco 1  →  "Como isso vira negócio?" gigante
+ Bloco 2  →  dois cards: GoodWe × Comerciante
+ Bloco 3  →  R$ 20,00 se dividindo na barra: R$ 1,20 (vermelho)
+             e R$ 18,80 (verde), com os valores CONTANDO na tela
+ Bloco 4  →  cascata: carro na vaga → cliente na loja → venda no caixa
+ Bloco 5  →  as três linhas entrando uma a uma
+ Bloco 6  →  "Vem ser GoodWe." gigante
+
+DICA DE ÊNFASE: as palavras que carregam o argumento são
+  "vinte reais" · "um e vinte" · "tudo que o cliente gastar" ·
+  "comprando dentro da loja" · "Vem ser GoodWe"
+
+-------------------------------------------------------------------------
+ DEPOIS DE GRAVAR
+-------------------------------------------------------------------------
+ Me mande o arquivo. Eu:
+   1. meço onde estão as suas pausas de 1s;
+   2. ajusto os 6 cortes de cena para o seu ritmo exato;
+   3. coloco o áudio dentro da página (vira um vídeo que roda sozinho).
+
+ Enquanto o áudio não chega, a animação roda em 30s no cronômetro:
+ https://jbelkior1.github.io/gs_goodwe/animacao.html

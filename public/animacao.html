@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ponto W — a IA explica o negócio</title>
+<title>Ponto W — o negócio em 30 segundos</title>
 <style>
   :root{--red:#E4002B;--red2:#ff5c7a;--ink:#0b0e13;--teal:#17b3b5;--green:#22c55e;
         --gold:#f5b301;--mut:#8b98ab;--line:rgba(255,255,255,.12)}
@@ -15,74 +15,79 @@
 
   .stage{position:relative;height:100vh}
   .scene{position:absolute;inset:4vh 5vw 13vh;display:grid;place-content:center;justify-items:center;
-    gap:2.4vh;opacity:0;transform:translateY(20px);transition:opacity .42s ease,transform .42s ease;
+    gap:2.6vh;opacity:0;transform:translateY(20px);transition:opacity .42s ease,transform .42s ease;
     pointer-events:none;text-align:center}
   .scene.on{opacity:1;transform:none}
 
-  .kick{font-size:clamp(11px,1.15vw,15px);letter-spacing:.3em;text-transform:uppercase;
+  .kick{font-size:clamp(11px,1.2vw,16px);letter-spacing:.28em;text-transform:uppercase;
     color:var(--red2);font-weight:700}
-  h1{font-size:clamp(28px,5.2vw,70px);font-weight:800;letter-spacing:-.03em;line-height:1.03}
+  h1{font-size:clamp(28px,5.2vw,70px);font-weight:800;letter-spacing:-.03em;line-height:1.05}
   h1 em{font-style:normal;color:var(--red)}
-  .sub{font-size:clamp(13px,1.6vw,23px);color:#c3cddb;font-weight:300;max-width:34ch;line-height:1.35}
-  .fonte{font-size:clamp(9px,.95vw,12px);color:#6b7a8f;letter-spacing:.04em}
-  .src{font-size:clamp(9px,.92vw,11.5px);color:#7d8b9e;margin-top:.9vh;
-    padding-top:.9vh;border-top:1px solid var(--line);letter-spacing:.02em}
+  .sub{font-size:clamp(14px,1.7vw,24px);color:#c3cddb;font-weight:300;max-width:40ch;line-height:1.4}
 
   .row{display:flex;gap:clamp(10px,2vw,30px);flex-wrap:wrap;justify-content:center}
   .card{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:16px;
-    padding:clamp(12px,1.8vw,26px) clamp(14px,2.1vw,32px);min-width:clamp(132px,18vw,250px);
+    padding:clamp(14px,2vw,28px) clamp(16px,2.3vw,34px);min-width:clamp(150px,20vw,280px);
     opacity:0;transform:translateY(14px) scale(.97);transition:all .4s cubic-bezier(.2,.7,.3,1)}
   .on .card{opacity:1;transform:none}
-  .on .card:nth-child(2){transition-delay:.13s}
-  .on .card:nth-child(3){transition-delay:.26s}
-  .card .big{font-size:clamp(21px,3.2vw,44px);font-weight:800;letter-spacing:-.03em}
-  .card .lb{font-size:clamp(10px,1.02vw,13.5px);color:var(--mut);text-transform:uppercase;
-    letter-spacing:.11em;font-weight:700;margin-top:.6vh}
+  .on .card:nth-child(2){transition-delay:.18s}
+  .card .big{font-size:clamp(22px,3.4vw,46px);font-weight:800;letter-spacing:-.03em}
+  .card .lb{font-size:clamp(10px,1.05vw,14px);color:var(--mut);text-transform:uppercase;
+    letter-spacing:.1em;font-weight:700;margin-top:.8vh;line-height:1.5}
   .card.red .big{color:var(--red)} .card.teal .big{color:var(--teal)}
-  .card.green .big{color:var(--green)} .card.gold .big{color:var(--gold)}
 
-  .box{border-radius:18px;padding:clamp(14px,2.1vw,30px);min-width:clamp(150px,21vw,310px);
-    border:2px solid var(--line);background:rgba(255,255,255,.04)}
-  .box.tax{border-color:var(--red)} .box.free{border-color:var(--green)}
-  .box .t{font-size:clamp(12px,1.4vw,19px);font-weight:700;margin-bottom:.8vh}
-  .box .v{font-size:clamp(24px,3.5vw,48px);font-weight:800;letter-spacing:-.03em}
-  .box.tax .v{color:var(--red)} .box.free .v{color:var(--green)}
-  .box .n{font-size:clamp(10px,1.05vw,13.5px);color:var(--mut);margin-top:.6vh}
+  /* ------- cena 3: a recarga de R$ 20 se dividindo ------- */
+  .money{font-size:clamp(30px,5vw,64px);font-weight:800;letter-spacing:-.03em;color:var(--gold)}
+  .split{display:flex;width:min(64vw,620px);height:clamp(20px,3.4vh,34px);border-radius:12px;
+    overflow:hidden;background:rgba(255,255,255,.08)}
+  .seg{height:100%;width:0;transition:width 1.15s cubic-bezier(.2,.7,.3,1)}
+  .seg.rede{background:linear-gradient(180deg,#ff3355,var(--red))}
+  .seg.loja{background:linear-gradient(180deg,#34d977,var(--green));transition-delay:.15s}
+  .on .seg.rede{width:6%}
+  .on .seg.loja{width:94%}
+  .split-lb{display:flex;justify-content:space-between;width:min(64vw,620px);
+    font-size:clamp(11px,1.25vw,16px)}
+  .split-lb b{display:block;font-size:clamp(18px,2.6vw,36px);font-weight:800;letter-spacing:-.02em}
+  .split-lb .l1{text-align:left;color:var(--red2)}
+  .split-lb .l2{text-align:right;color:#7ee2a4}
+  .split-lb span{color:var(--mut)}
 
-  .gauge{width:min(60vw,540px)}
-  .track{height:clamp(13px,2vh,20px);border-radius:20px;background:rgba(255,255,255,.09);
-    position:relative;overflow:hidden}
-  .fill{position:absolute;inset:0;width:0;border-radius:20px;
-    background:linear-gradient(90deg,var(--red),#ff8a5c,var(--green));
-    transition:width 1.4s cubic-bezier(.2,.7,.3,1)}
-  .on .fill{width:78%}
-  .limiar{position:absolute;top:-6px;bottom:-6px;left:46%;width:2px;background:#fff;opacity:.85}
-  .glabels{display:flex;justify-content:space-between;font-size:clamp(10px,1.05vw,13.5px);
-    color:var(--mut);margin-top:1.1vh}
+  /* ------- cena 4: o fluxo carro -> loja -> caixa ------- */
+  .fluxo{display:grid;gap:1.4vh;justify-items:center}
+  .pillbig{display:flex;align-items:center;gap:.7em;border:1px solid var(--line);border-radius:40px;
+    background:rgba(255,255,255,.05);padding:clamp(8px,1.3vh,14px) clamp(18px,2.4vw,34px);
+    font-size:clamp(15px,2.1vw,28px);font-weight:700;letter-spacing:-.01em;
+    opacity:0;transform:translateY(12px);transition:all .42s cubic-bezier(.2,.7,.3,1)}
+  .on .pillbig{opacity:1;transform:none}
+  .on .pillbig:nth-child(2){transition-delay:.55s}
+  .on .pillbig:nth-child(3){transition-delay:1.1s}
+  .pillbig .seta{color:var(--mut);font-weight:400}
+  .pillbig.destino{border-color:var(--green);background:rgba(34,197,94,.10)}
 
-  /* fecho: a frase de efeito em tres tempos */
-  .tri{display:grid;gap:1.2vh;justify-items:center}
-  .tri div{font-size:clamp(17px,2.9vw,40px);font-weight:700;letter-spacing:-.02em;
+  /* ------- cena 5: tríade ------- */
+  .tri{display:grid;gap:1.3vh;justify-items:center}
+  .tri div{font-size:clamp(18px,3vw,42px);font-weight:700;letter-spacing:-.02em;
     opacity:0;transform:translateY(12px);transition:all .42s cubic-bezier(.2,.7,.3,1)}
   .on .tri div{opacity:1;transform:none}
-  .on .tri div:nth-child(2){transition-delay:.75s}
-  .on .tri div:nth-child(3){transition-delay:1.5s}
+  .on .tri div:nth-child(2){transition-delay:.65s}
+  .on .tri div:nth-child(3){transition-delay:1.3s}
+
+  .cta{font-size:clamp(36px,8vw,110px);letter-spacing:-.04em}
 
   .foot{position:fixed;left:0;right:0;bottom:0;padding:2vh 5vw 2.4vh;
     background:linear-gradient(180deg,transparent,rgba(0,0,0,.78) 45%)}
-  .cap{font-size:clamp(12px,1.45vw,20px);color:#e7edf5;min-height:2.5em;line-height:1.4;
+  .cap{font-size:clamp(12px,1.5vw,21px);color:#e7edf5;min-height:2.5em;line-height:1.4;
     max-width:62ch;margin:0 auto 1.2vh;text-align:center}
   .bar{height:3px;background:rgba(255,255,255,.14);border-radius:3px;overflow:hidden}
   .bar>span{display:block;height:100%;width:0;background:var(--red)}
   .hint{position:fixed;top:2vh;right:2.4vw;font-size:11px;color:#5f6d80;letter-spacing:.04em}
-  .badge-ia{display:inline-flex;align-items:center;gap:.6em;border:1px solid var(--line);
-    border-radius:30px;padding:.5em 1.1em;font-size:clamp(10px,1.05vw,13.5px);color:#cbd6e4}
-  .badge-ia b{color:var(--red)}
+  .badge{display:inline-flex;align-items:center;gap:.6em;border:1px solid var(--line);
+    border-radius:30px;padding:.5em 1.1em;font-size:clamp(10px,1.05vw,14px);color:#cbd6e4}
+  .badge b{color:var(--red)}
   .pulse{width:7px;height:7px;border-radius:50%;background:var(--teal);
     animation:blink 1.4s ease-in-out infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-  .cta{font-size:clamp(34px,7.4vw,104px);letter-spacing:-.04em}
-  .scene.fim{gap:3.2vh}
+
   #start{position:fixed;inset:0;z-index:50;display:grid;place-content:center;justify-items:center;
     gap:1.6vh;background:rgba(11,14,19,.94);cursor:pointer;text-align:center}
   #start.off{display:none}
@@ -94,81 +99,57 @@
 </style>
 </head>
 <body>
-<div class="hint">espaço = pausa · ← → = cenas · R = reiniciar · <b>+ −</b> velocidade <span id="vel">1.12×</span> <span id="durx"></span></div>
+<div class="hint">espaço = pausa · ← → = cenas · R = reiniciar</div>
 <audio id="voz" src="narracao.mp3" preload="auto"></audio>
 <div id="start">
   <div class="play">▶</div>
-  <div class="t1">Ponto W · a IA explica o negócio</div>
-  <div class="t2">clique para começar — 41 segundos com narração</div>
+  <div class="t1">Ponto W · o negócio em 30 segundos</div>
+  <div class="t2">clique para começar</div>
 </div>
 
 <div class="stage">
-  <!-- 1 · 0,0 – 4,2 -->
+  <!-- 1 · abertura -->
   <section class="scene" data-i="0">
-    <span class="badge-ia"><i class="pulse"></i> IA do <b>Ponto&nbsp;W</b></span>
+    <span class="badge"><i class="pulse"></i> Ponto <b>W</b> · modelo de negócio</span>
     <h1>Como isso<br>vira <em>negócio</em>?</h1>
     <p class="sub">Franquia.</p>
   </section>
 
-  <!-- 2 · 4,2 – 9,4 -->
+  <!-- 2 · cada lado entra com o que tem -->
   <section class="scene" data-i="1">
     <div class="kick">Cada lado entra com o que tem</div>
     <div class="row">
       <div class="card red"><div class="big">GoodWe</div>
         <div class="lb">carregador · plataforma · marca</div></div>
-      <div class="card teal"><div class="big">Comércio</div>
+      <div class="card teal"><div class="big">Comerciante</div>
         <div class="lb">o ponto · a energia</div></div>
     </div>
   </section>
 
-  <!-- 3 · 9,4 – 14,8 -->
+  <!-- 3 · a conta na prática: R$ 20 se dividindo -->
   <section class="scene" data-i="2">
-    <div class="kick">O royalty tem fronteira</div>
-    <div class="row">
-      <div class="box tax"><div class="t">Recarga</div><div class="v">6%</div>
-        <div class="n">royalty da rede</div></div>
-      <div class="box free"><div class="t">Vendas da loja</div><div class="v">0%</div>
-        <div class="n">100% do franqueado</div></div>
+    <div class="kick">Na prática — uma recarga de</div>
+    <div class="money">R$ 20,00</div>
+    <div class="split"><div class="seg rede"></div><div class="seg loja"></div></div>
+    <div class="split-lb">
+      <div class="l1"><b id="vRede">R$ 0,00</b><span>vai para a rede</span></div>
+      <div class="l2"><b id="vLoja">R$ 0,00</b><span>fica com o comerciante</span></div>
     </div>
+    <p class="sub">E das vendas da loja, a rede não leva <b style="color:#7ee2a4">nada</b>.</p>
   </section>
 
-  <!-- 4a · o mecanismo -->
+  <!-- 4 · o pulo do gato -->
   <section class="scene" data-i="3">
-    <div class="kick">E o que o comerciante ganha em troca?</div>
-    <h1 style="font-size:clamp(24px,4.2vw,58px)">Cada carro parado<br>é uma pessoa <em>circulando</em>.</h1>
+    <div class="kick">E o melhor</div>
+    <div class="fluxo">
+      <div class="pillbig">🚗 Carro carregando na vaga</div>
+      <div class="pillbig"><span class="seta">vira</span> 🚶 cliente dentro da loja</div>
+      <div class="pillbig destino"><span class="seta">vira</span> 🛒 venda no caixa</div>
+    </div>
   </section>
 
-  <!-- 4b · Consumer Reports -->
+  <!-- 5 · tríade -->
   <section class="scene" data-i="4">
-    <div class="kick">Consumer Reports mediu o efeito</div>
-    <div class="row">
-      <div class="card gold"><div class="big">+4%</div><div class="lb">fluxo na loja</div></div>
-      <div class="card green"><div class="big">+5%</div><div class="lb">receita</div></div>
-    </div>
-  </section>
-
-  <!-- 4c · Nature Communications -->
-  <section class="scene" data-i="5">
-    <div class="kick">E a Nature Communications confirma</div>
-    <div class="row">
-      <div class="card teal"><div class="big">US$ 1.478</div>
-        <div class="lb">a mais por ano, em cada comércio vizinho</div>
-        <div class="src">estudo publicado em 2024</div></div>
-    </div>
-  </section>
-
-  <!-- 5 · 20,4 – 25,2 -->
-  <section class="scene" data-i="6">
-    <div class="kick">Antes de assinar, a IA calcula</div>
-    <div class="gauge">
-      <div class="track"><div class="fill"></div><div class="limiar"></div></div>
-      <div class="glabels"><span>0 h/dia</span><span>limiar 2,3 h</span><span>5 h/dia</span></div>
-    </div>
-    <h1 style="font-size:clamp(20px,3.1vw,40px)">Ponto fraco a gente <em>reprova</em>.</h1>
-  </section>
-
-  <!-- 6 · 25,2 – 31,0 — fecho -->
-  <section class="scene" data-i="7">
     <div class="tri">
       <div>Tecnologia da <span style="color:var(--red)">GoodWe</span>.</div>
       <div><span style="color:var(--teal)">Conforto</span> para o cliente.</div>
@@ -176,8 +157,8 @@
     </div>
   </section>
 
-  <!-- 7 · fecho — o convite -->
-  <section class="scene fim" data-i="8">
+  <!-- 6 · convite -->
+  <section class="scene" data-i="5">
     <div class="kick">A rede Ponto W</div>
     <h1 class="cta">Vem ser <em>GoodWe</em>.</h1>
   </section>
@@ -189,20 +170,17 @@
 </div>
 
 <script>
-// 31 s. Os cortes batem com ROTEIRO-NARRACAO.md, para a dublagem cair
-// exatamente em cima de cada cena.
+// 30 s, 6 cenas. Tempos provisórios: quando a dublagem chegar, os cortes
+// serão remedidos pelas pausas do áudio real (ROTEIRO-DUBLAGEM.txt).
 const T = [
-  { at: 0,     cap: 'Como isso vira negócio? Franquia.' },
-  { at: 2.63,  cap: 'A GoodWe entra com o carregador, a plataforma e a marca. O comércio entra com o ponto e a energia.' },
-  { at: 9.26,  cap: 'Royalty de seis por cento — só sobre a recarga. As vendas da loja são cem por cento do franqueado.' },
-  { at: 15.92, cap: 'E o que o comerciante ganha em troca? Cada carro parado ali é uma pessoa circulando na loja.' },
-  { at: 21.53, cap: 'A Consumer Reports mediu o efeito: mais quatro por cento de fluxo, mais cinco por cento de receita.' },
-  { at: 30.37, cap: 'E a Nature Communications confirma: quase mil e quinhentos dólares a mais por ano, em cada comércio vizinho.' },
-  { at: 34.81, cap: 'Antes de assinar, a inteligência calcula: acima de duas horas e vinte por dia, o ponto se paga. Ponto fraco, a gente reprova.' },
-  { at: 43.39, cap: 'Tecnologia da GoodWe. Conforto para o cliente. Movimento para a sua loja.' },
-  { at: 48.91, cap: 'Vem ser GoodWe.' },
+  { at: 0,    cap: 'Como isso vira negócio? Franquia.' },
+  { at: 4,    cap: 'A GoodWe entra com o carregador, a plataforma e a marca. O comerciante, com o ponto e a energia.' },
+  { at: 11,   cap: 'Numa recarga de vinte reais, um e vinte vai para a rede. O resto — e tudo que o cliente gastar na loja — é do comerciante.' },
+  { at: 18,   cap: 'Enquanto o carro carrega na vaga, o dono está comprando dentro da loja.' },
+  { at: 23.5, cap: 'Tecnologia da GoodWe. Conforto para o cliente. Movimento para a sua loja.' },
+  { at: 27.5, cap: 'Vem ser GoodWe.' },
 ];
-const FIM = 50.47;
+let FIM = 30;
 
 const cenas = [...document.querySelectorAll('.scene')];
 const cap = document.getElementById('cap');
@@ -211,64 +189,55 @@ const voz = document.getElementById('voz');
 const start = document.getElementById('start');
 
 let t = 0, atual = -1, rodando = false, ultimo = performance.now();
-// A narração manda no tempo: lemos o relógio do próprio áudio, então imagem e
-// voz nunca desencontram. Se o MP3 faltar, cai no cronômetro interno.
+// Sem narracao.mp3 o <audio> dá erro e o cronômetro interno assume.
+// Quando o áudio gravado entrar, ele passa a mandar no tempo.
 let temAudio = true;
 voz.addEventListener('error', () => { temAudio = false; });
+voz.addEventListener('loadedmetadata', () => { if (voz.duration) FIM = voz.duration; });
 
-// Acelera a locução sem subir o tom (o navegador preserva o pitch).
-// Como os cortes de cena são lidos de voz.currentTime, que continua no
-// tempo do áudio, a sincronia se mantém em qualquer velocidade.
-let vel = 1.12;
-function aplicarVel() {
-  voz.preservesPitch = true;
-  voz.mozPreservesPitch = true;
-  voz.webkitPreservesPitch = true;
-  voz.playbackRate = vel;
-  const el = document.getElementById('vel');
-  const dx = document.getElementById('durx');
-  if (el) el.textContent = vel.toFixed(2) + '×';
-  if (dx && voz.duration) dx.textContent = '· ' + (voz.duration / vel).toFixed(1) + 's';
+// ---- contador da cena 3: R$ 0,00 até o valor, moeda contando na tela
+function countUp(el, alvo, dur) {
+  const ini = performance.now();
+  const timer = setInterval(() => {
+    const p = Math.min(1, (performance.now() - ini) / dur);
+    const v = alvo * (1 - Math.pow(1 - p, 3)); // desacelera no final
+    el.textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
+    if (p >= 1) clearInterval(timer);
+  }, 40);
 }
-voz.addEventListener('loadedmetadata', aplicarVel);
-aplicarVel();
 
 function mostrar(i) {
   if (i === atual) return;
   atual = i;
   cenas.forEach((s, k) => s.classList.toggle('on', k === i));
   cap.textContent = T[i].cap;
+  if (i === 2) { // a divisão dos R$ 20
+    countUp(document.getElementById('vRede'), 1.20, 1150);
+    countUp(document.getElementById('vLoja'), 18.80, 1300);
+  }
 }
 function indicePorTempo() {
   let i = 0;
   for (let k = 0; k < T.length; k++) if (t >= T[k].at) i = k;
   return i;
 }
+function pintar() {
+  mostrar(indicePorTempo());
+  prog.style.width = Math.min(100, t / FIM * 100) + '%';
+}
 function loop(agora) {
   const dt = (agora - ultimo) / 1000;
   ultimo = agora;
   if (temAudio && !voz.paused) t = voz.currentTime;
   else if (rodando) t = Math.min(FIM, t + dt);
-  mostrar(indicePorTempo());
-  prog.style.width = Math.min(100, t / FIM * 100) + '%';
+  pintar();
   requestAnimationFrame(loop);
 }
-function pintar() {
-  mostrar(indicePorTempo());
-  prog.style.width = Math.min(100, t / FIM * 100) + '%';
-}
-
-// O rAF congela em aba oculta (e quando a janela é minimizada). O evento
-// timeupdate do áudio dispara de qualquer jeito, ~4x por segundo — o
-// suficiente para trocar de cena. O rAF fica só para a barra ficar fluida.
-voz.addEventListener('timeupdate', () => {
-  if (!voz.paused) { t = voz.currentTime; pintar(); }
-});
-
+// O rAF congela em aba oculta; o timeupdate do áudio dispara de qualquer jeito.
+voz.addEventListener('timeupdate', () => { if (!voz.paused) { t = voz.currentTime; pintar(); } });
 mostrar(0);
 requestAnimationFrame(loop);
 
-// O navegador só deixa tocar som depois de um gesto do usuário — daí a capa.
 function comecar() {
   start.classList.add('off');
   rodando = true;
@@ -277,28 +246,25 @@ function comecar() {
 start.addEventListener('click', comecar);
 
 function pausar() {
-  if (temAudio) { voz.paused ? voz.play() : voz.pause(); }
+  if (temAudio && voz.readyState > 0) { voz.paused ? voz.play() : voz.pause(); }
   rodando = !rodando;
 }
 function irPara(i) {
   i = Math.max(0, Math.min(T.length - 1, i));
   t = T[i].at;
-  if (temAudio) voz.currentTime = t;
-  // Reinicia as animações de entrada forçando reflow. De propósito sem
-  // requestAnimationFrame: em aba oculta o rAF não dispara e a cena sumiria.
+  if (temAudio && voz.readyState > 0) voz.currentTime = t;
+  // reflow síncrono de propósito: rAF não roda em aba oculta
   cenas.forEach((s) => s.classList.remove('on'));
   void document.body.offsetWidth;
   atual = -1;
   mostrar(i);
 }
 addEventListener('keydown', (e) => {
-  if (start.classList.contains('off') === false) { comecar(); return; }
+  if (!start.classList.contains('off')) { comecar(); return; }
   if (e.code === 'Space') { e.preventDefault(); pausar(); }
   if (e.code === 'ArrowRight') { e.preventDefault(); irPara(indicePorTempo() + 1); }
   if (e.code === 'ArrowLeft')  { e.preventDefault(); irPara(indicePorTempo() - 1); }
-  if (e.key.toLowerCase() === 'r') { irPara(0); if (temAudio) voz.play(); rodando = true; }
-  if (e.key === '+' || e.key === '=') { vel = Math.min(1.5, vel + 0.02); aplicarVel(); }
-  if (e.key === '-' || e.key === '_') { vel = Math.max(1.0, vel - 0.02); aplicarVel(); }
+  if (e.key.toLowerCase() === 'r') { irPara(0); if (temAudio && voz.readyState > 0) voz.play(); rodando = true; }
 });
 document.querySelector('.stage').addEventListener('click', pausar);
 </script>
