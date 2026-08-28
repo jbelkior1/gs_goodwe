@@ -137,22 +137,24 @@ export default function Totem() {
         <CenaCarro3D />
       </section>
 
-      <section className="tt-resumo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderBottom: '1px solid var(--k-line)' }}>
-        <div>
-          <span className="tt-rotulo">Potência agora</span>
-          <div className="tt-grande">{num(kw, 1)}<small>kW</small></div>
-        </div>
-        <div style={{ width: 1, height: 30, background: 'var(--k-line)' }} />
-        <div>
-          <span className="tt-rotulo">Total a pagar</span>
-          <div className="tt-grande tt-acento">{brl(custo)}</div>
+      <section className="tt-resumo" style={{ display: 'flex', flexDirection: 'column', gap: 15, padding: '15px', borderBottom: '1px solid var(--k-line)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <span className="tt-rotulo">Potência agora</span>
+            <div className="tt-grande">{num(kw, 1)}<small>kW</small></div>
+          </div>
+          <div style={{ width: 1, height: 30, background: 'var(--k-line)' }} />
+          <div style={{ textAlign: 'right' }}>
+            <span className="tt-rotulo">Total a pagar</span>
+            <div className="tt-grande tt-acento">{brl(custo)}</div>
+          </div>
         </div>
         {etapa === 'carregando' ? (
-          <button className="btn primary" onClick={() => setEtapa('pagando')}>
+          <button className="btn primary" style={{ width: '100%', justifyContent: 'center', padding: '12px' }} onClick={() => setEtapa('pagando')}>
             Encerrar e Pagar
           </button>
         ) : (
-          <div className="tt-eta">
+          <div className="tt-eta" style={{ justifyContent: 'center' }}>
             Sessão encerrada
           </div>
         )}
