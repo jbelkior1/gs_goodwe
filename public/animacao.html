@@ -210,7 +210,7 @@
 <body>
 <div class="bg-grid"></div><div class="orbe a"></div><div class="orbe b"></div>
 <div class="hint">espaço = pausa · ← → = cenas · R = reiniciar</div>
-<audio id="voz" src="narracao.mp3" preload="auto"></audio>
+<audio id="voz" src="narracao.wav" preload="auto"></audio>
 <div id="start">
   <div class="play">▶</div>
   <div class="t1">Ponto W · o negócio em 30 segundos</div>
@@ -294,14 +294,14 @@
 // 30 s provisórios — quando a dublagem chegar, os cortes são remedidos
 // pelas pausas do áudio real (ROTEIRO-DUBLAGEM.txt).
 const T = [
-  { at: 0,    cap: 'Como isso vira negócio? Franquia.' },
-  { at: 4,    cap: 'O comerciante compra a franquia e leva o pacote: carregadores, ambiente, suporte... e a marca GoodWe na fachada.' },
-  { at: 11,   cap: 'A rede lucra como toda franquia: taxa de entrada, seis por cento de royalty sobre a recarga... e dois por cento para o fundo que divulga a rede inteira. Da loja, nada.' },
-  { at: 20,   cap: 'Enquanto o carro carrega na vaga, o dono está comprando dentro da loja.' },
-  { at: 24.5, cap: 'Tecnologia da GoodWe. Conforto para o cliente. Movimento para a sua loja.' },
-  { at: 28,   cap: 'Mas como isso funciona? Vamos entender, na prática.' },
+  { at: 0,     cap: 'Como isso vira negócio? Franquia.' },
+  { at: 3.95,  cap: 'O comerciante compra a franquia e leva o pacote: carregadores, ambiente, suporte... e a marca GoodWe na fachada.' },
+  { at: 12.30, cap: 'A rede lucra como toda franquia: taxa de entrada, royalty de seis por cento sobre a recarga e dois por cento para o fundo que divulga a rede inteira. Da loja, nada.' },
+  { at: 23.70, cap: 'E o melhor: enquanto o carro carrega na vaga, o dono está comprando dentro da loja.' },
+  { at: 29.05, cap: 'Tecnologia da GoodWe. Conforto para o cliente. Movimento para a sua loja.' },
+  { at: 33.80, cap: 'Mas como isso funciona? Vamos entender, na prática.' },
 ];
-let FIM = 31;
+let FIM = 37.61;
 
 const cenas = [...document.querySelectorAll('.scene')];
 const cap = document.getElementById('cap');
