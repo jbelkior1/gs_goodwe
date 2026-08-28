@@ -177,72 +177,111 @@ export default function Totem() {
         </div>
       </section>
 
-      {/* ------------------------------------------------------- curva */}
-      <section className="tt-curva">
-        <div className="tt-curva-topo">
-          <span className="tt-rotulo">Curva de carga</span>
-          <span className="live-tag"><span className="dot pulse" />ao vivo</span>
-        </div>
-        <div className="tt-curva-graf">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={curva} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="ttGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={CHART.serie1} stopOpacity={0.5} />
-                  <stop offset="100%" stopColor={CHART.serie1} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <YAxis hide domain={[0, (max: number) => Math.max(12, max * 1.45)]} />
-              <Area type="monotone" dataKey="kw" stroke={CHART.serie1Claro} strokeWidth={2}
-                    fill="url(#ttGrad)" isAnimationActive={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-
-      {/* --------------------------------------------------------- Volt */}
-      <section className="tt-chat">
-        <div className="tt-chat-topo">
-          <Volt estado={estadoVolt} tamanho={46} />
-          <div className="tt-chat-id">
-            <span className="tt-chat-nome">Volt</span>
-            <span className="tt-chat-estado">
-              {estadoVolt === 'pensando' ? 'consultando a sessão…' : 'pergunte o que quiser'}
-            </span>
-          </div>
-        </div>
-
-        <div className="tt-mensagens">
-          {mensagens.map((m, i) => (
-            <div key={i} className={`tt-balao ${m.de}`}>{m.texto}</div>
-          ))}
-          {estadoVolt === 'pensando' && (
-            <div className="tt-balao volt tt-digitando"><span /><span /><span /></div>
-          )}
-          <div ref={fim} />
-        </div>
-
-        <div className="tt-acoes">
-          {sugestoes.length > 0 && (
-            <div className="tt-sugestoes">
-              {sugestoes.slice(0, 3).map((s) => (
-                <button key={s} className="chip" onClick={() => perguntar(s)}>{s}</button>
-              ))}
+      {etapa === 'carregando' ? (
+        <>
+          {/* ------------------------------------------------------- curva */}
+          <section className="tt-curva">
+            <div className="tt-curva-topo">
+              <span className="tt-rotulo">Curva de carga</span>
+              <span className="live-tag"><span className="dot pulse" />ao vivo</span>
             </div>
+            <div className="tt-curva-graf">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={curva} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="ttGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={CHART.serie1} stopOpacity={0.5} />
+                      <stop offset="100%" stopColor={CHART.serie1} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <YAxis hide domain={[0, (max: number) => Math.max(12, max * 1.45)]} />
+                  <Area type="monotone" dataKey="kw" stroke={CHART.serie1Claro} strokeWidth={2}
+                        fill="url(#ttGrad)" isAnimationActive={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
+          {/* --------------------------------------------------------- Volt */}
+          <section className="tt-chat">
+            <div className="tt-chat-topo">
+              <Volt estado={estadoVolt} tamanho={46} />
+              <div className="tt-chat-id">
+                <span className="tt-chat-nome">Volt</span>
+                <span className="tt-chat-estado">
+                  {estadoVolt === 'pensando' ? 'consultando a sessão…' : 'pergunte o que quiser'}
+                </span>
+              </div>
+            </div>
+
+            <div className="tt-mensagens">
+              {mensagens.map((m, i) => (
+                <div key={i} className={`tt-balao ${m.de}`}>{m.texto}</div>
+              ))}
+              {estadoVolt === 'pensando' && (
+                <div className="tt-balao volt tt-digitando"><span /><span /><span /></div>
+              )}
+              <div ref={fim} />
+            </div>
+
+            <div className="tt-acoes">
+              {sugestoes.length > 0 && (
+                <div className="tt-sugestoes">
+                  {sugestoes.slice(0, 3).map((s) => (
+                    <button key={s} className="chip" onClick={() => perguntar(s)}>{s}</button>
+                  ))}
+                </div>
+              )}
+              <form className="tt-entrada" onSubmit={(e) => { e.preventDefault(); perguntar(rascunho); }}>
+                <input
+                  value={rascunho}
+                  onChange={(e) => setRascunho(e.target.value)}
+                  placeholder="Pergunte ao Volt…"
+                  aria-label="Pergunte ao Volt"
+                />
+                <button type="submit" className="btn primary" aria-label="Enviar pergunta">
+                  <Icone nome="setaDireita" tamanho={15} />
+                </button>
+              </form>
+            </div>
+          </section>
+        </>
+      ) : (
+        <section style={{ gridRow: '4 / 6', display: 'flex', flexDirection: 'column', padding: '20px 24px', overflowY: 'auto' }}>
+          {etapa === 'pagando' && (
+              <div className="stack" style={{ alignItems: 'center', background: 'var(--k-panel)', padding: 30, borderRadius: 16 }}>
+                <h2 style={{ fontSize: 18, marginBottom: 10 }}>Pague com Pix</h2>
+                <div style={{
+                  width: 150, height: 150, borderRadius: 8, background: 'var(--k-text)',
+                  display: 'grid', placeItems: 'center', color: 'var(--k-bg)', fontSize: 10,
+                  letterSpacing: '.16em', textAlign: 'center', padding: 10,
+                }}>
+                  QR CODE<br />PIX DINÂMICO
+                </div>
+                <div className="tiny muted" style={{ marginTop: 10 }}>txid {gerarTxid(semente?.id ?? '123')}</div>
+                <div className="kpi-value kpi-accent-red" style={{ margin: '10px 0' }}>{brl(custo)}</div>
+                <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }}
+                        onClick={() => setEtapa('pago')}>
+                  Simular pagamento
+                </button>
+              </div>
           )}
-          <form className="tt-entrada" onSubmit={(e) => { e.preventDefault(); perguntar(rascunho); }}>
-            <input
-              value={rascunho}
-              onChange={(e) => setRascunho(e.target.value)}
-              placeholder="Pergunte ao Volt…"
-              aria-label="Pergunte ao Volt"
-            />
-            <button type="submit" className="btn primary" aria-label="Enviar pergunta">
-              <Icone nome="setaDireita" tamanho={15} />
-            </button>
-          </form>
-        </div>
-      </section>
+          {etapa === 'pago' && (
+              <div className="stack" style={{ alignItems: 'center', textAlign: 'center', background: 'var(--k-panel)', padding: 30, borderRadius: 16 }}>
+                <Icone nome="check" tamanho={54} cor="var(--k-ok)" style={{ marginBottom: 10 }} />
+                <div className="strong" style={{ fontSize: 18 }}>Recibo emitido</div>
+                <div className="tiny muted" style={{ marginBottom: 20 }}>Sessão {semente?.id ?? '123'} · {brl(custo)}</div>
+                <Badge tom="green" dot>Pago via Pix</Badge>
+                <button className="btn" style={{ width: '100%', justifyContent: 'center', marginTop: 20 }}
+                        onClick={() => {
+                          setSoc(38); setKwh(6.2); setKw(21.4); setEtapa('carregando');
+                        }}>
+                  Nova Recarga
+                </button>
+              </div>
+          )}
+        </section>
+      )}
 
       <footer className="tt-rodape meta">
         <span className="tt-rodape-ponto">{ponto.nome.toUpperCase()}</span>
