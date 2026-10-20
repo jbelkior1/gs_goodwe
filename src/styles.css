@@ -1179,3 +1179,83 @@ select.btn option { background: var(--k-panel); color: var(--k-text); }
 
 
 
+
+/* ==========================================================================
+   APARELHOS REAIS — totem em quiosque e app do motorista em tela cheia
+   ========================================================================== */
+
+/* ------------------------------------------------ totem: escala para a tela */
+.quiosque {
+  position: fixed; inset: 0; overflow: hidden; background: var(--k-bg);
+  display: grid; place-items: center; touch-action: manipulation; user-select: none;
+}
+.quiosque-palco { transform-origin: center; display: flex; flex: none; }
+.quiosque-palco > .tt { width: 100%; height: 100%; }
+.quiosque-config {
+  position: fixed; right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom));
+  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--k-line);
+  background: var(--k-panel); color: var(--k-dim2); opacity: .35; cursor: pointer; font-size: 16px;
+}
+.quiosque-config:hover, .quiosque-config:focus-visible { opacity: 1; }
+.quiosque-menu {
+  position: fixed; right: 12px; bottom: 54px; z-index: 10; display: flex; flex-direction: column; gap: 8px;
+  padding: 14px; border-radius: var(--radius); background: var(--k-panel); border: 1px solid var(--k-line);
+}
+
+/* alvos de toque maiores no totem */
+.quiosque .tt .btn { min-height: 44px; }
+.quiosque .tt .chip { min-height: 32px; }
+
+/* pagamento ocupa o lugar da curva + Volt */
+.tt-pag { grid-row: 5 / 7; display: flex; flex-direction: column; padding: 20px 24px; overflow-y: auto; min-height: 0; }
+
+/* totem na horizontal: dados à esquerda, Volt (ou pagamento) à direita */
+.tt.tt-h {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+}
+.tt-h .tt-topo, .tt-h .tt-rodape { grid-column: 1 / -1; }
+.tt-h .tt-topo { grid-row: 1; }
+.tt-h .tt-hero { grid-column: 1; grid-row: 2; }
+.tt-h .tt-resumo { grid-column: 1; grid-row: 3; }
+.tt-h .tt-tiles { grid-column: 1; grid-row: 4; }
+.tt-h .tt-curva { grid-column: 1; grid-row: 5; min-height: 0; }
+.tt-h .tt-curva-graf { flex: 1; height: auto; min-height: 40px; }
+.tt-h .tt-chat, .tt-h .tt-pag { grid-column: 2; grid-row: 2 / 6; border-left: 1px solid var(--k-line); }
+.tt-h .tt-rodape { grid-row: 6; }
+
+/* ------------------------------------------------ app do motorista no celular */
+.mob {
+  height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  max-width: 520px; margin: 0 auto; background: var(--k-bg);
+  border-left: 1px solid var(--k-line-2); border-right: 1px solid var(--k-line-2);
+}
+.mob-topo {
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px; border-bottom: 1px solid var(--k-line);
+}
+.mob-titulo { font-size: 15px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mob-usuario { font-size: 12px; color: var(--k-dim); text-decoration: none; }
+.mob-conteudo { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.mob-abas {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  padding: 6px 4px calc(env(safe-area-inset-bottom, 0px) + 6px); border-top: 1px solid var(--k-line); background: var(--k-bg-2);
+}
+.mob-aba {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 0; min-height: 48px; font-size: 10.5px; color: var(--k-dim2); text-decoration: none;
+}
+.mob-aba.on { color: var(--k-text); }
+.mob-aba.on svg { color: var(--k-red2); }
+.mob-ponto { position: absolute; top: 4px; right: calc(50% - 16px); width: 7px; height: 7px; border-radius: 50%; background: var(--k-red); }
+/* 16px nos campos evita o zoom automático do iPhone */
+.mob input, .mob select { min-height: 44px; font-size: 16px; }
+
+/* horizontal: a coluna da esquerda precisa caber em 432 de altura */
+.tt-h .tt-hero { padding: 8px 12px; gap: 8px !important; }
+.tt-h .tt-anel { width: 100px; height: 100px; }
+.tt-h .tt-anel-num { font-size: 28px; }
+.tt-h .tt-hero img { max-height: 104px; width: auto; }
+.tt-h .tt-resumo { padding: 9px 15px !important; gap: 8px !important; }
+.tt-h .tt-resumo .tt-grande { font-size: 23px; }
+.tt-h .tt-tile { padding: 8px 9px; }

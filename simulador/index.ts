@@ -89,7 +89,11 @@ async function ciclo() {
 
     // ------------------------------------------------ conexões, expiração e saída do carro
     for (const vaga of doPonto) {
-      const s = sessoes.filter((x) => x.carregadorId === vaga.id).sort((a, b) => b.inicio.localeCompare(a.inicio))[0];
+      // uma sessão paga só "segura" a vaga se o carro conectado é o daquela recarga (chegou antes do fim)
+      const daRecarga = (x: Sessao) => x.estado !== 'FATURADO'
+        || (!!vaga.carro && !!x.fim && new Date(vaga.carro.conectadoEm).getTime() <= new Date(x.fim).getTime());
+      const s = sessoes.filter((x) => x.carregadorId === vaga.id && daRecarga(x))
+        .sort((a, b) => b.inicio.localeCompare(a.inicio))[0];
       if (vaga.carro && !s && vaga.estado !== 'MANUTENCAO') {
         const tarifa = calcularTarifa(ponto, REGIOES.find((r) => r.id === ponto.regiaoId) ?? REGIOES[0], new Date().getHours(), 0.5);
         const nova = {

@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import Layout from './app/Layout';
+import AppMotorista from './app/AppMotorista';
+import { Quiosque } from './ui/Quiosque';
 import { useApp } from './app/estado';
 import Entrar from './pages/entrar/Entrar';
 import Mapa from './pages/motorista/Mapa';
@@ -42,16 +44,20 @@ export default function App() {
       <Route path="/" element={<Portal />} />
       <Route path="/entrar" element={<Entrar />} />
 
-      <Route element={<Layout />}>
-        {/* motorista — app de celular */}
+      {/* totem — quiosque em tela cheia no aparelho real (vertical ou horizontal) */}
+      <Route path="/totem" element={<Quiosque>{(o) => <Totem orientacao={o} />}</Quiosque>} />
+
+      {/* motorista — app em tela cheia no celular */}
+      <Route element={<AppMotorista />}>
         <Route path="/motorista" element={<Mapa />} />
         <Route path="/motorista/vincular" element={<Vincular />} />
         <Route path="/motorista/recarga" element={<Recarga />} />
         <Route path="/motorista/recarga/:sessaoId" element={<RecargaComSessao />} />
         <Route path="/motorista/assistente" element={<Assistente />} />
+      </Route>
 
-        {/* totem — quiosque do eletroposto */}
-        <Route path="/totem" element={<Totem />} />
+      {/* franqueado e GoodWe — painéis de computador */}
+      <Route element={<Layout />}>
 
         {/* franqueado — o comércio que hospeda o ponto */}
         <Route path="/franqueado" element={<Painel />} />

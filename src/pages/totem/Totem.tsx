@@ -14,19 +14,25 @@ import { Icone } from '../../ui/icones';
 import { CenaCarro3D } from '../../ui/CenaCarro3D';
 import { Volt, type EstadoVolt } from '../../ui/Volt';
 import { QR, linkDoApp } from '../../ui/QR';
-import { BancadaVaga } from '../../ui/Bancada';
 
 interface Mensagem { de: 'volt' | 'motorista'; texto: string }
-const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
+const CHAVE_PONTO = 'pontow.totem.ponto';
 
 /**
  * Tela do totem (MVP): mostra as vagas do ponto ao vivo. Carro conectado → QR com o código da
  * sessão; o motorista lê no celular e a recarga aparece aqui e no app ao mesmo tempo.
  */
-export default function Totem() {
+export default function Totem({ orientacao = 'vertical' }: { orientacao?: 'vertical' | 'horizontal' }) {
   const { pontoId: pontoDoPainel } = useApp();
   const [params] = useSearchParams();
-  const pontoId = params.get('ponto') ?? pontoDoPainel;
+  // o totem lembra o ponto em que foi instalado (aberto uma vez com ?ponto=)
+  const pontoId = (() => {
+    const daUrl = params.get('ponto');
+    try {
+      if (daUrl) { localStorage.setItem(CHAVE_PONTO, daUrl); return daUrl; }
+      return localStorage.getItem(CHAVE_PONTO) ?? pontoDoPainel;
+    } catch { return daUrl ?? pontoDoPainel; }
+  })();
   const ponto = obterPonto(pontoId);
   const vagas = carregadoresDoPonto(pontoId);
   const [vagaId, setVagaId] = useState<string>('');
@@ -81,7 +87,7 @@ export default function Totem() {
 
   const agir = (f: () => Promise<void>) => () => { setErro(''); f().catch((e: Error) => setErro(e.message)); };
 
-  if (!ponto) return <div className="tt"><div style={{ padding: 24 }}>Ponto não encontrado. Abra o totem pelo painel do franqueado.</div></div>;
+  if (!ponto) return <div className="tt"><div style={{ padding: 24 }}>Totem sem ponto. Abra pelo link do painel do franqueado (Meu ponto, Totem do ponto).</div></div>;
 
   const horaFmt = relogio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const raio = 62;
@@ -89,7 +95,7 @@ export default function Totem() {
   const nomeCurto = motorista?.nome?.split(' ')[0];
 
   return (
-    <div className="tt">
+    <div className={`tt ${orientacao === 'horizontal' ? 'tt-h' : ''}`}>
       <header className="tt-topo">
         <span className="tt-marca">GOODWE</span>
         <span className="tt-tag">Autoatendimento</span>
@@ -109,10 +115,10 @@ export default function Totem() {
         </div>
         {sessao?.estado === 'ABERTA' ? (
           <div className="row" style={{ gap: 18, alignItems: 'center', justifyContent: 'center' }}>
-            <QR texto={linkDoApp(`/motorista/vincular?c=${sessao.codigoVinculo}`)} tamanho={170} />
+            <QR texto={linkDoApp(`/motorista/vincular?c=${sessao.codigoVinculo}`)} tamanho={orientacao === 'horizontal' ? 116 : 170} />
             <div className="stack" style={{ gap: 6 }}>
               <span className="tt-rotulo">Leia com a câmera do celular</span>
-              <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '.18em' }}>{sessao.codigoVinculo}</span>
+              <span style={{ fontSize: orientacao === 'horizontal' ? 32 : 40, fontWeight: 700, letterSpacing: '.18em' }}>{sessao.codigoVinculo}</span>
               <span className="tiny muted">{veiculo ? `${veiculo.montadora} ${veiculo.modelo} conectado` : 'carro conectado'} · {brl(precoKWh)}/kWh agora</span>
             </div>
           </div>
@@ -156,8 +162,11 @@ export default function Totem() {
             Carregar sem app (paga aqui no fim)
           </button>
         )}
-        {!sessao && vagaSel && DEMO && <BancadaVaga vaga={vagaSel} />}
-        {!sessao && vagaSel && !DEMO && <div className="tt-eta" style={{ justifyContent: 'center' }}>Conecte o cabo para começar</div>}
+        {!sessao && vagaSel && (
+          <div className="tt-eta" style={{ justifyContent: 'center' }}>
+            {vagaSel.estado === 'MANUTENCAO' ? 'Vaga em manutenção' : 'Conecte o cabo na vaga para começar'}
+          </div>
+        )}
         {erro && <div className="tiny" style={{ color: 'var(--k-red2)' }}>{erro}</div>}
       </section>
 
@@ -169,7 +178,7 @@ export default function Totem() {
       </section>
 
       {sessao?.estado === 'CONCLUIDO' || sessao?.estado === 'FATURADO' ? (
-        <section style={{ gridRow: '5 / 7', display: 'flex', flexDirection: 'column', padding: '20px 24px', overflowY: 'auto' }}>
+        <section className="tt-pag">
           {sessao.estado === 'CONCLUIDO' && cobranca ? (
             <div className="stack" style={{ alignItems: 'center', background: 'var(--k-panel)', padding: 24, borderRadius: 16 }}>
               <h2 style={{ fontSize: 18, margin: 0 }}>Pague com Pix</h2>
