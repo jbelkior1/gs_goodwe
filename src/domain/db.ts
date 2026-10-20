@@ -84,7 +84,10 @@ function assinarTempoReal() {
       avisarMudanca();
     });
   }
-  canal.subscribe();
+  canal.subscribe((status, erro) => {
+    if (status !== 'SUBSCRIBED') console.warn('tempo real:', status, erro?.message ?? '');
+  });
+  if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__pontow = { base, canal };
 }
 
 // ---------------------------------------------------------------- básicos

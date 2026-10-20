@@ -28,7 +28,7 @@ const TICK_MS = 2000;
 const EXPIRA_MIN = 10;
 const ALFABETO = 'ACDEFHJKMNPRTUVWXY3479';
 const EM_CARGA = ['AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO'];
-const ABERTAS = ['ABERTA', ...EM_CARGA, 'CONCLUIDO', 'FATURADO'];
+const ABERTAS = ['ABERTA', ...EM_CARGA, 'CONCLUIDO'];
 
 const log = (...a: unknown[]) => console.log(new Date().toLocaleTimeString('pt-BR'), ...a);
 const codigo = () => Array.from({ length: 4 }, () => ALFABETO[Math.floor(Math.random() * ALFABETO.length)]).join('');
@@ -70,10 +70,14 @@ async function ciclo() {
   }
   const ids = pontos.map((p) => p.id);
   if (!ids.length) return;
-  const [vagas, sessoes] = await Promise.all([
+  const recente = new Date(Date.now() - 15 * 60000).toISOString();
+  const [vagas, abertas, pagas] = await Promise.all([
     q<Carregador[]>(sb.from('carregadores').select('*').in('pontoId', ids)),
     q<Sessao[]>(sb.from('sessoes').select('*').in('pontoId', ids).in('estado', ABERTAS)),
+    // só pagamentos recentes de sessões reais (o histórico de demonstração também está FATURADO)
+    q<Sessao[]>(sb.from('sessoes').select('*').in('pontoId', ids).eq('estado', 'FATURADO').eq('demo', false).gte('fim', recente)),
   ]);
+  const sessoes = [...abertas, ...pagas];
   const agora = Date.now();
   const dtH = (TICK_MS / 3600000) * ACEL;
   const gravarTelemetria = agora - ultimaTelemetria > 10000;
