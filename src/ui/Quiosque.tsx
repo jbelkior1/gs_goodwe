@@ -1,4 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+
+const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
 
 export type ModoTela = 'auto' | 'vertical' | 'horizontal';
 const CHAVE = 'pontow.totem.modo';
@@ -53,6 +56,7 @@ export function Quiosque({ children }: { children: (orientacao: 'vertical' | 'ho
             </button>
           ))}
           <button className="btn" onClick={telaCheia}>Tela cheia</button>
+          {DEMO && <Link className="btn" to="/">Trocar de painel</Link>}
         </div>
       )}
     </div>

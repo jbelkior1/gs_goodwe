@@ -3,6 +3,8 @@ import { useApp } from './estado';
 import { sessaoDoMotorista } from '../domain/db';
 import { Icone, type NomeIcone } from '../ui/icones';
 
+const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
+
 const ABAS: { to: string; ico: NomeIcone; label: string; fim?: boolean }[] = [
   { to: '/motorista', ico: 'globo', label: 'Carregar', fim: true },
   { to: '/motorista/recarga', ico: 'raio', label: 'Recarga' },
@@ -28,6 +30,7 @@ export default function AppMotorista() {
       <header className="mob-topo">
         <span className="brand-logo"><Icone nome="raio" tamanho={14} /></span>
         <span className="mob-titulo">{titulo}</span>
+        {DEMO && <Link className="mob-usuario" to="/" title="Trocar de painel">Painéis</Link>}
         {perfil
           ? <span className="mob-usuario">{perfil.nome.split(' ')[0]}</span>
           : <Link className="mob-usuario" to={`/entrar?volta=${encodeURIComponent(pathname)}`}>Entrar</Link>}
