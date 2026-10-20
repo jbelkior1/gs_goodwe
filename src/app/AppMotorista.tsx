@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useApp } from './estado';
+import { comTela, telaDoNavegador } from './tela';
 import { sessaoDoMotorista } from '../domain/db';
 import { Icone, type NomeIcone } from '../ui/icones';
 
@@ -20,7 +21,7 @@ const TITULOS: Record<string, string> = {
 
 /** App do motorista em tela cheia no celular real: barra no topo, conteúdo e abas embaixo. */
 export default function AppMotorista() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const { perfil, motoristaId } = useApp();
   const ativa = sessaoDoMotorista(perfil?.motoristaId ?? motoristaId);
   const titulo = TITULOS[pathname] ?? (pathname.startsWith('/motorista/recarga') ? 'Minha recarga' : 'Ponto W');
@@ -30,7 +31,7 @@ export default function AppMotorista() {
       <header className="mob-topo">
         <span className="brand-logo"><Icone nome="raio" tamanho={14} /></span>
         <span className="mob-titulo">{titulo}</span>
-        {DEMO && <Link className="mob-usuario" to="/" title="Trocar de painel">Painéis</Link>}
+        {DEMO && <Link className="mob-usuario" to={comTela(pathname, search, 'vitrine')} onClick={() => telaDoNavegador(false)}>Sair da tela cheia</Link>}
         {perfil
           ? <span className="mob-usuario">{perfil.nome.split(' ')[0]}</span>
           : <Link className="mob-usuario" to={`/entrar?volta=${encodeURIComponent(pathname)}`}>Entrar</Link>}

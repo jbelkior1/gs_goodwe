@@ -3,9 +3,12 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useApp, type Persona } from './estado';
 import { base, obterPonto } from '../domain/db';
 import { bancoConfigurado } from '../data/supabase';
-import { Badge } from '../ui/kit';
+import { comTela, telaDoNavegador } from './tela';
+import { Badge, Nota } from '../ui/kit';
 import { Icone, type NomeIcone } from '../ui/icones';
 import { Totem3D } from '../ui/Totem3D';
+
+const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
 
 const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcone; label: string }[] }[]> = {
   motorista: [
@@ -113,7 +116,23 @@ function Moldura({ persona, children }: { persona: Persona; children: ReactNode 
   return <>{children}</>;
 }
 
-export default function Layout() {
+/** Tela cheia é o ambiente real: o painel do franqueado e o da GoodWe pedem a conta daquele papel. */
+function Porta({ persona, atual }: { persona: Persona; atual?: string }) {
+  const { pathname, search } = useLocation();
+  return (
+    <div style={{ maxWidth: 520, margin: '48px auto' }}>
+      <Nota titulo={`Ambiente do ${ROTULO[persona].nome.toLowerCase()}`} tom="amber">
+        {atual ? `Você está com a conta ${atual}. ` : ''}Entre com a conta do {ROTULO[persona].nome.toLowerCase()} para usar este painel.
+        <div style={{ marginTop: 10 }}>
+          <Link className="btn primary" to={`/entrar?volta=${encodeURIComponent(pathname + search)}`}>Entrar</Link>
+        </div>
+      </Nota>
+    </div>
+  );
+}
+
+/** cheia: só o ambiente do papel da rota, sem a troca de painel da vitrine */
+export default function Layout({ cheia = false }: { cheia?: boolean }) {
   const { persona, setPersona, pontoId, setPontoId, perfil, sair } = useApp();
   const pontosVisiveis = perfil?.papel === 'franqueado' ? base.pontos.filter((p) => p.franqueadoId === perfil.franqueadoId) : base.pontos;
   const location = useLocation();
@@ -135,11 +154,15 @@ export default function Layout() {
     setPersona(p);
     navigate(ROTA_INICIAL[p]);
   };
+  const mudarTela = (tela: 'cheia' | 'vitrine') => {
+    telaDoNavegador(tela === 'cheia');
+    navigate(comTela(location.pathname, location.search, tela));
+  };
 
   return (
-    <div className={`app app-${personaAtual}`}>
+    <div className={`app app-${personaAtual}${cheia ? ' app-cheia' : ''}`}>
       <aside className="sidebar">
-        <Link to="/" className="brand" title="Voltar para a escolha de painel">
+        <Link to={cheia ? ROTA_INICIAL[personaAtual] : '/'} className="brand" title={cheia ? ROTULO[personaAtual].nome : 'Voltar para a escolha de painel'}>
           <div className="brand-logo"><Icone nome="raio" tamanho={16} /></div>
           <div className="brand-txt">
             <div className="brand-name">GoodWe</div>
@@ -148,7 +171,7 @@ export default function Layout() {
           <span className="brand-voltar"><Icone nome="casa" tamanho={14} /></span>
         </Link>
 
-        <div className="persona-switch">
+        {!cheia && <div className="persona-switch">
           <div className="persona-label">Painel</div>
           {(Object.keys(ROTULO) as Persona[]).map((p) => (
             <button
@@ -160,7 +183,7 @@ export default function Layout() {
               {ROTULO[p].nome}
             </button>
           ))}
-        </div>
+        </div>}
 
         <nav className="nav">
           {MENUS[personaAtual].map((grupo) => (
@@ -184,6 +207,7 @@ export default function Layout() {
         <div className="sidebar-foot">
           {perfil ? <>{perfil.nome} · {perfil.papel} · <button className="btn" onClick={() => sair()}>sair</button></> : <Link to="/entrar">ENTRAR</Link>}
           <br />{base.sessoes.length.toLocaleString('pt-BR')} SESSÕES · {bancoConfigurado ? 'BANCO AO VIVO' : 'BASE SIMULADA'}
+          {cheia && DEMO && <><br /><button className="btn" onClick={() => mudarTela('vitrine')}>Sair da tela cheia</button></>}
         </div>
       </aside>
 
@@ -213,6 +237,11 @@ export default function Layout() {
                 {ponto.ativo ? 'Operando' : 'Inativo'}
               </Badge>
             )}
+            {!cheia && (
+              <button className="btn primary" onClick={() => mudarTela('cheia')} title="Abre só este ambiente, como no aparelho real">
+                Abrir em tela cheia
+              </button>
+            )}
             {personaAtual === 'totem' && <Badge tom="red" dot pulse>totem em operação</Badge>}
             {personaAtual === 'goodwe' && (
               <Badge tom="teal" dot pulse>
@@ -223,9 +252,9 @@ export default function Layout() {
         </header>
 
         <main className={`content content-${personaAtual}`}>
-          <Moldura persona={personaAtual}>
-            <Outlet />
-          </Moldura>
+          {cheia && bancoConfigurado && (personaAtual === 'franqueado' || personaAtual === 'goodwe') && perfil?.papel !== personaAtual
+            ? <Porta persona={personaAtual} atual={perfil ? `${perfil.nome} (${perfil.papel})` : undefined} />
+            : <Moldura persona={personaAtual}><Outlet /></Moldura>}
         </main>
       </div>
     </div>

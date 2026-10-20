@@ -20,7 +20,7 @@ export default function MeuPonto() {
   if (!ponto) return <Nota titulo="Nenhum ponto">Seu ponto aparece aqui quando a GoodWe aprovar a solicitação.</Nota>;
 
   const status = ponto.status ?? (ponto.ativo ? 'ATIVO' : 'INSTALACAO');
-  const linkTotem = linkDoApp(`/totem?ponto=${ponto.id}`);
+  const linkTotem = linkDoApp(`/totem?ponto=${ponto.id}&tela=cheia`);
   const rodar = (f: () => Promise<void>, ok: string) => () => { setMsg(''); f().then(() => setMsg(ok)).catch((e: Error) => setMsg(e.message)); };
   const campo = (k: keyof typeof form, rotulo: string, tipo = 'number') => (
     <label className="stack" style={{ gap: 4 }}>
@@ -63,7 +63,7 @@ export default function MeuPonto() {
         <Card title="Totem do ponto" sub="Abra este endereço no tablet ou monitor do totem">
           <div className="stack" style={{ alignItems: 'center' }}>
             <QR texto={linkTotem} tamanho={150} />
-            <Link className="btn" to={`/totem?ponto=${ponto.id}`}>Abrir o totem aqui</Link>
+            <Link className="btn" to={`/totem?ponto=${ponto.id}&tela=vitrine`}>Abrir o totem aqui</Link>
             <div className="tiny muted" style={{ wordBreak: 'break-all' }}>{linkTotem}</div>
           </div>
         </Card>

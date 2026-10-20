@@ -115,7 +115,7 @@ export default function Totem({ orientacao = 'vertical' }: { orientacao?: 'verti
         </div>
         {sessao?.estado === 'ABERTA' ? (
           <div className="row" style={{ gap: 18, alignItems: 'center', justifyContent: 'center' }}>
-            <QR texto={linkDoApp(`/motorista/vincular?c=${sessao.codigoVinculo}`)} tamanho={orientacao === 'horizontal' ? 116 : 170} />
+            <QR texto={linkDoApp(`/motorista/vincular?c=${sessao.codigoVinculo}&tela=cheia`)} tamanho={orientacao === 'horizontal' ? 116 : 170} />
             <div className="stack" style={{ gap: 6 }}>
               <span className="tt-rotulo">Leia com a câmera do celular</span>
               <span style={{ fontSize: orientacao === 'horizontal' ? 32 : 40, fontWeight: 700, letterSpacing: '.18em' }}>{sessao.codigoVinculo}</span>

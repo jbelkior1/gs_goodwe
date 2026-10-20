@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { telaCheia } from './app/tela';
 import Layout from './app/Layout';
 import AppMotorista from './app/AppMotorista';
 import { Quiosque } from './ui/Quiosque';
@@ -35,6 +36,29 @@ function RecargaComSessao() {
   return <Recarga />;
 }
 
+function CascaMotorista() {
+  const { search } = useLocation();
+  return telaCheia('motorista', search) ? <AppMotorista /> : <Layout />;
+}
+
+/** franqueado e GoodWe: mesma tela, com ou sem a troca de painel da vitrine */
+function CascaPainel() {
+  const { pathname, search } = useLocation();
+  return <Layout cheia={telaCheia(pathname.startsWith('/goodwe') ? 'goodwe' : 'franqueado', search)} />;
+}
+
+function CascaTotem() {
+  const { search } = useLocation();
+  return telaCheia('totem', search) ? <Outlet /> : <Layout />;
+}
+
+function TotemNaTela() {
+  const { search } = useLocation();
+  return telaCheia('totem', search)
+    ? <Quiosque>{(o) => <Totem orientacao={o} />}</Quiosque>
+    : <Totem />;
+}
+
 export default function App() {
   // lê o contexto para recriar as telas a cada atualização do banco em tempo real
   useApp();
@@ -44,11 +68,13 @@ export default function App() {
       <Route path="/" element={<Portal />} />
       <Route path="/entrar" element={<Entrar />} />
 
-      {/* totem — quiosque em tela cheia no aparelho real (vertical ou horizontal) */}
-      <Route path="/totem" element={<Quiosque>{(o) => <Totem orientacao={o} />}</Quiosque>} />
+      {/* totem — vitrine no notebook ou quiosque em tela cheia no aparelho real */}
+      <Route element={<CascaTotem />}>
+        <Route path="/totem" element={<TotemNaTela />} />
+      </Route>
 
-      {/* motorista — app em tela cheia no celular */}
-      <Route element={<AppMotorista />}>
+      {/* motorista — vitrine (celular emoldurado) ou app em tela cheia no celular */}
+      <Route element={<CascaMotorista />}>
         <Route path="/motorista" element={<Mapa />} />
         <Route path="/motorista/vincular" element={<Vincular />} />
         <Route path="/motorista/recarga" element={<Recarga />} />
@@ -56,8 +82,8 @@ export default function App() {
         <Route path="/motorista/assistente" element={<Assistente />} />
       </Route>
 
-      {/* franqueado e GoodWe — painéis de computador */}
-      <Route element={<Layout />}>
+      {/* franqueado e GoodWe — painéis de computador (vitrine ou só o ambiente do papel) */}
+      <Route element={<CascaPainel />}>
 
         {/* franqueado — o comércio que hospeda o ponto */}
         <Route path="/franqueado" element={<Painel />} />

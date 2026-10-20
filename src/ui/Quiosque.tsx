@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { comTela, telaDoNavegador } from '../app/tela';
 
 const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
 
@@ -56,7 +57,7 @@ export function Quiosque({ children }: { children: (orientacao: 'vertical' | 'ho
             </button>
           ))}
           <button className="btn" onClick={telaCheia}>Tela cheia</button>
-          {DEMO && <Link className="btn" to="/">Trocar de painel</Link>}
+          {DEMO && <Link className="btn" to={comTela('/totem', window.location.search, 'vitrine')} onClick={() => telaDoNavegador(false)}>Sair da tela cheia</Link>}
         </div>
       )}
     </div>
