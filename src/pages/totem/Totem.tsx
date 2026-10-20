@@ -1,194 +1,199 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 import { useApp } from '../../app/estado';
 import {
-  carregadoresDoPonto, obterPonto, sessoesAtivas, solarDoPonto, tarifaAtual,
+  carregadoresDoPonto, cobrancaDaSessao, obterMotorista, obterPonto, obterVeiculo, sessaoDaVaga,
+  solarDoPonto, tarifaAtual, telemetriaDaSessao,
 } from '../../domain/db';
 import { responderVolt, saudacaoVolt, type ContextoVolt } from '../../domain/engine/assistente';
-import { gerarTxid } from '../../domain/engine/tarifa';
-import { brl, num, CHART, Badge } from '../../ui/kit';
+import { gerarPixCopiaECola, gerarTxid } from '../../domain/engine/tarifa';
+import { encerrarSessao, iniciarVisitante, pagarCobranca } from '../../data/acoes';
+import { brl, num, CHART, Badge, EstadoBadge } from '../../ui/kit';
 import { Icone } from '../../ui/icones';
 import { CenaCarro3D } from '../../ui/CenaCarro3D';
 import { Volt, type EstadoVolt } from '../../ui/Volt';
+import { QR, linkDoApp } from '../../ui/QR';
+import { BancadaVaga } from '../../ui/Bancada';
 
 interface Mensagem { de: 'volt' | 'motorista'; texto: string }
+const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
 
 /**
- * Tela que roda dentro do totem.
- *
- * O layout é uma grade de linhas explícitas com `overflow: hidden`: painel,
- * indicadores, curva e rodapé têm altura própria e a conversa fica com a
- * sobra. Assim nada se sobrepõe nem empurra o rodapé para fora, em qualquer
- * altura de tela — só o histórico da conversa rola, por natureza.
+ * Tela do totem (MVP): mostra as vagas do ponto ao vivo. Carro conectado → QR com o código da
+ * sessão; o motorista lê no celular e a recarga aparece aqui e no app ao mesmo tempo.
  */
 export default function Totem() {
-  const { pontoId } = useApp();
-  const [etapa, setEtapa] = useState<'carregando' | 'pagando' | 'pago'>('carregando');
-  const ponto = obterPonto(pontoId)!;
-  const carregadores = carregadoresDoPonto(pontoId);
-  const solar = solarDoPonto(pontoId);
-  const tarifa = tarifaAtual(pontoId);
-
-  const semente = sessoesAtivas(pontoId)[0];
-  const precoKWh = semente?.tarifaAplicadaKWh ?? tarifa.precoFinalKWh;
-
-  const [soc, setSoc] = useState(() => semente?.socAtual ?? 38);
-  const [kw, setKw] = useState(() => semente?.potenciaAtualKW ?? 21.4);
-  const [kwh, setKwh] = useState(() => semente?.energiaKWh ?? 6.2);
+  const { pontoId: pontoDoPainel } = useApp();
+  const [params] = useSearchParams();
+  const pontoId = params.get('ponto') ?? pontoDoPainel;
+  const ponto = obterPonto(pontoId);
+  const vagas = carregadoresDoPonto(pontoId);
+  const [vagaId, setVagaId] = useState<string>('');
+  const vagaSel = vagas.find((v) => v.id === vagaId) ?? vagas.find((v) => sessaoDaVaga(v.id)) ?? vagas[0];
+  const sessao = vagaSel ? sessaoDaVaga(vagaSel.id) : undefined;
+  const cobranca = sessao ? cobrancaDaSessao(sessao.id) : undefined;
+  const veiculo = obterVeiculo(sessao?.veiculoId ?? vagaSel?.carro?.veiculoId);
+  const motorista = obterMotorista(sessao?.motoristaId);
+  const tarifa = ponto ? tarifaAtual(pontoId) : undefined;
+  const solar = ponto ? solarDoPonto(pontoId) : undefined;
   const [relogio, setRelogio] = useState(() => new Date());
-  const [curva, setCurva] = useState<{ t: number; kw: number }[]>(() => {
-    const p = semente?.potenciaAtualKW ?? 21.4;
-    return Array.from({ length: 32 }, (_, i) => ({
-      t: i,
-      kw: Math.max(2, p * Math.min(1, (i + 3) / 9) + Math.sin(i / 2.1) * (p * 0.09)),
-    }));
-  });
+  const [erro, setErro] = useState('');
+  useEffect(() => { const id = setInterval(() => setRelogio(new Date()), 15000); return () => clearInterval(id); }, []);
 
-  // telemetria ao vivo: a potência cai depois dos 80% (curva CC/CV do carro)
-  useEffect(() => {
-    const id = setInterval(() => {
-      setRelogio(new Date());
-      setSoc((s) => (s >= 99 ? 24 : s + 0.35));
-      setKw((p) => {
-        const teto = soc > 80 ? 12 : soc > 60 ? 24 : 34;
-        return Math.min(teto, Math.max(5, p + (Math.random() - 0.5) * 3.2));
-      });
-      setKwh((e) => e + (kw / 3600) * 4);
-      setCurva((c) => [...c.slice(1), { t: (c[c.length - 1]?.t ?? 0) + 1, kw }]);
-    }, 1000);
-    return () => clearInterval(id);
-  }, [kw, soc]);
+  const emCarga = !!sessao && ['AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO'].includes(sessao.estado);
+  const soc = sessao?.socAtual ?? vagaSel?.carro?.socReal ?? 0;
+  const kw = emCarga ? sessao!.potenciaAtualKW : 0;
+  const kwh = sessao?.energiaKWh ?? 0;
+  const custo = cobranca?.valor ?? sessao?.custoAcumulado ?? 0;
+  const precoKWh = sessao?.tarifaAplicadaKWh ?? tarifa?.precoFinalKWh ?? 0;
+  const vagasLivres = vagas.filter((c) => c.estado === 'DISPONIVEL' && !c.carro).length;
+  const faltaKWh = veiculo ? veiculo.capacidadeKWh * ((100 - soc) / 100) : 0;
+  const minutosRestantes = kw > 0 ? Math.max(1, Math.round((faltaKWh / kw) * 60)) : 0;
+  const curva = sessao ? telemetriaDaSessao(sessao.id).map((t, i) => ({ t: i, kw: t.potenciaKW })) : [];
+  if (emCarga) curva.push({ t: curva.length, kw });
 
-  const custo = kwh * precoKWh;
-  const minutosRestantes = Math.max(1, Math.round(((80 - soc) / 100) * 62));
-  const vagasLivres = carregadores.filter((c) => c.estado === 'DISPONIVEL').length;
-  const socLimitado = Math.min(100, Math.max(0, soc));
-
-  const contexto: ContextoVolt = useMemo(() => ({
+  const contexto: ContextoVolt | null = useMemo(() => (ponto ? {
     ponto,
-    sessao: {
-      socAtual: soc, energiaKWh: kwh, potenciaAtualKW: kw,
-      tarifaAplicadaKWh: precoKWh, custoAcumulado: custo,
-    },
-    minutosRestantes,
-    autossuficiencia: solar.resumo.autossuficiencia,
-    vagasLivres,
-    totalVagas: carregadores.length,
-  }), [ponto, soc, kwh, kw, precoKWh, custo, minutosRestantes, solar, vagasLivres, carregadores.length]);
+    sessao: { socAtual: soc, energiaKWh: kwh, potenciaAtualKW: kw, tarifaAplicadaKWh: precoKWh, custoAcumulado: custo },
+    minutosRestantes, autossuficiencia: solar?.resumo.autossuficiencia ?? 0, vagasLivres, totalVagas: vagas.length,
+  } : null), [ponto, soc, kwh, kw, precoKWh, custo, minutosRestantes, solar, vagasLivres, vagas.length]);
 
   // ------------------------------------------------------------------ chat
-  const [mensagens, setMensagens] = useState<Mensagem[]>(
-    () => [{ de: 'volt', texto: saudacaoVolt(contexto).texto }],
-  );
-  const [sugestoes, setSugestoes] = useState<string[]>(() => saudacaoVolt(contexto).sugestoes ?? []);
+  const [mensagens, setMensagens] = useState<Mensagem[]>(() => (contexto ? [{ de: 'volt', texto: saudacaoVolt(contexto).texto }] : []));
+  const [sugestoes, setSugestoes] = useState<string[]>(() => (contexto ? saudacaoVolt(contexto).sugestoes ?? [] : []));
   const [rascunho, setRascunho] = useState('');
   const [estadoVolt, setEstadoVolt] = useState<EstadoVolt>('ocioso');
   const fim = useRef<HTMLDivElement>(null);
-
   useEffect(() => { fim.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [mensagens, estadoVolt]);
-
   const perguntar = (texto: string) => {
     const pergunta = texto.trim();
-    if (!pergunta || estadoVolt === 'pensando') return;
+    if (!pergunta || estadoVolt === 'pensando' || !contexto) return;
     setMensagens((m) => [...m, { de: 'motorista', texto: pergunta }]);
-    setRascunho('');
-    setSugestoes([]);
-    setEstadoVolt('pensando');
-
+    setRascunho(''); setSugestoes([]); setEstadoVolt('pensando');
     window.setTimeout(() => {
       const r = responderVolt(pergunta, contexto);
       setMensagens((m) => [...m, { de: 'volt', texto: r.texto }]);
-      setSugestoes(r.sugestoes ?? []);
-      setEstadoVolt('falando');
+      setSugestoes(r.sugestoes ?? []); setEstadoVolt('falando');
       window.setTimeout(() => setEstadoVolt('ocioso'), 1400);
     }, 620);
   };
 
+  const agir = (f: () => Promise<void>) => () => { setErro(''); f().catch((e: Error) => setErro(e.message)); };
+
+  if (!ponto) return <div className="tt"><div style={{ padding: 24 }}>Ponto não encontrado. Abra o totem pelo painel do franqueado.</div></div>;
+
   const horaFmt = relogio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const raio = 62;
   const circ = 2 * Math.PI * raio;
+  const nomeCurto = motorista?.nome?.split(' ')[0];
 
   return (
     <div className="tt">
-      {/* ------------------------------------------------------ cabeçalho */}
       <header className="tt-topo">
         <span className="tt-marca">GOODWE</span>
         <span className="tt-tag">Autoatendimento</span>
         <span className="tt-hora meta">{horaFmt}</span>
       </header>
 
-      {/* ------------------------------------------ painel principal */}
-      <section className="tt-hero" style={{ justifyContent: 'center' }}>
-        <div className="tt-anel">
-          <svg viewBox="0 0 150 150" className="tt-anel-svg">
-            <circle cx="75" cy="75" r={raio} className="tt-anel-trilho" />
-            <circle
-              cx="75" cy="75" r={raio} className="tt-anel-carga"
-              strokeDasharray={`${(socLimitado / 100) * circ} ${circ}`}
-            />
-            <circle cx="75" cy="75" r={raio - 13} className="tt-anel-pontilhado" />
-          </svg>
-          <div className="tt-anel-centro">
-            <span className="tt-anel-num">{Math.round(soc)}<small>%</small></span>
-            <span className="tt-anel-cap">bateria</span>
-          </div>
+      <section className="tt-hero" style={{ flexDirection: 'column', gap: 12 }}>
+        <div className="row" style={{ gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {vagas.map((v) => {
+            const s = sessaoDaVaga(v.id);
+            return (
+              <button key={v.id} className={`chip ${vagaSel?.id === v.id ? 'on' : ''}`} onClick={() => setVagaId(v.id)}>
+                {v.apelido} · {s ? s.estado === 'ABERTA' ? 'aguardando QR' : s.estado.toLowerCase() : v.estado === 'DISPONIVEL' ? 'livre' : v.estado.toLowerCase()}
+              </button>
+            );
+          })}
         </div>
-
-        <CenaCarro3D />
-      </section>
-
-      <section className="tt-resumo" style={{ display: 'flex', flexDirection: 'column', gap: 15, padding: '15px', borderBottom: '1px solid var(--k-line)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <span className="tt-rotulo">Potência agora</span>
-            <div className="tt-grande">{num(kw, 1)}<small>kW</small></div>
+        {sessao?.estado === 'ABERTA' ? (
+          <div className="row" style={{ gap: 18, alignItems: 'center', justifyContent: 'center' }}>
+            <QR texto={linkDoApp(`/motorista/vincular?c=${sessao.codigoVinculo}`)} tamanho={170} />
+            <div className="stack" style={{ gap: 6 }}>
+              <span className="tt-rotulo">Leia com a câmera do celular</span>
+              <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '.18em' }}>{sessao.codigoVinculo}</span>
+              <span className="tiny muted">{veiculo ? `${veiculo.montadora} ${veiculo.modelo} conectado` : 'carro conectado'} · {brl(precoKWh)}/kWh agora</span>
+            </div>
           </div>
-          <div style={{ width: 1, height: 30, background: 'var(--k-line)' }} />
-          <div style={{ textAlign: 'right' }}>
-            <span className="tt-rotulo">Total a pagar</span>
-            <div className="tt-grande tt-acento">{brl(custo)}</div>
-          </div>
-        </div>
-        {etapa === 'carregando' ? (
-          <button className="btn primary" style={{ width: '100%', justifyContent: 'center', padding: '12px' }} onClick={() => setEtapa('pagando')}>
-            Encerrar e Pagar
-          </button>
         ) : (
-          <div className="tt-eta" style={{ justifyContent: 'center' }}>
-            Sessão encerrada
+          <div className="row" style={{ gap: 15, alignItems: 'center', justifyContent: 'center' }}>
+            <div className="tt-anel">
+              <svg viewBox="0 0 150 150" className="tt-anel-svg">
+                <circle cx="75" cy="75" r={raio} className="tt-anel-trilho" />
+                <circle cx="75" cy="75" r={raio} className="tt-anel-carga" strokeDasharray={`${(Math.min(100, soc) / 100) * circ} ${circ}`} />
+                <circle cx="75" cy="75" r={raio - 13} className="tt-anel-pontilhado" />
+              </svg>
+              <div className="tt-anel-centro">
+                <span className="tt-anel-num">{Math.round(soc)}<small>%</small></span>
+                <span className="tt-anel-cap">bateria (est.)</span>
+              </div>
+            </div>
+            <CenaCarro3D />
           </div>
         )}
       </section>
 
-      {/* ------------------------------------------------- indicadores */}
-      <section className="tt-tiles">
-        <div className="tt-tile">
-          <span className="tt-rotulo">Entregue</span>
-          <span className="tt-medio">{num(kwh, 1)}<small>kWh</small></span>
+      <section className="tt-resumo" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 15, borderBottom: '1px solid var(--k-line)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <span className="tt-rotulo">{nomeCurto ? `Olá, ${nomeCurto}` : 'Potência agora'}</span>
+            <div className="tt-grande">{num(kw, 1)}<small>kW</small></div>
+          </div>
+          {sessao && <EstadoBadge estado={sessao.estado} />}
+          <div style={{ textAlign: 'right' }}>
+            <span className="tt-rotulo">Total</span>
+            <div className="tt-grande tt-acento">{brl(custo)}</div>
+          </div>
         </div>
-        <div className="tt-tile">
-          <span className="tt-rotulo">Preço/kWh</span>
-          <span className="tt-medio">{brl(precoKWh)}</span>
-        </div>
-        <div className="tt-tile">
-          <span className="tt-rotulo">Vagas</span>
-          <span className="tt-medio">{vagasLivres}<small>/{carregadores.length}</small></span>
-        </div>
-        <div className="tt-tile">
-          <span className="tt-rotulo">Solar</span>
-          <span className="tt-medio tt-solar">
-            {Math.round(solar.resumo.autossuficiencia * 100)}<small>%</small>
-          </span>
-        </div>
+        {emCarga && sessao!.estado !== 'ENCERRANDO' && (
+          <button className="btn primary" style={{ width: '100%', justifyContent: 'center', padding: 12 }} onClick={agir(() => encerrarSessao(sessao!, 'totem'))}>
+            Encerrar e pagar
+          </button>
+        )}
+        {sessao?.estado === 'ABERTA' && (
+          <button className="btn" style={{ width: '100%', justifyContent: 'center' }} onClick={agir(() => iniciarVisitante(sessao))}>
+            Carregar sem app (paga aqui no fim)
+          </button>
+        )}
+        {!sessao && vagaSel && DEMO && <BancadaVaga vaga={vagaSel} />}
+        {!sessao && vagaSel && !DEMO && <div className="tt-eta" style={{ justifyContent: 'center' }}>Conecte o cabo para começar</div>}
+        {erro && <div className="tiny" style={{ color: 'var(--k-red2)' }}>{erro}</div>}
       </section>
 
-      {etapa === 'carregando' ? (
+      <section className="tt-tiles">
+        <div className="tt-tile"><span className="tt-rotulo">Entregue</span><span className="tt-medio">{num(kwh, 1)}<small>kWh</small></span></div>
+        <div className="tt-tile"><span className="tt-rotulo">Preço/kWh</span><span className="tt-medio">{brl(precoKWh)}</span></div>
+        <div className="tt-tile"><span className="tt-rotulo">Vagas livres</span><span className="tt-medio">{vagasLivres}<small>/{vagas.length}</small></span></div>
+        <div className="tt-tile"><span className="tt-rotulo">Solar</span><span className="tt-medio tt-solar">{Math.round((solar?.resumo.autossuficiencia ?? 0) * 100)}<small>%</small></span></div>
+      </section>
+
+      {sessao?.estado === 'CONCLUIDO' || sessao?.estado === 'FATURADO' ? (
+        <section style={{ gridRow: '5 / 7', display: 'flex', flexDirection: 'column', padding: '20px 24px', overflowY: 'auto' }}>
+          {sessao.estado === 'CONCLUIDO' && cobranca ? (
+            <div className="stack" style={{ alignItems: 'center', background: 'var(--k-panel)', padding: 24, borderRadius: 16 }}>
+              <h2 style={{ fontSize: 18, margin: 0 }}>Pague com Pix</h2>
+              <QR texto={gerarPixCopiaECola(cobranca.txid || gerarTxid(sessao.id), cobranca.valor)} tamanho={160} />
+              <div className="tiny muted">txid {cobranca.txid} · {num(sessao.energiaKWh, 2)} kWh</div>
+              <div className="kpi-value kpi-accent-red">{brl(cobranca.valor)}</div>
+              <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }} onClick={agir(() => pagarCobranca(cobranca))}>Simular pagamento</button>
+            </div>
+          ) : sessao.estado === 'CONCLUIDO' ? (
+            <div className="tt-eta" style={{ justifyContent: 'center' }}>Fechando a conta…</div>
+          ) : (
+            <div className="stack" style={{ alignItems: 'center', textAlign: 'center', background: 'var(--k-panel)', padding: 24, borderRadius: 16 }}>
+              <Icone nome="check" tamanho={54} cor="var(--k-ok)" />
+              <div className="strong" style={{ fontSize: 18 }}>Pago. Pode desconectar.</div>
+              <Badge tom="green" dot>Recibo {sessao.id}</Badge>
+            </div>
+          )}
+        </section>
+      ) : (
         <>
-          {/* ------------------------------------------------------- curva */}
           <section className="tt-curva">
             <div className="tt-curva-topo">
               <span className="tt-rotulo">Curva de carga</span>
-              <span className="live-tag"><span className="dot pulse" />ao vivo</span>
+              {emCarga && <span className="live-tag"><span className="dot pulse" />ao vivo</span>}
             </div>
             <div className="tt-curva-graf">
               <ResponsiveContainer width="100%" height="100%">
@@ -199,98 +204,45 @@ export default function Totem() {
                       <stop offset="100%" stopColor={CHART.serie1} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <YAxis hide domain={[0, (max: number) => Math.max(12, max * 1.45)]} />
-                  <Area type="monotone" dataKey="kw" stroke={CHART.serie1Claro} strokeWidth={2}
-                        fill="url(#ttGrad)" isAnimationActive={false} />
+                  <YAxis hide domain={[0, (max: number) => Math.max(8, max * 1.4)]} />
+                  <Area type="monotone" dataKey="kw" stroke={CHART.serie1Claro} strokeWidth={2} fill="url(#ttGrad)" isAnimationActive={false} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </section>
 
-          {/* --------------------------------------------------------- Volt */}
           <section className="tt-chat">
             <div className="tt-chat-topo">
               <Volt estado={estadoVolt} tamanho={46} />
               <div className="tt-chat-id">
                 <span className="tt-chat-nome">Volt</span>
-                <span className="tt-chat-estado">
-                  {estadoVolt === 'pensando' ? 'consultando a sessão…' : 'pergunte o que quiser'}
-                </span>
+                <span className="tt-chat-estado">{estadoVolt === 'pensando' ? 'consultando a sessão…' : 'pergunte o que quiser'}</span>
               </div>
             </div>
-
             <div className="tt-mensagens">
-              {mensagens.map((m, i) => (
-                <div key={i} className={`tt-balao ${m.de}`}>{m.texto}</div>
-              ))}
-              {estadoVolt === 'pensando' && (
-                <div className="tt-balao volt tt-digitando"><span /><span /><span /></div>
-              )}
+              {mensagens.map((m, i) => <div key={i} className={`tt-balao ${m.de}`}>{m.texto}</div>)}
+              {estadoVolt === 'pensando' && <div className="tt-balao volt tt-digitando"><span /><span /><span /></div>}
               <div ref={fim} />
             </div>
-
             <div className="tt-acoes">
               {sugestoes.length > 0 && (
                 <div className="tt-sugestoes">
-                  {sugestoes.slice(0, 3).map((s) => (
-                    <button key={s} className="chip" onClick={() => perguntar(s)}>{s}</button>
-                  ))}
+                  {sugestoes.slice(0, 3).map((s) => <button key={s} className="chip" onClick={() => perguntar(s)}>{s}</button>)}
                 </div>
               )}
               <form className="tt-entrada" onSubmit={(e) => { e.preventDefault(); perguntar(rascunho); }}>
-                <input
-                  value={rascunho}
-                  onChange={(e) => setRascunho(e.target.value)}
-                  placeholder="Pergunte ao Volt…"
-                  aria-label="Pergunte ao Volt"
-                />
-                <button type="submit" className="btn primary" aria-label="Enviar pergunta">
-                  <Icone nome="setaDireita" tamanho={15} />
-                </button>
+                <input id="pergunta-volt" value={rascunho} onChange={(e) => setRascunho(e.target.value)} placeholder="Pergunte ao Volt…" aria-label="Pergunte ao Volt" />
+                <button type="submit" className="btn primary" aria-label="Enviar pergunta"><Icone nome="setaDireita" tamanho={15} /></button>
               </form>
             </div>
           </section>
         </>
-      ) : (
-        <section style={{ gridRow: '5 / 7', display: 'flex', flexDirection: 'column', padding: '20px 24px', overflowY: 'auto' }}>
-          {etapa === 'pagando' && (
-              <div className="stack" style={{ alignItems: 'center', background: 'var(--k-panel)', padding: 30, borderRadius: 16 }}>
-                <h2 style={{ fontSize: 18, marginBottom: 10 }}>Pague com Pix</h2>
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + import.meta.env.BASE_URL + 'seja-goodwe')}`}
-                  alt="QR Code Pix"
-                  style={{ width: 150, height: 150, borderRadius: 8, flexShrink: 0, objectFit: 'contain', backgroundColor: '#fff', padding: 10 }}
-                />
-                <div className="tiny muted" style={{ marginTop: 10 }}>txid {gerarTxid(semente?.id ?? '123')}</div>
-                <div className="kpi-value kpi-accent-red" style={{ margin: '10px 0' }}>{brl(custo)}</div>
-                <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }}
-                        onClick={() => setEtapa('pago')}>
-                  Simular pagamento
-                </button>
-              </div>
-          )}
-          {etapa === 'pago' && (
-              <div className="stack" style={{ alignItems: 'center', textAlign: 'center', background: 'var(--k-panel)', padding: 30, borderRadius: 16 }}>
-                <Icone nome="check" tamanho={54} cor="var(--k-ok)" style={{ marginBottom: 10 }} />
-                <div className="strong" style={{ fontSize: 18 }}>Recibo emitido</div>
-                <div className="tiny muted" style={{ marginBottom: 20 }}>Sessão {semente?.id ?? '123'} · {brl(custo)}</div>
-                <Badge tom="green" dot>Pago via Pix</Badge>
-                <button className="btn" style={{ width: '100%', justifyContent: 'center', marginTop: 20 }}
-                        onClick={() => {
-                          setSoc(38); setKwh(6.2); setKw(21.4); setEtapa('carregando');
-                        }}>
-                  Nova Recarga
-                </button>
-              </div>
-          )}
-        </section>
       )}
 
       <footer className="tt-rodape meta">
         <span className="tt-rodape-ponto">{ponto.nome.toUpperCase()}</span>
-        <span>{ponto.formato.toUpperCase()} · {carregadores.length} CONECTORES</span>
+        <span>{ponto.formato.toUpperCase()} · {vagas.length} CONECTORES</span>
       </footer>
     </div>
   );
 }
-

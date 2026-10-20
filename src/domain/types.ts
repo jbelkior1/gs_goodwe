@@ -43,6 +43,13 @@ export type EstadoCarregador =
   | 'OFFLINE'
   | 'MANUTENCAO';
 
+export interface CarroConectado {
+  veiculoId: string;
+  /** bateria real do carro simulado (o sistema mostra só a estimativa) */
+  socReal: number;
+  conectadoEm: string;
+}
+
 export interface Carregador {
   id: string;
   pontoId: string;
@@ -53,6 +60,8 @@ export interface Carregador {
   potenciaPermitidaKW: number;
   firmware: string;
   ultimoHeartbeat: string;
+  /** carro simulado conectado (MVP); null = vaga livre */
+  carro?: CarroConectado | null;
 }
 
 // ---------------------------------------------------------------- rede
@@ -97,6 +106,8 @@ export interface Ponto {
   inauguradoEm: string;
   lat: number;
   lng: number;
+  status?: 'INSTALACAO' | 'ATIVO' | 'SUSPENSO';
+  demo?: boolean;
 }
 
 // ---------------------------------------------------------------- usuários
@@ -119,12 +130,19 @@ export interface Motorista {
 }
 
 // ---------------------------------------------------------------- sessão
+/**
+ * ABERTA (carro conectado, aguardando QR) → AUTENTICADO (motorista assumiu) → CARREGANDO ↔ PAUSADO
+ * → ENCERRANDO (pedido de parar) → CONCLUIDO (a pagar) → FATURADO (pago). EXPIRADA: ninguém assumiu.
+ */
 export type EstadoSessao =
+  | 'ABERTA'
   | 'AUTENTICADO'
   | 'CARREGANDO'
   | 'PAUSADO'
+  | 'ENCERRANDO'
   | 'CONCLUIDO'
-  | 'FATURADO';
+  | 'FATURADO'
+  | 'EXPIRADA';
 
 export type MeioAutorizacao = 'RFID' | 'APP' | 'QR';
 
@@ -132,8 +150,9 @@ export interface Sessao {
   id: string;
   pontoId: string;
   carregadorId: string;
-  motoristaId: string;
-  veiculoId: string;
+  /** vazio enquanto a sessão está ABERTA (ninguém leu o QR ainda) */
+  motoristaId?: string | null;
+  veiculoId?: string | null;
   inicio: string;
   fim?: string;
   socInicial: number;
@@ -146,7 +165,22 @@ export interface Sessao {
   tarifaAplicadaKWh: number;
   custoAcumulado: number;
   /** motivo da última redução/pausa imposta pelo controle de demanda */
-  motivoPausa?: string;
+  motivoPausa?: string | null;
+  /** código de 4 caracteres que o totem mostra no QR (só na sessão ABERTA) */
+  codigoVinculo?: string | null;
+  /** valor máximo da recarga escolhido pelo motorista (o simulador para ao atingir) */
+  limiteValor?: number | null;
+  demo?: boolean;
+}
+
+export type Papel = 'motorista' | 'franqueado' | 'goodwe';
+
+export interface Perfil {
+  id: string;
+  nome: string;
+  papel: Papel;
+  franqueadoId?: string | null;
+  motoristaId?: string | null;
 }
 
 export interface AmostraTelemetria {
@@ -204,6 +238,8 @@ export interface SolicitacaoHomologacao {
   scoreViabilidade: number;
   horasUsoPrevistas: number;
   parecer: string;
+  solicitanteId?: string | null;
+  pontoId?: string | null;
 }
 
 // ---------------------------------------------------------------- IA

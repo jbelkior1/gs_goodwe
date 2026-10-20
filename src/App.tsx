@@ -1,5 +1,11 @@
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import Layout from './app/Layout';
+import { useApp } from './app/estado';
+import Entrar from './pages/entrar/Entrar';
+import Mapa from './pages/motorista/Mapa';
+import Vincular from './pages/motorista/Vincular';
+import MeuPonto from './pages/franqueado/MeuPonto';
+import SejaGoodwe from './pages/SejaGoodwe';
 
 import Portal from './pages/portal/Portal';
 
@@ -27,23 +33,19 @@ function RecargaComSessao() {
   return <Recarga />;
 }
 
-function SejaGoodwe() {
-  return (
-    <div style={{ display: 'grid', placeItems: 'center', height: '100vh', background: 'var(--k-bg)' }}>
-      <h1 style={{ fontSize: '4rem', color: 'var(--k-text)', textAlign: 'center' }}>Seja Goodwe!!</h1>
-    </div>
-  );
-}
-
 export default function App() {
+  // lê o contexto para recriar as telas a cada atualização do banco em tempo real
+  useApp();
   return (
     <Routes>
       {/* porta de entrada: escolha do painel */}
       <Route path="/" element={<Portal />} />
+      <Route path="/entrar" element={<Entrar />} />
 
       <Route element={<Layout />}>
         {/* motorista — app de celular */}
-        <Route path="/motorista" element={<Navigate to="/motorista/recarga" replace />} />
+        <Route path="/motorista" element={<Mapa />} />
+        <Route path="/motorista/vincular" element={<Vincular />} />
         <Route path="/motorista/recarga" element={<Recarga />} />
         <Route path="/motorista/recarga/:sessaoId" element={<RecargaComSessao />} />
         <Route path="/motorista/assistente" element={<Assistente />} />
@@ -55,6 +57,7 @@ export default function App() {
         <Route path="/franqueado" element={<Painel />} />
         <Route path="/franqueado/demanda" element={<Demanda />} />
         <Route path="/franqueado/financeiro" element={<Financeiro />} />
+        <Route path="/franqueado/ponto" element={<MeuPonto />} />
 
         {/* goodwe — a franqueadora */}
         <Route path="/goodwe" element={<Visao />} />

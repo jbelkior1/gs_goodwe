@@ -9,7 +9,12 @@ import type {
   SolicitacaoHomologacao,
   Carregador,
 } from '../types';
-import { CURVA_DEMANDA_HORA, REGRAS } from '../catalogo';
+import { CURVA_DEMANDA_HORA, REGRAS, FORMATOS, MODELOS_CARREGADOR } from '../catalogo';
+import type { FormatoFranquia } from '../types';
+
+/** Potência necessária na entrada: vagas × potência do modelo do formato + 8 kW do comércio. */
+export const cargaNecessariaKW = (formato: FormatoFranquia): number =>
+  FORMATOS[formato].carregadores * MODELOS_CARREGADOR[FORMATOS[formato].modelo].potenciaKW + 8;
 
 /**
  * PILAR 4 — IA APLICADA
@@ -108,7 +113,6 @@ export function analisarViabilidade(
   >,
   regiao: Regiao,
 ): AnaliseViabilidade {
-  const carregadores = s.formatoDesejado === 'Light' ? 1 : s.formatoDesejado === 'Standard' ? 2 : 4;
 
   // segmentos onde o tempo de permanência combina com o tempo de recarga
   const aderenciaSegmento: Record<string, number> = {
@@ -124,7 +128,7 @@ export function analisarViabilidade(
   const notaFluxo = Math.min(1, s.fluxoDiarioPessoas / 900);
   const notaRegiao = regiao.densidadeEV;
   const notaSegmento = aderenciaSegmento[s.segmento] ?? 0.6;
-  const cargaNecessaria = carregadores * 7 + 8;
+  const cargaNecessaria = cargaNecessariaKW(s.formatoDesejado);
   const notaCarga = Math.min(1, s.cargaDisponivelKW / cargaNecessaria);
 
   const fatores = [

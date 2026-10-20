@@ -8,9 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "start": "node server.js"
+    "start": "node server.js",
+    "simulador": "tsx --env-file=.env.local simulador/index.ts",
+    "seed": "tsx --env-file=.env.local scripts/seed-supabase.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2",
@@ -18,6 +22,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
@@ -27,6 +32,6 @@
     "vite": "^8.2.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   }
 }

@@ -1,4 +1,6 @@
 import { gerarBase, type BaseDados } from './seed';
+import { supabase, buscarTudo } from '../data/supabase';
+import { geracaoSolarKW } from './engine/solar';
 import { MODELOS_CARREGADOR, REGIOES, REGRAS, FORMATOS, VEICULOS } from './catalogo';
 import { calcularDemanda, cargaComercioNaHora } from './engine/demanda';
 import { calcularTarifa } from './engine/tarifa';
@@ -16,18 +18,99 @@ import type {
 } from './types';
 
 /**
- * Camada de acesso a dados.
- * Hoje lê da base falsa em memória; amanhã cada função destas vira uma
- * consulta ao Postgres/Supabase — a interface não muda.
+ * Camada de acesso a dados (MVP).
+ * Com o Supabase configurado, `base` é carregada do banco na abertura e mantida em dia
+ * pelo tempo real; sem banco, usa a base simulada local. As telas continuam chamando
+ * as mesmas funções síncronas abaixo.
  */
 
-export const base: BaseDados = gerarBase();
+export const base: BaseDados = {
+  franqueados: [], pontos: [], carregadores: [], motoristas: [], sessoes: [],
+  telemetria: [], cobrancas: [], homologacoes: [], geradoEm: '',
+};
+
+const ouvintes = new Set<() => void>();
+export function aoMudarBase(f: () => void): () => void {
+  ouvintes.add(f);
+  return () => { ouvintes.delete(f); };
+}
+let avisoAgendado = false;
+function avisarMudanca() {
+  if (avisoAgendado) return;
+  avisoAgendado = true;
+  setTimeout(() => { avisoAgendado = false; ouvintes.forEach((f) => f()); }, 200);
+}
+
+/** tabela do banco → lista em `base` */
+const TABELAS = {
+  franqueados: 'franqueados', pontos: 'pontos', carregadores: 'carregadores', motoristas: 'motoristas',
+  sessoes: 'sessoes', telemetria: 'telemetria', cobrancas: 'cobrancas', homologacoes: 'homologacoes',
+} as const;
+
+export async function carregarBase(): Promise<'banco' | 'local'> {
+  if (!supabase) {
+    Object.assign(base, gerarBase());
+    return 'local';
+  }
+  const desde = new Date(Date.now() - 6 * 3600_000).toISOString();
+  const [franqueados, pontos, carregadores, motoristas, sessoes, telemetria, cobrancas, homologacoes] = await Promise.all([
+    buscarTudo<BaseDados['franqueados'][number]>('franqueados'),
+    buscarTudo<Ponto>('pontos'),
+    buscarTudo<Carregador>('carregadores'),
+    buscarTudo<Motorista>('motoristas'),
+    buscarTudo<Sessao>('sessoes'),
+    buscarTudo<BaseDados['telemetria'][number]>('telemetria', (q) => q.gte('ts', desde)),
+    buscarTudo<Cobranca>('cobrancas'),
+    buscarTudo<BaseDados['homologacoes'][number]>('homologacoes'),
+  ]);
+  Object.assign(base, { franqueados, pontos, carregadores, motoristas, sessoes, telemetria, cobrancas, homologacoes,
+    geradoEm: new Date().toISOString() });
+  assinarTempoReal();
+  return 'banco';
+}
+
+function assinarTempoReal() {
+  const canal = supabase!.channel('pontow-mvp');
+  for (const [tabela, chave] of Object.entries(TABELAS)) {
+    canal.on('postgres_changes', { event: '*', schema: 'public', table: tabela }, (p: any) => {
+      const lista = base[chave] as { id?: unknown }[];
+      if (p.eventType === 'DELETE') {
+        const i = lista.findIndex((x) => x.id === p.old?.id);
+        if (i >= 0) lista.splice(i, 1);
+      } else {
+        const i = lista.findIndex((x) => x.id === p.new.id);
+        if (i >= 0) lista[i] = p.new; else lista.push(p.new);
+      }
+      avisarMudanca();
+    });
+  }
+  canal.subscribe();
+}
 
 // ---------------------------------------------------------------- básicos
 export const listarPontos = (): Ponto[] => base.pontos;
 
 export const obterPonto = (id: string): Ponto | undefined =>
   base.pontos.find((p) => p.id === id);
+
+export const pontoAtivo = (p: Ponto) => p.ativo && (p.status ?? 'ATIVO') === 'ATIVO';
+
+/** sessão "da vaga agora": a mais recente que ainda não terminou de vez */
+export const sessaoDaVaga = (carregadorId: string): Sessao | undefined =>
+  base.sessoes
+    .filter((s) => s.carregadorId === carregadorId && ['ABERTA', 'AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO', 'CONCLUIDO'].includes(s.estado))
+    .sort((a, b) => b.inicio.localeCompare(a.inicio))[0];
+
+export const sessaoPorCodigo = (codigo: string): Sessao | undefined =>
+  base.sessoes.find((s) => s.estado === 'ABERTA' && s.codigoVinculo?.toUpperCase() === codigo.trim().toUpperCase());
+
+/** recarga em andamento (ou a pagar) do motorista */
+export const sessaoDoMotorista = (motoristaId?: string | null): Sessao | undefined =>
+  motoristaId
+    ? base.sessoes
+        .filter((s) => s.motoristaId === motoristaId && ['AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO', 'CONCLUIDO'].includes(s.estado))
+        .sort((a, b) => b.inicio.localeCompare(a.inicio))[0]
+    : undefined;
 
 export const obterRegiao = (id: string): Regiao =>
   REGIOES.find((r) => r.id === id) ?? REGIOES[0];
@@ -37,10 +120,10 @@ export const regiaoDoPonto = (ponto: Ponto): Regiao => obterRegiao(ponto.regiaoI
 export const carregadoresDoPonto = (pontoId: string): Carregador[] =>
   base.carregadores.filter((c) => c.pontoId === pontoId);
 
-export const obterMotorista = (id: string): Motorista | undefined =>
+export const obterMotorista = (id?: string | null): Motorista | undefined =>
   base.motoristas.find((m) => m.id === id);
 
-export const obterVeiculo = (id: string): Veiculo | undefined =>
+export const obterVeiculo = (id?: string | null): Veiculo | undefined =>
   VEICULOS.find((v) => v.id === id);
 
 export const obterFranqueado = (id: string) =>
@@ -53,7 +136,7 @@ export const sessoesDoPonto = (pontoId: string): Sessao[] =>
 export const sessoesAtivas = (pontoId?: string): Sessao[] =>
   base.sessoes.filter(
     (s) =>
-      (s.estado === 'CARREGANDO' || s.estado === 'PAUSADO' || s.estado === 'AUTENTICADO') &&
+      (s.estado === 'CARREGANDO' || s.estado === 'PAUSADO' || s.estado === 'AUTENTICADO' || s.estado === 'ENCERRANDO') &&
       (!pontoId || s.pontoId === pontoId),
   );
 
@@ -183,7 +266,9 @@ export function demandaDoPonto(pontoId: string) {
   const ponto = obterPonto(pontoId)!;
   const carregadores = carregadoresDoPonto(pontoId);
   const ativas = sessoesAtivas(pontoId);
-  const cargaComercioKW = cargaComercioNaHora(ponto, new Date().getHours());
+  const h = new Date().getHours();
+  // o sol gerando no ponto alivia a entrada elétrica: o motor enxerga a carga líquida
+  const cargaComercioKW = Math.max(0, cargaComercioNaHora(ponto, h) - geracaoSolarKW(ponto, h));
 
   const potenciaMaxPorSessao: Record<string, number> = {};
   for (const s of ativas) {
@@ -321,7 +406,7 @@ export function frotaPorModelo() {
 /** Pontos disponíveis para o motorista, com preço e disponibilidade agora. */
 export function pontosParaMotorista() {
   return base.pontos
-    .filter((p) => p.ativo)
+    .filter(pontoAtivo)
     .map((p) => {
       const carregadores = carregadoresDoPonto(p.id);
       const livres = carregadores.filter((c) => c.estado === 'DISPONIVEL').length;

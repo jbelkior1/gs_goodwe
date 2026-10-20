@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../app/estado';
 import {
-  carregadoresDoPonto, obterPonto, sessoesAtivas, solarDoPonto, tarifaAtual,
+  carregadoresDoPonto, obterPonto, sessaoDoMotorista, solarDoPonto, tarifaAtual,
 } from '../../domain/db';
 import { responderVolt, saudacaoVolt, type ContextoVolt } from '../../domain/engine/assistente';
 import { Icone } from '../../ui/icones';
@@ -17,8 +17,8 @@ interface Mensagem { de: 'volt' | 'motorista'; texto: string }
  * que está acontecendo no eletroposto à sua frente.
  */
 export default function Assistente() {
-  const { pontoId } = useApp();
-  const ativa = sessoesAtivas()[0];
+  const { pontoId, motoristaId, perfil } = useApp();
+  const ativa = sessaoDoMotorista(perfil?.motoristaId ?? motoristaId);
   const ponto = obterPonto(ativa?.pontoId ?? pontoId)!;
   const carregadores = carregadoresDoPonto(ponto.id);
   const solar = solarDoPonto(ponto.id);

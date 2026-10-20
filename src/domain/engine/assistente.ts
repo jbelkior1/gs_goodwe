@@ -119,7 +119,7 @@ const INTENCOES: Intencao[] = [
     termos: ['conector', 'plugue', 'plug', 'ccs', 'type 2', 'tipo 2', 'cabo', 'encaixa'],
     responder: (c) => ({
       texto:
-        `Este ponto é ${c.ponto.formato} e atende os conectores padrão do mercado brasileiro (Type 2 em AC e CCS2 em DC). ` +
+        `Este ponto é ${c.ponto.formato} e usa o conector Tipo 2 em corrente alternada, o padrão dos carros elétricos no Brasil. ` +
         'Encaixe até o clique: o totem reconhece o carro e mostra o preço antes de começar.',
       sugestoes: ['Isso é seguro?', 'Quanto custa o kWh?'],
     }),
@@ -202,7 +202,9 @@ export function responderVolt(pergunta: string, c: ContextoVolt): RespostaVolt {
   for (const intencao of INTENCOES) {
     for (const termo of intencao.termos) {
       const alvo = normalizar(termo);
-      if (texto.includes(alvo) && (!melhor || alvo.length > melhor.peso)) {
+      // palavra inteira: "oi" não casa com "dois" nem com "noite"
+      const palavraInteira = new RegExp(`(^|[^a-z0-9])${alvo.replace(/[^a-z0-9 ]/g, '')}($|[^a-z0-9])`);
+      if (palavraInteira.test(texto) && (!melhor || alvo.length > melhor.peso)) {
         melhor = { intencao, peso: alvo.length };
       }
     }

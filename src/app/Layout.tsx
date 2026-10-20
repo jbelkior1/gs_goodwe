@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp, type Persona } from './estado';
 import { base, obterPonto } from '../domain/db';
+import { bancoConfigurado } from '../data/supabase';
 import { Badge } from '../ui/kit';
 import { Icone, type NomeIcone } from '../ui/icones';
 import { Totem3D } from '../ui/Totem3D';
@@ -11,7 +12,9 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcon
     {
       grupo: 'App do motorista',
       itens: [
-        { to: '/motorista/recarga', ico: 'raio', label: 'Recarga e pagamento' },
+        { to: '/motorista', ico: 'globo', label: 'Onde carregar' },
+        { to: '/motorista/recarga', ico: 'raio', label: 'Minha recarga' },
+        { to: '/motorista/vincular', ico: 'check', label: 'Digitar código do totem' },
         { to: '/motorista/assistente', ico: 'chat', label: 'Falar com o Volt' },
       ],
     },
@@ -29,6 +32,7 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcon
         { to: '/franqueado', ico: 'painel', label: 'Painel' },
         { to: '/franqueado/demanda', ico: 'tomada', label: 'Controle de demanda' },
         { to: '/franqueado/financeiro', ico: 'dinheiro', label: 'Tarifas e financeiro' },
+        { to: '/franqueado/ponto', ico: 'loja', label: 'Meu ponto e totem' },
       ],
     },
   ],
@@ -45,7 +49,9 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcon
 
 const TITULOS: Record<string, { t: string; s: string }> = {
   '/motorista': { t: 'Onde carregar', s: 'Pontos da rede disponíveis agora' },
-  '/motorista/recarga': { t: 'Recarga e pagamento', s: 'Acompanhe a sessão e feche a conta por Pix' },
+  '/motorista/recarga': { t: 'Minha recarga', s: 'Acompanhe a sessão e feche a conta por Pix' },
+  '/motorista/vincular': { t: 'Confirmar recarga', s: 'Código do QR do totem' },
+  '/franqueado/ponto': { t: 'Meu ponto', s: 'Instalação, configuração, vagas e totem' },
   '/motorista/assistente': { t: 'Volt', s: 'O assistente da rede no seu bolso' },
   '/totem': { t: 'Totem do eletroposto', s: 'Autoatendimento com o assistente Volt' },
   '/franqueado': { t: 'Painel da unidade', s: 'Como o ponto está performando neste mês' },
@@ -72,7 +78,7 @@ function personaDaRota(pathname: string): Persona | null {
 }
 
 const ROTA_INICIAL: Record<Persona, string> = {
-  motorista: '/motorista/recarga',
+  motorista: '/motorista',
   totem: '/totem',
   franqueado: '/franqueado',
   goodwe: '/goodwe',
@@ -108,7 +114,8 @@ function Moldura({ persona, children }: { persona: Persona; children: ReactNode 
 }
 
 export default function Layout() {
-  const { persona, setPersona, pontoId, setPontoId } = useApp();
+  const { persona, setPersona, pontoId, setPontoId, perfil, sair } = useApp();
+  const pontosVisiveis = perfil?.papel === 'franqueado' ? base.pontos.filter((p) => p.franqueadoId === perfil.franqueadoId) : base.pontos;
   const location = useLocation();
   const navigate = useNavigate();
   const ponto = obterPonto(pontoId);
@@ -175,8 +182,8 @@ export default function Layout() {
         </nav>
 
         <div className="sidebar-foot">
-          BASE DE DEMONSTRAÇÃO · {base.sessoes.length.toLocaleString('pt-BR')} SESSÕES
-          <br />DADOS SIMULADOS (MOCK)
+          {perfil ? <>{perfil.nome} · {perfil.papel} · <button className="btn" onClick={() => sair()}>sair</button></> : <Link to="/entrar">ENTRAR</Link>}
+          <br />{base.sessoes.length.toLocaleString('pt-BR')} SESSÕES · {bancoConfigurado ? 'BANCO AO VIVO' : 'BASE SIMULADA'}
         </div>
       </aside>
 
@@ -194,7 +201,7 @@ export default function Layout() {
                 onChange={(e) => setPontoId(e.target.value)}
                 style={{ maxWidth: 250 }}
               >
-                {base.pontos.map((p) => (
+                {pontosVisiveis.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.nome} — {p.formato}
                   </option>

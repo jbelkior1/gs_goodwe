@@ -1,11 +1,21 @@
 import { useState } from 'react';
 import { base, obterRegiao } from '../../domain/db';
-import { analisarViabilidade } from '../../domain/engine/ia';
+import { analisarViabilidade, cargaNecessariaKW } from '../../domain/engine/ia';
+import { decidirSolicitacao } from '../../data/acoes';
+import { useApp } from '../../app/estado';
 import { FORMATOS, REGRAS } from '../../domain/catalogo';
 import { Card, KPI, Badge, EstadoBadge, Bar, Nota, brl, num, dataCurta, Tabela } from '../../ui/kit';
 
 export default function Homologacao() {
+  useApp();
   const [selecionada, setSelecionada] = useState(base.homologacoes[0]?.id ?? '');
+  const [msg, setMsg] = useState('');
+  const decidir = (d: 'APROVADO' | 'REPROVADO' | 'VISTORIA') => () => {
+    if (!atual) return;
+    setMsg('');
+    decidirSolicitacao(atual.id, d).then(() => setMsg(d === 'APROVADO' ? 'Aprovado: ponto criado em instalação para o franqueado.' : 'Decisão registrada.'))
+      .catch((e: Error) => setMsg(e.message));
+  };
   const solicitacoes = base.homologacoes;
   const atual = solicitacoes.find((h) => h.id === selecionada) ?? solicitacoes[0];
 
@@ -137,14 +147,16 @@ export default function Homologacao() {
                 <tr><td>Formato desejado</td><td className="r">{atual.formatoDesejado} ({FORMATOS[atual.formatoDesejado].carregadores} vaga(s))</td></tr>
                 <tr><td>Fluxo diário de pessoas</td><td className="r num">{num(atual.fluxoDiarioPessoas)}</td></tr>
                 <tr><td>Carga elétrica disponível</td><td className="r num">{num(atual.cargaDisponivelKW, 1)} kW</td></tr>
-                <tr><td>Necessário para o formato</td><td className="r num">{FORMATOS[atual.formatoDesejado].carregadores * 7 + 8} kW</td></tr>
+                <tr><td>Necessário para o formato</td><td className="r num">{cargaNecessariaKW(atual.formatoDesejado)} kW</td></tr>
                 <tr><td>Investimento estimado</td><td className="r num">{brl(FORMATOS[atual.formatoDesejado].capex)}</td></tr>
                 <tr><td>Taxa de franquia</td><td className="r num">{brl(FORMATOS[atual.formatoDesejado].taxaFranquia)}</td></tr>
               </Tabela>
               <div className="row" style={{ marginTop: 10 }}>
-                <button className="btn primary">Aprovar e emitir COF</button>
-                <button className="btn">Solicitar vistoria</button>
+                <button className="btn primary" disabled={atual.status === 'APROVADO'} onClick={decidir('APROVADO')}>Aprovar e emitir COF</button>
+                <button className="btn" disabled={atual.status === 'APROVADO'} onClick={decidir('VISTORIA')}>Solicitar vistoria</button>
+                <button className="btn" disabled={atual.status === 'APROVADO'} onClick={decidir('REPROVADO')}>Reprovar</button>
               </div>
+              {msg && <div className="tiny muted" style={{ marginTop: 6 }}>{msg}</div>}
               <div className="tiny muted" style={{ marginTop: 6 }}>
                 A COF (Circular de Oferta de Franquia) deve ser entregue no mínimo 10 dias antes da
                 assinatura — Lei 13.966/2019, Art. 2º, §1º.

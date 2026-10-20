@@ -7,6 +7,7 @@ import {
 } from '../../domain/db';
 import { cargaComercioNaHora } from '../../domain/engine/demanda';
 import { geracaoSolarKW } from '../../domain/engine/solar';
+import { BancadaVaga } from '../../ui/Bancada';
 import {
   Card, KPI, LoadBar, Tabela, Badge, Nota, num, pct, Vazio, Bar, ChartTip, EstadoBadge,
   CHART, eixoProps, gradeProps,
@@ -33,10 +34,10 @@ export default function Demanda() {
              foot={`${ponto.limiteCorrenteA} A · disjuntor do comércio`} />
         <KPI label="Carga do comércio" value={`${num(d.cargaComercioKW, 1)} kW`}
              foot="geladeiras, luzes, climatização" />
-        <KPI label="Disponível p/ recarga" value={`${num(d.disponivelParaRecargaKW + solarAgoraKW, 1)} kW`}
+        <KPI label="Disponível p/ recarga" value={`${num(d.disponivelParaRecargaKW, 1)} kW`}
              accent="teal"
              foot={solarAgoraKW > 0
-               ? `inclui ${num(solarAgoraKW, 1)} kW de geração solar`
+               ? `já com ${num(solarAgoraKW, 1)} kW do sol descontados`
                : 'já com margem de segurança de 8%'} />
         <KPI label="Uso da entrada" value={pct(d.utilizacaoEntrada)}
              accent={d.utilizacaoEntrada > 0.85 ? 'red' : 'green'}
@@ -88,6 +89,7 @@ export default function Demanda() {
                 <div className="tiny muted">
                   {aloc ? `de ${num(aloc.potenciaSolicitadaKW, 1)} kW pedidos` : 'sem sessão'}
                 </div>
+                <div style={{ marginTop: 8 }}><BancadaVaga vaga={c} /></div>
               </div>
             );
           })}
