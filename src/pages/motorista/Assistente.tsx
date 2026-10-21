@@ -1,56 +1,69 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../../app/estado';
 import {
-  carregadoresDoPonto, obterPonto, sessoesAtivas, solarDoPonto, tarifaAtual,
+  carregadoresDoPonto, cobrancaDaSessao, obterPonto, obterVeiculo, sessaoDoMotorista, solarDoPonto, tarifaAtual,
 } from '../../domain/db';
-import { responderVolt, saudacaoVolt, type ContextoVolt } from '../../domain/engine/assistente';
+import { responderVolt, saudacaoVolt, type ContextoVolt, type FaseVolt } from '../../domain/engine/assistente';
+import { minutosAte100, vagaLivre } from '../../domain/engine/totem';
 import { Icone } from '../../ui/icones';
 import { Volt, type EstadoVolt } from '../../ui/Volt';
 
 interface Mensagem { de: 'volt' | 'motorista'; texto: string }
 
+const FASE_DA_SESSAO: Record<string, FaseVolt> = {
+  AUTENTICADO: 'iniciando', CARREGANDO: 'carga', PAUSADO: 'pausada', ENCERRANDO: 'encerrando', CONCLUIDO: 'pagar',
+};
+
 /**
  * O Volt dentro do app do motorista.
  *
- * É o mesmo assistente do totem, com o mesmo cérebro — o que muda é o
- * contexto: aqui ele fala da recarga que a pessoa tem em andamento, e não da
- * que está acontecendo no eletroposto à sua frente.
+ * É o mesmo assistente do totem, com o mesmo cérebro. O contexto vem da recarga que a pessoa tem
+ * em andamento; sem recarga, o Volt explica o passo a passo e não cita nenhum número de recarga.
+ * A conversa recomeça quando a fase ou a sessão mudam.
  */
 export default function Assistente() {
-  const { pontoId } = useApp();
-  const ativa = sessoesAtivas()[0];
+  const { pontoId, motoristaId, perfil } = useApp();
+  const ativa = sessaoDoMotorista(perfil?.motoristaId ?? motoristaId);
   const ponto = obterPonto(ativa?.pontoId ?? pontoId)!;
   const carregadores = carregadoresDoPonto(ponto.id);
-  const solar = solarDoPonto(ponto.id);
   const tarifa = tarifaAtual(ponto.id);
+  const fase: FaseVolt = (ativa && FASE_DA_SESSAO[ativa.estado]) || 'espera';
+  const veiculo = obterVeiculo(ativa?.veiculoId);
 
-  const contexto: ContextoVolt = useMemo(() => {
-    const soc = ativa?.socAtual ?? 62;
-    return {
-      ponto,
-      sessao: {
-        socAtual: soc,
-        energiaKWh: ativa?.energiaKWh ?? 9.4,
-        potenciaAtualKW: ativa?.potenciaAtualKW ?? 7.2,
-        tarifaAplicadaKWh: ativa?.tarifaAplicadaKWh ?? tarifa.precoFinalKWh,
-        custoAcumulado: ativa?.custoAcumulado ?? 9.4 * tarifa.precoFinalKWh,
-      },
-      minutosRestantes: Math.max(1, Math.round(((80 - soc) / 100) * 62)),
-      autossuficiencia: solar.resumo.autossuficiencia,
-      vagasLivres: carregadores.filter((c) => c.estado === 'DISPONIVEL').length,
-      totalVagas: carregadores.length,
-    };
-  }, [ponto, ativa, tarifa, solar, carregadores]);
+  const contexto: ContextoVolt = {
+    ponto, fase, onde: 'app',
+    sessao: ativa ? {
+      socAtual: ativa.socAtual, energiaKWh: ativa.energiaKWh, potenciaAtualKW: ativa.potenciaAtualKW,
+      tarifaAplicadaKWh: ativa.tarifaAplicadaKWh, custoAcumulado: ativa.custoAcumulado,
+      visitante: ativa.autorizacao === 'VISITANTE', limiteValor: ativa.limiteValor, motivoPausa: ativa.motivoPausa,
+    } : undefined,
+    minutosRestantes: ativa && fase === 'carga'
+      ? minutosAte100(ativa.socAtual, veiculo?.capacidadeKWh, ativa.potenciaAtualKW) ?? undefined : undefined,
+    precoAgoraKWh: tarifa.precoFinalKWh,
+    valorConta: ativa && fase === 'pagar' ? (cobrancaDaSessao(ativa.id)?.valor ?? ativa.custoAcumulado) : undefined,
+    autossuficiencia: ponto.temSolar ? solarDoPonto(ponto.id).resumo.autossuficiencia : undefined,
+    vagasLivres: carregadores.filter(vagaLivre).length,
+    totalVagas: carregadores.length,
+  };
 
-  const [mensagens, setMensagens] = useState<Mensagem[]>(
-    () => [{ de: 'volt', texto: saudacaoVolt(contexto).texto }],
-  );
-  const [sugestoes, setSugestoes] = useState<string[]>(() => saudacaoVolt(contexto).sugestoes ?? []);
+  return <Conversa key={`${fase}:${ativa?.id ?? ''}`} contexto={contexto} />;
+}
+
+function Conversa({ contexto }: { contexto: ContextoVolt }) {
+  const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   const [rascunho, setRascunho] = useState('');
+  const [sugestoes, setSugestoes] = useState<string[] | null>(null);
   const [estado, setEstado] = useState<EstadoVolt>('ocioso');
-  const fim = useRef<HTMLDivElement>(null);
+  const lista = useRef<HTMLDivElement>(null);
+  const ultimo = useRef(contexto);
+  const timers = useRef<number[]>([]);
 
-  useEffect(() => { fim.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [mensagens, estado]);
+  useEffect(() => { ultimo.current = contexto; });
+  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+  // rola só a lista de mensagens, nunca os ancestrais
+  useEffect(() => { const el = lista.current; if (el) el.scrollTop = el.scrollHeight; }, [mensagens, estado]);
+
+  const saudacao = saudacaoVolt(contexto);
 
   const perguntar = (texto: string) => {
     const pergunta = texto.trim();
@@ -59,14 +72,16 @@ export default function Assistente() {
     setRascunho('');
     setSugestoes([]);
     setEstado('pensando');
-    window.setTimeout(() => {
-      const r = responderVolt(pergunta, contexto);
+    timers.current.push(window.setTimeout(() => {
+      const r = responderVolt(pergunta, ultimo.current);
       setMensagens((m) => [...m, { de: 'volt', texto: r.texto }]);
       setSugestoes(r.sugestoes ?? []);
       setEstado('falando');
-      window.setTimeout(() => setEstado('ocioso'), 1400);
-    }, 620);
+      timers.current.push(window.setTimeout(() => setEstado('ocioso'), 1400));
+    }, 620));
   };
+
+  const chips = sugestoes ?? saudacao.sugestoes ?? [];
 
   return (
     <div className="mv-chat">
@@ -75,25 +90,25 @@ export default function Assistente() {
         <div>
           <div className="mv-chat-nome">Volt</div>
           <div className="mv-chat-estado">
-            {estado === 'pensando' ? 'consultando sua recarga…' : `assistente · ${ponto.nome}`}
+            {estado === 'pensando' ? 'consultando sua recarga…' : `assistente · ${contexto.ponto.nome}`}
           </div>
         </div>
       </header>
 
-      <div className="tt-mensagens mv-chat-msgs">
+      <div className="tt-mensagens mv-chat-msgs" ref={lista}>
+        <div className="tt-balao volt">{saudacao.texto}</div>
         {mensagens.map((m, i) => (
           <div key={i} className={`tt-balao ${m.de}`}>{m.texto}</div>
         ))}
         {estado === 'pensando' && (
           <div className="tt-balao volt tt-digitando"><span /><span /><span /></div>
         )}
-        <div ref={fim} />
       </div>
 
       <div className="tt-acoes">
-        {sugestoes.length > 0 && (
+        {chips.length > 0 && (
           <div className="tt-sugestoes">
-            {sugestoes.slice(0, 3).map((s) => (
+            {chips.slice(0, 3).map((s) => (
               <button key={s} className="chip" onClick={() => perguntar(s)}>{s}</button>
             ))}
           </div>

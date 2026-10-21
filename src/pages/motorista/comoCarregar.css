@@ -1,0 +1,38 @@
+/* Passo a passo "de onde vem o código" (telas Digitar código e Recarga sem sessão) */
+.como { display: flex; flex-direction: column; gap: 12px; }
+.como-titulo { font-size: 13px; font-weight: 500; letter-spacing: -.005em; }
+.como-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.como-passo { position: relative; display: flex; gap: 12px; padding: 0 0 14px; }
+.como-passo:last-child { padding-bottom: 0; }
+/* linha que liga os passos */
+.como-passo:not(:last-child)::before {
+  content: ''; position: absolute; left: 15px; top: 32px; bottom: 2px; width: 1px; background: var(--k-line);
+}
+.como-marca {
+  flex: 0 0 31px; height: 31px; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid var(--k-line); background: var(--k-panel-2); color: var(--k-dim);
+}
+.como-passo.on .como-marca { border-color: var(--k-red); color: var(--k-red2); background: var(--k-redsoft); }
+.como-texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-top: 3px; }
+.como-texto b { font-size: 12.5px; font-weight: 500; line-height: 1.35; }
+.como-texto span { font-size: 11px; color: var(--k-dim); line-height: 1.45; }
+.como-texto b .como-n { color: var(--k-dim2); font-weight: 400; margin-right: 2px; font-variant-numeric: tabular-nums; }
+
+/* tela Digitar código */
+.cod-campo {
+  width: 100%; text-align: center; font-size: 34px; font-weight: 600; letter-spacing: .32em;
+  padding: 14px 10px 14px calc(10px + .32em); text-transform: uppercase; font-variant-numeric: tabular-nums;
+  background: var(--k-bg-2); border: 1px solid var(--k-hair); border-radius: var(--radius-sm, 10px);
+}
+.cod-campo::placeholder { color: var(--k-dim3); }
+.cod-ajuda { font-size: 11px; color: var(--k-dim); line-height: 1.5; text-align: center; }
+.cod-resumo { display: flex; flex-direction: column; gap: 10px; }
+.cod-preco { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.cod-preco-valor { font-size: 26px; font-weight: 600; letter-spacing: -.02em; color: var(--k-red2); font-variant-numeric: tabular-nums; }
+.cod-preco-valor small { font-size: 12px; font-weight: 400; color: var(--k-dim); letter-spacing: 0; margin-left: 2px; }
+.cod-linhas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cod-linhas li { font-size: 11.5px; color: var(--k-dim); display: flex; justify-content: space-between; gap: 10px; line-height: 1.4; }
+.cod-linhas li:first-child { color: var(--k-text); }
+.cod-linhas .val { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cod-linhas .menos { color: var(--k-ok); }
+.cod-linhas .mais { color: var(--k-warn); }

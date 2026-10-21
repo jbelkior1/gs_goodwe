@@ -56,7 +56,8 @@ export function Totem3D({ children }: { children: ReactNode }) {
         <div className="t3d-frente">
           <div className="t3d-bezel">
             <div className="t3d-camera" />
-            <div className="t3d-visor">
+            {/* o conteúdo é a tela do totem (1080×1920) escalada para caber; o fundo preto esconde as sobras */}
+            <div className="t3d-visor" style={{ background: '#000' }}>
               {children}
               <span className="t3d-reflexo" aria-hidden="true" />
             </div>

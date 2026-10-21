@@ -49,6 +49,13 @@ export const REGIOES: Regiao[] = [
   { id: 'r-sp-pinheiros', uf: 'SP', cidade: 'São Paulo', zona: 'Pinheiros', custoEnergiaKWh: 0.85, densidadeEV: 0.95, lat: -23.5646, lng: -46.696 },
   { id: 'r-sp-moema', uf: 'SP', cidade: 'São Paulo', zona: 'Moema', custoEnergiaKWh: 0.85, densidadeEV: 0.9, lat: -23.6021, lng: -46.6669 },
   { id: 'r-sp-tatuape', uf: 'SP', cidade: 'São Paulo', zona: 'Tatuapé', custoEnergiaKWh: 0.85, densidadeEV: 0.62, lat: -23.5405, lng: -46.5766 },
+  { id: 'r-sp-higienopolis', uf: 'SP', cidade: 'São Paulo', zona: 'Higienópolis/Consolação', custoEnergiaKWh: 0.85, densidadeEV: 0.88, lat: -23.5475, lng: -46.659 },
+  { id: 'r-sp-paulista', uf: 'SP', cidade: 'São Paulo', zona: 'Paulista/Bela Vista', custoEnergiaKWh: 0.85, densidadeEV: 0.92, lat: -23.565, lng: -46.651 },
+  { id: 'r-sp-vila-mariana', uf: 'SP', cidade: 'São Paulo', zona: 'Vila Mariana', custoEnergiaKWh: 0.85, densidadeEV: 0.82, lat: -23.589, lng: -46.6385 },
+  { id: 'r-sp-itaim', uf: 'SP', cidade: 'São Paulo', zona: 'Itaim Bibi/Faria Lima', custoEnergiaKWh: 0.85, densidadeEV: 0.97, lat: -23.5845, lng: -46.68 },
+  { id: 'r-sp-morumbi', uf: 'SP', cidade: 'São Paulo', zona: 'Morumbi/Butantã', custoEnergiaKWh: 0.85, densidadeEV: 0.86, lat: -23.59, lng: -46.72 },
+  { id: 'r-sp-santana', uf: 'SP', cidade: 'São Paulo', zona: 'Santana', custoEnergiaKWh: 0.85, densidadeEV: 0.6, lat: -23.5027, lng: -46.6252 },
+  { id: 'r-sp-anhanguera', uf: 'SP', cidade: 'São Paulo', zona: 'Rodovia Anhanguera (Perus/Cajamar)', custoEnergiaKWh: 0.85, densidadeEV: 0.5, lat: -23.392, lng: -46.78 },
   { id: 'r-sp-campinas', uf: 'SP', cidade: 'Campinas', zona: 'Cambuí', custoEnergiaKWh: 0.82, densidadeEV: 0.7, lat: -22.8983, lng: -47.0498 },
   { id: 'r-rj-barra', uf: 'RJ', cidade: 'Rio de Janeiro', zona: 'Barra da Tijuca', custoEnergiaKWh: 1.12, densidadeEV: 0.78, lat: -23.0045, lng: -43.365 },
   { id: 'r-rj-botafogo', uf: 'RJ', cidade: 'Rio de Janeiro', zona: 'Botafogo', custoEnergiaKWh: 1.12, densidadeEV: 0.66, lat: -22.9519, lng: -43.1841 },
@@ -109,6 +116,53 @@ export const REGRAS = {
   ticketVarejoIncremental: 28,
   margemVarejo: 0.35,
   conversaoLoja: 0.5,
+  /** validade do código do QR e da cotação de preço mostrada no totem (min) */
+  codigoValidadeMin: 10,
+} as const;
+
+/**
+ * Alfabeto do código de 4 caracteres do QR. Fora dele ficam os que se confundem ao digitar
+ * (0/O, 1/I, 5/S, 8/B, 2/Z, 6/G, Q, L). O simulador sorteia daqui e o app só aceita estes.
+ */
+export const ALFABETO_CODIGO = 'ACDEFHJKMNPRTUVWXY3479';
+
+/**
+ * Tarifa dinâmica v2 (ADR-0013). Valores padrão; o motor está em engine/tarifa.ts.
+ * O preço é: base × faixa de horário × escassez − sol, sempre entre o piso e o teto do ponto.
+ */
+export const TARIFA = {
+  /** multiplicador de cada faixa publicada */
+  multVale: 0.9,
+  multNormal: 1,
+  multPico: 1.12,
+  /** dia útil, hora local de Brasília. Pico: 17h a 19h. Vale: 22h a 8h. Fim de semana: sem pico */
+  picoIni: 17,
+  picoFim: 19,
+  valeIni: 22,
+  valeFim: 8,
+  /** variação máxima de preço entre duas horas seguidas (as horas de borda 8, 16, 20 e 22 são rampas) */
+  passoMaxHora: 0.1,
+  /** escassez: só em ponto com 2 vagas operantes ou mais; sobe até 8% quando passa de metade ocupado */
+  escassezMinVagas: 2,
+  escassezMax: 0.08,
+  escassezAPartirDe: 0.5,
+  /** solar: com excedente de geração, o motorista leva metade da economia de custo, até 8% do preço */
+  solarDescontoMax: 0.08,
+  solarRepasse: 0.5,
+  /** premissa: o kWh do sol vale R$ 0,70 (crédito de energia injetada, já líquido de encargos) */
+  solarCreditoKWh: 0.7,
+  /** janela, em horas, da média do excedente solar (suaviza o desconto: ele nunca liga ou desliga de uma hora para a outra) */
+  solarJanelaHoras: 5,
+  /** excedente que cobre um carro inteiro a 7 kW (a vaga padrão GW7K) */
+  solarPotenciaRefKW: 7,
+  /** margem líquida mínima por kWh, depois de energia e taxas */
+  margemMinKWh: 0.2,
+  /** limites do ponto em relação ao preço base */
+  pisoPctBase: 0.85,
+  tetoPctBase: 1.3,
+  /** preço base sugerido: margem alvo por kWh e arredondamento */
+  baseMargemAlvoKWh: 0.85,
+  baseDegrauKWh: 0.05,
 } as const;
 
 /**

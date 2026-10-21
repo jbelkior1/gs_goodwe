@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ponto W — Como o sistema funciona</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000; --painel: #1c1c1e; --painel2: #242427; --hair: #2c2c30; --linha: #3a3a3f;
+    --txt: #f5f5f7; --dim: #a1a1a6; --dim2: #6e6e73;
+    --red: #e60012; --red2: #ff3b45; --red3: #ff5560; --rosa: #ff8a92;
+    --ok: #3ddc97; --aviso: #ffb020; --azul: #5b9cff;
+    --grad: linear-gradient(100deg, #ff5560 0%, #ff3b45 45%, #e60012 100%);
+  }
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; background: var(--bg); }
+  html { font-family: Inter, "Segoe UI", system-ui, sans-serif; color: var(--txt); font-size: 9.6pt; line-height: 1.5; font-feature-settings: "tnum" 0; }
+  body { counter-reset: folha; }
+
+  /* cada página é uma folha A4 fixa: fundo preto até a borda */
+  .folha { width: 210mm; height: 297mm; padding: 15mm 15mm 17mm; position: relative; overflow: hidden; break-after: page; counter-increment: folha; display: flex; flex-direction: column; }
+  .folha:last-of-type { break-after: auto; }
+  .rod { position: absolute; left: 15mm; right: 15mm; bottom: 7mm; display: flex; justify-content: space-between; align-items: center; font-size: 7.2pt; color: var(--dim2); }
+  .rod .pg::after { content: counter(folha); color: var(--dim); font-weight: 500; }
+  .transborda { position: absolute; top: 3mm; right: 3mm; background: var(--red); color: #fff; font: 600 10pt Inter, sans-serif; padding: 1mm 3mm; z-index: 9; border-radius: 2mm; }
+
+  h1, h2, h3, h4 { margin: 0; }
+  /* vermelho chapado: o texto com gradiente (background-clip) deixa filetes nas bordas no PDF */
+  em { font-style: normal; color: var(--red2); }
+  p { margin: 0 0 2.4mm; }
+  b, strong { font-weight: 600; }
+
+  /* abertura de seção */
+  .cab { display: grid; grid-template-columns: auto 1fr; gap: 5mm; align-items: end; padding-bottom: 4mm; margin-bottom: 6mm; border-bottom: 1px solid var(--hair); }
+  .cab .n { font-size: 50pt; font-weight: 200; line-height: .8; letter-spacing: -.04em; color: var(--red2); }
+  .cab h2 { font-size: 23pt; font-weight: 300; letter-spacing: -.035em; line-height: 1.05; }
+  .cab h2 em { font-weight: 400; }
+  .cab.cont { margin-bottom: 5mm; }
+  .cab.cont .n { font-size: 30pt; }
+  .cab.cont h2 { font-size: 16pt; }
+  .lead { font-size: 10.6pt; color: var(--dim); line-height: 1.5; max-width: 168mm; margin: 0 0 5mm; }
+  h3 { font-size: 11.5pt; font-weight: 500; letter-spacing: -.01em; margin: 5mm 0 2.5mm; }
+  h3:first-child { margin-top: 0; }
+  .dim { color: var(--dim); }
+  .peq { font-size: 8.4pt; }
+
+  /* cartões no estilo do app: painel #1c1c1e, filete no topo, vermelho no destaque */
+  .card { background: var(--painel); border-top: 2px solid var(--hair); border-radius: 3.5mm; padding: 4mm 4.2mm; break-inside: avoid; }
+  .card.r { border-top-color: var(--red); }
+  .card h4 { font-size: 10.4pt; font-weight: 600; margin: 0 0 1.5mm; }
+  .card p, .card li { font-size: 8.9pt; color: var(--dim); }
+  .card p:last-child { margin-bottom: 0; }
+  .card ul { margin: 0; padding-left: 4mm; }
+  .card li { margin-bottom: .8mm; }
+  .card .url { margin-bottom: 2mm; display: inline-block; }
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+  .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.5mm; }
+  .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; }
+
+  code, .url { font-family: "Cascadia Mono", Consolas, monospace; font-size: 8pt; color: #e8e8ed; background: var(--painel2); border: 1px solid var(--linha); border-radius: 1.2mm; padding: .2mm 1.2mm; white-space: nowrap; }
+
+  .nota { font-size: 8.6pt; color: var(--dim); background: var(--painel); border-left: 2px solid var(--red); padding: 2.6mm 3.6mm; border-radius: 0 2.5mm 2.5mm 0; margin: 3mm 0; }
+  .nota b { color: var(--txt); }
+
+  /* tabelas escuras */
+  table { width: 100%; border-collapse: collapse; font-size: 8.7pt; margin: 1mm 0 3mm; }
+  th, td { text-align: left; vertical-align: top; padding: 1.7mm 2.2mm; border-bottom: 1px solid var(--hair); }
+  thead th { font-size: 7.8pt; font-weight: 500; color: var(--dim); border-bottom: 1px solid var(--linha); }
+  td { color: #d9d9de; }
+  td.c { white-space: nowrap; }
+  /* tabelas longas (endereços): letra e respiro menores para caber na folha */
+  table.compacta { font-size: 8.1pt; }
+  table.compacta th, table.compacta td { padding: 1.15mm 2mm; line-height: 1.38; }
+  table.compacta code { font-size: 7.5pt; }
+  .grupo td { background: var(--painel); color: var(--txt); font-weight: 600; font-size: 8.6pt; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.soma td { color: var(--txt); font-weight: 600; border-top: 1px solid var(--linha); }
+  tr.menos td:first-child { color: var(--dim); }
+  tr.destaque td { background: rgba(230, 0, 18, .10); color: var(--txt); font-weight: 600; }
+
+  /* selo de preço sugerido */
+  .sug { display: inline-block; font-size: 6.6pt; font-weight: 500; line-height: 1.5; padding: 0 1.6mm; border: 1px solid rgba(255, 85, 96, .55); color: var(--rosa); border-radius: 99px; margin-left: 1.2mm; vertical-align: .2mm; white-space: nowrap; }
+
+  .tag { display: inline-block; font-size: 7pt; font-weight: 600; padding: .2mm 2mm; border-radius: 99px; margin-left: 1mm; vertical-align: .4mm; }
+  .t-voce { background: rgba(230, 0, 18, .18); color: var(--rosa); }
+  .t-gw { background: #2c2c30; color: #d9d9de; }
+  .t-sis { background: rgba(91, 156, 255, .16); color: #9cc2ff; }
+
+  /* números grandes */
+  .stat { background: var(--painel); border-top: 2px solid var(--hair); border-radius: 3.5mm; padding: 3.6mm 4mm; }
+  .stat.r { border-top-color: var(--red); }
+  .stat .v { font-size: 20pt; font-weight: 300; letter-spacing: -.03em; line-height: 1.05; white-space: nowrap; }
+  .stat .v small { font-size: 9pt; color: var(--dim); letter-spacing: 0; margin-left: .8mm; }
+  .stat .l { font-size: 8pt; color: var(--dim); margin-top: 1.2mm; line-height: 1.35; }
+
+  /* passos do fluxo */
+  .passos { display: grid; gap: 2.6mm; }
+  .passo { display: grid; grid-template-columns: 12mm 1fr; gap: 3mm; background: var(--painel); border-radius: 3.5mm; padding: 3.4mm 4mm; break-inside: avoid; }
+  .passo .n { font-size: 22pt; font-weight: 200; line-height: 1; color: var(--red2); }
+  .passo h4 { font-size: 10.4pt; font-weight: 600; margin: 0 0 1mm; }
+  .passo p { margin: 0; font-size: 8.9pt; color: var(--dim); }
+  .passo .meta { margin-top: 1.6mm; font-size: 8pt; color: var(--dim2); display: flex; flex-wrap: wrap; gap: 1.2mm 4mm; }
+  .passo .meta b { color: var(--dim); font-weight: 500; }
+
+  /* molduras de aparelho para as telas reais */
+  .tela { margin: 0; break-inside: avoid; }
+  .tela.media { width: 164mm; margin-left: auto; margin-right: auto; }
+  .tela figcaption { font-size: 8.2pt; color: var(--dim); margin-top: 2.2mm; line-height: 1.4; }
+  .tela figcaption b { color: var(--txt); font-weight: 600; }
+  .cel { border: 1.5mm solid #2a2a2e; border-radius: 7mm; overflow: hidden; background: #000; box-shadow: 0 0 0 .25mm #48484d; }
+  .cel img, .note img, .tot img { display: block; width: 100%; height: auto; }
+  .note { border: 1.1mm solid #2a2a2e; border-bottom-width: 1.6mm; border-radius: 2.6mm 2.6mm 1mm 1mm; overflow: hidden; background: #000; box-shadow: 0 0 0 .25mm #48484d; }
+  .note-base { height: 2.2mm; margin: 0 -3mm; background: linear-gradient(#3a3a3f, #232326); border-radius: 0 0 3mm 3mm; }
+  .tot { border: 1.6mm solid #2a2a2e; border-radius: 4mm; overflow: hidden; background: #000; box-shadow: 0 0 0 .25mm #48484d; }
+  .tot-pe { width: 22%; height: 6mm; margin: 0 auto; background: linear-gradient(90deg, #232326, #3a3a3f, #232326); border-radius: 0 0 1.5mm 1.5mm; }
+
+  /* fórmula */
+  .formula { background: var(--painel); border-radius: 3.5mm; border-top: 2px solid var(--red); padding: 4.5mm 5mm; }
+  .formula .linha { font-size: 12pt; font-weight: 300; letter-spacing: -.01em; padding: 2.5mm 0 3.5mm; border-bottom: 1px solid var(--hair); margin-bottom: 3.5mm; }
+  .formula .linha b { font-weight: 500; }
+
+  figure { margin: 0; }
+  .fig { break-inside: avoid; }
+  .fig figcaption { font-size: 8.2pt; color: var(--dim); margin-top: 2mm; }
+  svg text { font-family: Inter, "Segoe UI", sans-serif; }
+
+  /* barra empilhada de repartição */
+  .barra { display: flex; height: 11mm; border-radius: 2.5mm; overflow: hidden; margin: 2mm 0 2.5mm; }
+  .barra span { display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: 600; color: #fff; white-space: nowrap; }
+  .legenda { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2mm; font-size: 8pt; color: var(--dim); }
+  .legenda div { display: flex; gap: 1.6mm; align-items: baseline; }
+  .legenda i { width: 2.4mm; height: 2.4mm; border-radius: .6mm; flex: none; transform: translateY(.3mm); }
+  .legenda b { color: var(--txt); }
+
+  ol.cmd { padding-left: 5mm; margin: 0; }
+  ol.cmd li { margin-bottom: 2.4mm; color: #d9d9de; }
+
+  /* capa */
+  .capa { padding: 0; background:
+      radial-gradient(130mm 120mm at 88% 14%, rgba(230, 0, 18, .42), transparent 70%),
+      radial-gradient(110mm 90mm at 0% 100%, rgba(230, 0, 18, .20), transparent 70%), #000; }
+  .capa .grade { position: absolute; inset: 0; background-image: linear-gradient(rgba(255, 255, 255, .055) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .055) 1px, transparent 1px); background-size: 16.4mm 16.4mm; -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, .55) 55%, transparent 92%); mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, .55) 55%, transparent 92%); }
+  .capa .dentro { position: relative; height: 100%; padding: 17mm 17mm 13mm; display: flex; flex-direction: column; }
+  .marca { display: flex; align-items: center; gap: 3mm; }
+  .marca .logo { width: 10mm; height: 10mm; border-radius: 2.6mm; background: var(--red); display: grid; place-items: center; }
+  .marca b { display: block; letter-spacing: .32em; font-size: 10pt; font-weight: 600; }
+  .marca span { display: block; font-size: 8pt; color: var(--dim); }
+  .capa h1 { font-size: 50pt; font-weight: 300; letter-spacing: -.055em; line-height: .98; margin-top: 25mm; }
+  .capa h1 em { font-weight: 400; }
+  .capa .sub { font-size: 12pt; color: var(--dim); max-width: 140mm; margin-top: 6mm; line-height: 1.45; }
+  .colagem { position: relative; height: 112mm; margin-top: auto; margin-bottom: 9mm; }
+  .colagem .note { position: absolute; left: 30mm; top: 6mm; width: 128mm; }
+  .colagem .note-base { position: absolute; left: 27mm; top: 86.2mm; width: 134mm; margin: 0; }
+  .colagem .tot { position: absolute; left: 0; top: 16mm; width: 46mm; }
+  .colagem .cel { position: absolute; right: 0; top: 30mm; width: 38mm; border-radius: 6mm; }
+  .capa .pe { display: flex; justify-content: space-between; font-size: 8pt; color: var(--dim2); border-top: 1px solid var(--hair); padding-top: 3.5mm; }
+
+  /* índice */
+  .indice { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8mm; }
+  .indice div { display: grid; grid-template-columns: 9mm 1fr auto; align-items: baseline; padding: 2mm 0; border-bottom: 1px solid var(--hair); font-size: 9.4pt; }
+  .indice b { font-weight: 300; font-size: 13pt; color: var(--red3); }
+  .indice span:last-child { color: var(--dim2); font-size: 8pt; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ CAPA -->
+<section class="folha capa">
+  <div class="grade"></div>
+  <div class="dentro">
+    <div class="marca">
+      <span class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg></span>
+      <div><b>GOODWE</b><span>Ponto W · recarga de carro elétrico no comércio</span></div>
+    </div>
+    <h1>Como o Ponto W<br><em>funciona.</em></h1>
+    <p class="sub">O caminho do pedido de franquia até a recarga paga: o que cada tela faz, como os aparelhos conversam, como sai o preço do kWh e quanto fica com cada um.</p>
+    <div class="colagem">
+      <div class="note"><img src="telas/goodwe.jpg" alt="Painel da GoodWe com a visão da rede"></div>
+      <div class="note-base"></div>
+      <div class="tot"><img src="telas/totem.jpg" alt="Totem do ponto com o preço do kWh"></div>
+      <div class="cel"><img src="telas/celular-mapa.jpg" alt="App do motorista com o mapa dos pontos"></div>
+    </div>
+    <div class="pe"><span>Mapa do sistema para a banca · MVP · outubro de 2026</span><span>EV Challenge GoodWe × FIAP</span></div>
+  </div>
+</section>
+
+<!-- ============================================================ VISÃO GERAL + ÍNDICE -->
+<section class="folha">
+  <header class="cab"><span class="n">W</span><div><h2>O Ponto W <em>em 30 segundos</em></h2></div></header>
+  <p class="lead">O Ponto W transforma uma vaga do estacionamento de um comércio em ponto de recarga de carro elétrico, no modelo de franquia da GoodWe. O motorista carrega por 1 a 2 horas e, nesse tempo, compra na loja. A GoodWe instala o carregador, o totem e a plataforma; o comércio fica com o resultado da recarga e com tudo o que vende.</p>
+
+  <div class="g4" style="margin-bottom:5mm">
+    <div class="card r"><h4>Motorista</h4><p>No celular: acha o ponto, lê o QR do totem, vê o preço travado, acompanha a carga e paga com Pix.</p></div>
+    <div class="card r"><h4>Totem</h4><p>Na vaga: mostra o preço de agora, o QR, a carga ao vivo e o Pix no fim. Funciona sem app.</p></div>
+    <div class="card"><h4>Franqueado</h4><p>No notebook: configura o ponto e o preço, acompanha vagas, energia, demanda e o extrato.</p></div>
+    <div class="card"><h4>GoodWe</h4><p>No notebook: aprova novos pontos, vê a rede ao vivo e recebe o royalty de cada recarga.</p></div>
+  </div>
+
+  <h3>A rede de demonstração <span class="peq dim" style="font-weight:400">(dados gerados, no banco real)</span></h3>
+  <div class="g4" style="margin-bottom:5mm">
+    <div class="stat"><div class="v">10<small>pontos</small></div><div class="l">em São Paulo, com marcas conhecidas como exemplo (Graal, Pão de Açúcar, Carrefour…)</div></div>
+    <div class="stat"><div class="v">5.651<small>recargas</small></div><div class="l">em 90 dias de histórico, com cobrança e repartição de cada uma</div></div>
+    <div class="stat"><div class="v">8,4<small>kWh</small></div><div class="l">por recarga, em média; 1 h 15 min parado no comércio</div></div>
+    <div class="stat r"><div class="v">R$ 1,90<small>/kWh</small></div><div class="l">preço base sugerido em São Paulo, ajustável pelo franqueado</div></div>
+  </div>
+
+  <h3>Neste documento</h3>
+  <div class="indice">
+    <div><b>1</b><span>O sistema em uma página</span><span>3</span></div>
+    <div><b>6</b><span>Os estados de uma recarga</span><span>14</span></div>
+    <div><b>2</b><span>O fluxo em 11 passos</span><span>4</span></div>
+    <div><b>7</b><span>Como sai o preço do kWh</span><span>15</span></div>
+    <div><b>3</b><span>As telas de verdade</span><span>6</span></div>
+    <div><b>8</b><span>Valores, margens e preços sugeridos</span><span>16</span></div>
+    <div><b>4</b><span>Cada tela por dentro</span><span>10</span></div>
+    <div><b>9</b><span>Endereços (URLs) e parâmetros</span><span>20</span></div>
+    <div><b>5</b><span>Como as telas conversam</span><span>12</span></div>
+    <div><b>10</b><span>Links e roteiro da apresentação</span><span>22</span></div>
+    <div><b>A</b><span>Anexo: preparar a demonstração</span><span>23</span></div>
+    <div><b>G</b><span>Glossário</span><span>24</span></div>
+  </div>
+  <p class="nota" style="margin-top:5mm">Todo valor em reais deste documento é <b>preço sugerido</b>, calculado pelo próprio sistema e <b>ajustável</b> pela GoodWe (regras da rede) e pelo franqueado (preço base do ponto). A seção 8 mostra as contas e quem pode mudar cada número.</p>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 1 -->
+<section class="folha">
+  <header class="cab"><span class="n">1</span><div><h2>O sistema <em>em uma página</em></h2></div></header>
+  <p class="lead">Quatro aparelhos, cada um com um papel, mais a página de franquia e a avaliação 3D. Nenhum aparelho conversa direto com o outro: todos leem e gravam no mesmo banco, e o tempo real do banco avisa cada tela em cerca de um segundo.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 760 440" width="100%" role="img" aria-label="Os quatro aparelhos e a página de franquia leem e gravam na plataforma; o agente do ponto e o GSVR também gravam nela">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#a1a1a6"/></marker>
+        <marker id="a1r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#ff3b45"/></marker>
+        <marker id="a1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#5b9cff"/></marker>
+      </defs>
+      <g font-size="12" fill="#f5f5f7">
+        <rect x="10" y="14" width="170" height="66" rx="12" fill="#1c1c1e" stroke="#ff3b45" stroke-width="1.6"/>
+        <text x="95" y="42" text-anchor="middle" font-weight="600">Celular · Motorista</text>
+        <text x="95" y="60" text-anchor="middle" fill="#a1a1a6" font-size="10.5">acha o ponto, confirma, paga</text>
+        <rect x="200" y="14" width="170" height="66" rx="12" fill="#1c1c1e" stroke="#ff3b45" stroke-width="1.6"/>
+        <text x="285" y="42" text-anchor="middle" font-weight="600">Totem · na vaga</text>
+        <text x="285" y="60" text-anchor="middle" fill="#a1a1a6" font-size="10.5">preço, QR, carga e Pix</text>
+        <rect x="390" y="14" width="170" height="66" rx="12" fill="#1c1c1e" stroke="#3a3a3f" stroke-width="1.4"/>
+        <text x="475" y="42" text-anchor="middle" font-weight="600">Notebook · Franqueado</text>
+        <text x="475" y="60" text-anchor="middle" fill="#a1a1a6" font-size="10.5">configura, acompanha, recebe</text>
+        <rect x="580" y="14" width="170" height="66" rx="12" fill="#1c1c1e" stroke="#3a3a3f" stroke-width="1.4"/>
+        <text x="665" y="42" text-anchor="middle" font-weight="600">Notebook · GoodWe</text>
+        <text x="665" y="60" text-anchor="middle" fill="#a1a1a6" font-size="10.5">aprova pontos, vê a rede</text>
+      </g>
+      <g stroke="#ff3b45" stroke-width="1.5" fill="none">
+        <line x1="95" y1="82" x2="250" y2="182" marker-end="url(#a1r)" marker-start="url(#a1r)"/>
+        <line x1="285" y1="82" x2="330" y2="182" marker-end="url(#a1r)" marker-start="url(#a1r)"/>
+        <line x1="475" y1="82" x2="430" y2="182" marker-end="url(#a1r)" marker-start="url(#a1r)"/>
+        <line x1="665" y1="82" x2="510" y2="182" marker-end="url(#a1r)" marker-start="url(#a1r)"/>
+      </g>
+      <rect x="292" y="118" width="176" height="22" rx="11" fill="#000"/>
+      <text x="380" y="133" text-anchor="middle" font-size="10.5" fill="#ff8a92">lê e grava · tempo real avisa</text>
+      <rect x="170" y="184" width="420" height="96" rx="14" fill="#242427" stroke="#f5f5f7" stroke-width="1.6"/>
+      <text x="380" y="212" text-anchor="middle" font-size="14" font-weight="700" fill="#f5f5f7">Plataforma Ponto W (Supabase)</text>
+      <text x="380" y="233" text-anchor="middle" font-size="10.5" fill="#a1a1a6">banco de dados + tempo real + arquivos (fotos)</text>
+      <text x="380" y="257" text-anchor="middle" font-size="10" fill="#6e6e73">pontos · vagas · sessões · cobranças · pedidos · totens · avaliações</text>
+      <rect x="10" y="198" width="140" height="68" rx="12" fill="#1c1c1e" stroke="#6e6e73" stroke-width="1.3" stroke-dasharray="4 3"/>
+      <text x="80" y="222" text-anchor="middle" font-size="11.5" font-weight="600" fill="#f5f5f7">Comerciante</text>
+      <text x="80" y="239" text-anchor="middle" font-size="10" fill="#a1a1a6">/seja-goodwe</text>
+      <text x="80" y="254" text-anchor="middle" font-size="10" fill="#a1a1a6">pede a franquia</text>
+      <line x1="152" y1="232" x2="168" y2="232" stroke="#a1a1a6" stroke-width="1.4" marker-end="url(#a1)"/>
+      <rect x="60" y="340" width="290" height="84" rx="12" fill="#1c1c1e" stroke="#5b9cff" stroke-width="1.6"/>
+      <text x="205" y="367" text-anchor="middle" font-size="12" font-weight="600" fill="#f5f5f7">Agente do ponto (simulador)</text>
+      <text x="205" y="386" text-anchor="middle" font-size="10" fill="#a1a1a6">faz o papel do carregador: abre a sessão,</text>
+      <text x="205" y="401" text-anchor="middle" font-size="10" fill="#a1a1a6">carrega o carro, fecha a conta, manda sinal</text>
+      <rect x="410" y="340" width="290" height="84" rx="12" fill="#1c1c1e" stroke="#3a3a3f" stroke-width="1.4"/>
+      <text x="555" y="367" text-anchor="middle" font-size="12" font-weight="600" fill="#f5f5f7">GSVR · avaliação 3D</text>
+      <text x="555" y="386" text-anchor="middle" font-size="10" fill="#a1a1a6">foto do estacionamento + Ponto W projetado</text>
+      <text x="555" y="401" text-anchor="middle" font-size="10" fill="#a1a1a6">(outro site, repositório gs_vr)</text>
+      <line x1="230" y1="338" x2="300" y2="282" stroke="#5b9cff" stroke-width="1.6" marker-end="url(#a1b)" marker-start="url(#a1b)"/>
+      <text x="168" y="315" font-size="10" fill="#9cc2ff">lê e grava a cada 2 s</text>
+      <line x1="530" y1="338" x2="460" y2="282" stroke="#a1a1a6" stroke-width="1.4" marker-end="url(#a1)"/>
+      <text x="508" y="315" font-size="10" fill="#a1a1a6">envia fotos e medidas</text>
+    </svg>
+    <figcaption>Todos os aparelhos falam com a plataforma, nunca entre si. Por isso uma recarga iniciada no celular aparece no totem, no franqueado e na GoodWe no mesmo instante.</figcaption>
+  </figure>
+
+  <div class="g2" style="margin-top:6mm">
+    <div class="card r"><h4>O que é real e o que é simulado</h4>
+      <p><b style="color:#f5f5f7">Real:</b> as telas, o banco, o tempo real, as contas, o pedido de franquia, a aprovação, o pareamento do totem, o preço travado, a cobrança e a repartição do dinheiro.</p>
+      <p><b style="color:#f5f5f7">Simulado:</b> o carregador físico (o agente faz o papel dele), o carro conectando ("Simular carro conectado") e o pagamento Pix ("Simular pagamento").</p>
+    </div>
+    <div class="card"><h4>A regra de ouro</h4>
+      <p>Cada ação grava uma linha no banco. Cada tela que precisa daquela informação recebe a mudança pelo tempo real e se redesenha sozinha. Não existe botão "atualizar".</p>
+      <p>Quando o carregador de verdade da GoodWe entrar, ele toma o lugar do agente simulado e as telas não mudam.</p>
+    </div>
+  </div>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 2a -->
+<section class="folha">
+  <header class="cab"><span class="n">2</span><div><h2>O fluxo <em>em 11 passos</em></h2></div></header>
+  <p class="lead">É o fluxograma do produto, do pedido de franquia até a GoodWe receber o royalty. Em cada passo: quem faz, em qual tela e quem enxerga o resultado na hora.</p>
+  <div class="passos">
+    <div class="passo"><span class="n">1</span><div><h4>O comerciante pede a franquia <span class="tag t-voce">Comerciante</span></h4>
+      <p>Na página Seja GoodWe, avalia o estacionamento em 3D no GSVR (foto, área marcada, Ponto W projetado, "Enviar avaliação"), volta com as fotos e preenche o pedido. A IA calcula o potencial do local: score e horas de uso por dia.</p>
+      <div class="meta"><span><b>Tela:</b> <code>/seja-goodwe</code> + GSVR</span><span><b>Grava:</b> pedido e avaliação</span><span><b>Quem vê:</b> GoodWe, na fila da Homologação</span></div></div></div>
+    <div class="passo"><span class="n">2</span><div><h4>A GoodWe aprova a concessão <span class="tag t-gw">GoodWe</span></h4>
+      <p>Abre o pedido, vê o score, as fotos e as medidas da avaliação 3D e a previsão financeira; pede vistoria ou aprova. Ao aprovar, o sistema cria o franqueado, o ponto (em instalação) e as vagas.</p>
+      <div class="meta"><span><b>Tela:</b> <code>/goodwe/homologacao</code></span><span><b>Quem vê:</b> o comerciante vira franqueado na hora, sem recarregar a página</span></div></div></div>
+    <div class="passo"><span class="n">3</span><div><h4>O franqueado configura o ponto <span class="tag t-voce">Franqueado</span></h4>
+      <p>Confere nome, endereço e entrada elétrica e define o preço base do kWh. O sistema mostra o preço sugerido da região (R$ 1,90 em São Paulo) e não deixa vender abaixo do custo.</p>
+      <div class="meta"><span><b>Tela:</b> <code>/franqueado/ponto</code></span></div></div></div>
+    <div class="passo"><span class="n">4</span><div><h4>O franqueado pareia o totem e ativa <span class="tag t-voce">Franqueado</span><span class="tag t-sis">Totem</span></h4>
+      <p>No aparelho do totem abre <code>/totem?tela=cheia</code>: aparece um código de 6 dígitos. Em Meu ponto ele digita o código, e o totem passa a mostrar o ponto sozinho. Depois toca em "Ativar ponto".</p>
+      <div class="meta"><span><b>Grava:</b> pareamento do totem, ponto ATIVO</span><span><b>Quem vê:</b> o mapa do motorista</span></div></div></div>
+    <div class="passo"><span class="n">5</span><div><h4>O motorista acha o ponto no mapa <span class="tag t-voce">Motorista</span></h4>
+      <p>Mapa real de São Paulo com as vagas livres e o preço de agora de cada ponto. Ao tocar num ponto, vê como carregar ali.</p>
+      <div class="meta"><span><b>Tela:</b> <code>/motorista</code></span></div></div></div>
+    <div class="passo"><span class="n">6</span><div><h4>O carro conecta e o totem mostra o código <span class="tag t-sis">Totem + agente</span></h4>
+      <p>O cabo entra na vaga (na demonstração: "Simular carro conectado" no totem). O agente abre a recarga com um código de 4 letras, válido por 10 minutos, já com o preço travado.</p>
+      <div class="meta"><span><b>Quem vê:</b> totem (QR + código grande) e franqueado ("aguardando o motorista ler o QR")</span></div></div></div>
+  </div>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 2b -->
+<section class="folha">
+  <header class="cab cont"><span class="n">2</span><div><h2>O fluxo <em>em 11 passos</em> · continuação</h2></div></header>
+  <div class="passos">
+    <div class="passo"><span class="n">7</span><div><h4>O motorista lê o QR ou digita o código <span class="tag t-voce">Motorista</span></h4>
+      <p>O app mostra o ponto, a vaga e o mesmo preço do totem, com o motivo ("energia do sol −2%", "horário de pico +12%"). Ele toca em "Iniciar recarga".</p>
+      <div class="meta"><span><b>Tela:</b> <code>/motorista/vincular?c=CODIGO</code></span><span><b>Grava:</b> sessão AUTENTICADO</span></div></div></div>
+    <div class="passo"><span class="n">8</span><div><h4>O agente libera a potência <span class="tag t-sis">Agente</span></h4>
+      <p>A carga roda (10 vezes mais rápida na demonstração). A cada 2 s o agente grava kW, kWh, bateria e R$. O controle de demanda divide a potência entre a loja e os carros sem passar do limite do disjuntor.</p>
+      <div class="meta"><span><b>Quem vê ao vivo:</b> celular, totem, franqueado ("Agora no ponto", Controle de demanda) e GoodWe ("Agora na rede")</span></div></div></div>
+    <div class="passo"><span class="n">9</span><div><h4>Encerra e paga com Pix <span class="tag t-voce">Motorista</span></h4>
+      <p>O motorista encerra pelo app (no totem, só quem carregou sem app). O agente fecha a conta e cria a cobrança Pix já repartida; o totem mostra o QR do Pix. Pago, o totem mostra o recibo e o carro sai uns 20 s depois.</p>
+      <div class="meta"><span><b>Telas:</b> <code>/motorista/recarga</code> e totem</span><span><b>Grava:</b> cobrança PENDENTE → PAGA, sessão FATURADO</span></div></div></div>
+    <div class="passo"><span class="n">10</span><div><h4>O franqueado vê o extrato <span class="tag t-voce">Franqueado</span></h4>
+      <p>A recarga entra no extrato com a repartição: energia, royalty, fundo, Pix e o que fica para o comércio.</p>
+      <div class="meta"><span><b>Tela:</b> <code>/franqueado/financeiro</code></span></div></div></div>
+    <div class="passo"><span class="n">11</span><div><h4>A GoodWe vê o royalty e a rede <span class="tag t-gw">GoodWe</span></h4>
+      <p>"Pagas na última meia hora" mostra o valor e a parte da GoodWe; os números do mês, a receita e a projeção sobem.</p>
+      <div class="meta"><span><b>Tela:</b> <code>/goodwe</code></span></div></div></div>
+  </div>
+
+  <h3 style="margin-top:7mm">O mesmo fluxo, em três blocos</h3>
+  <div class="g3">
+    <div class="card"><h4>Abrir um ponto</h4><p>Passos 1 a 4. Comerciante e GoodWe, em dias ou semanas: pedido, avaliação 3D, aprovação, instalação, totem pareado, ponto ativo.</p></div>
+    <div class="card r"><h4>Uma recarga</h4><p>Passos 5 a 9. Motorista, totem e agente, em 1 a 2 horas: mapa, QR, preço travado, carga ao vivo, Pix.</p></div>
+    <div class="card"><h4>Fechar a conta</h4><p>Passos 10 e 11. Na hora do pagamento: o extrato do franqueado e o royalty da GoodWe já saem repartidos.</p></div>
+  </div>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 3a telas: motorista e totem -->
+<section class="folha">
+  <header class="cab"><span class="n">3</span><div><h2>As telas <em>de verdade</em></h2></div></header>
+  <p class="lead">Capturas do sistema rodando, com a rede de demonstração no banco. Começa por quem está no estacionamento: o motorista e o totem.</p>
+  <div style="display:grid; grid-template-columns: 50mm 50mm 1fr; gap: 7mm; align-items: start">
+    <figure class="tela"><div class="cel"><img src="telas/celular-mapa.jpg" alt="Mapa dos pontos no app do motorista"></div>
+      <figcaption><b>Mapa.</b> Pontos de São Paulo com vagas livres e o preço de agora.</figcaption></figure>
+    <figure class="tela"><div class="cel"><img src="telas/celular-recarga.jpg" alt="Recarga em andamento no app"></div>
+      <figcaption><b>Minha recarga.</b> Bateria, kW, kWh e custo ao vivo; encerrar e pagar.</figcaption></figure>
+    <figure class="tela"><div class="tot"><img src="telas/totem.jpg" alt="Totem na tela de espera"></div><div class="tot-pe"></div>
+      <figcaption><b>Totem, em espera.</b> O preço do kWh agora, o porquê, o próximo preço e as vagas.</figcaption></figure>
+  </div>
+  <div class="g2" style="margin-top:7mm">
+    <div class="card r"><h4>O mesmo preço nas duas telas</h4><p>O totem e o celular calculam o preço com a mesma conta. Ao confirmar, o preço fica travado na recarga e é o que vai para o Pix.</p></div>
+    <div class="card"><h4>Sem app também funciona</h4><p>No totem, "Sem app? Carregue e pague aqui com Pix": o visitante faz tudo pela tela da vaga.</p></div>
+  </div>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 3b telas: totem carregando + franqueado -->
+<section class="folha">
+  <header class="cab cont"><span class="n">3</span><div><h2>As telas · <em>totem e franqueado</em></h2></div></header>
+  <div style="display:grid; grid-template-columns: 58mm 1fr; gap: 7mm; align-items: start">
+    <figure class="tela"><div class="tot"><img src="telas/totem-carregando.jpg" alt="Totem com a recarga em andamento"></div><div class="tot-pe"></div>
+      <figcaption><b>Totem, carregando.</b> O mesmo número do celular, visto de longe.</figcaption></figure>
+    <div>
+      <figure class="tela"><div class="note"><img src="telas/franqueado.jpg" alt="Painel do franqueado"></div><div class="note-base"></div>
+        <figcaption><b>Painel do franqueado.</b> Receita, resultado do comércio, energia, uso por vaga e retorno do investimento, com "Agora no ponto" ao vivo.</figcaption></figure>
+      <figure class="tela" style="margin-top:6mm"><div class="note"><img src="telas/tarifas.jpg" alt="Tarifas e financeiro"></div><div class="note-base"></div>
+        <figcaption><b>Tarifas e financeiro.</b> O preço de cada hora com piso e teto, a margem por kWh e o extrato repartido.</figcaption></figure>
+    </div>
+  </div>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 3c telas: GoodWe -->
+<section class="folha">
+  <header class="cab cont"><span class="n">3</span><div><h2>As telas · <em>GoodWe</em></h2></div></header>
+  <figure class="tela media"><div class="note"><img src="telas/goodwe.jpg" alt="Visão da rede da GoodWe"></div><div class="note-base"></div>
+    <figcaption><b>Visão da rede.</b> Pontos operando, receita da rede e da GoodWe, energia, sessões e "Agora na rede": recargas em andamento, potência somada, valor correndo e quem está esperando o QR.</figcaption></figure>
+  <figure class="tela media" style="margin-top:7mm"><div class="note"><img src="telas/homologacao.jpg" alt="Homologação de pontos"></div><div class="note-base"></div>
+    <figcaption><b>Homologação.</b> A fila de pedidos de franquia com o score da IA, o uso previsto contra a meta de 2,3 h por dia, o parecer e as fotos da avaliação 3D que o comerciante enviou pelo GSVR.</figcaption></figure>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 3d telas: franquia e palco -->
+<section class="folha">
+  <header class="cab cont"><span class="n">3</span><div><h2>As telas · <em>franquia e palco</em></h2></div></header>
+  <figure class="tela media"><div class="note"><img src="telas/landing.jpg" alt="Página Seja GoodWe"></div><div class="note-base"></div>
+    <figcaption><b>Seja GoodWe.</b> A página de franquia: antes e depois do estacionamento, a rede ao vivo, como funciona, os ganhos, os três formatos com preço sugerido e o pedido com a avaliação 3D.</figcaption></figure>
+  <figure class="tela media" style="margin-top:7mm"><div class="note"><img src="telas/palco.jpg" alt="Central da demonstração em modo palco"></div><div class="note-base"></div>
+    <figcaption><b>Palco.</b> As quatro telas lado a lado, ao vivo, numa tela só: celular, totem, franqueado e GoodWe. Serve para mostrar a sincronia quando não há quatro aparelhos.</figcaption></figure>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 4a -->
+<section class="folha">
+  <header class="cab"><span class="n">4</span><div><h2>Cada tela <em>por dentro</em></h2></div></header>
+
+  <h3>Comerciante</h3>
+  <div class="g2">
+    <div class="card r"><h4>Seja GoodWe</h4><span class="url">/seja-goodwe</span>
+      <ul><li>Antes e depois arrastável do estacionamento com o Ponto W.</li><li>A rede ao vivo, como funciona, os ganhos com o painel real e os 3 formatos com preço sugerido.</li><li>Pedido com avaliação 3D, simulador de viabilidade (score, uso previsto, resultado do mês) e acompanhamento como linha do tempo.</li></ul></div>
+    <div class="card"><h4>GSVR · avaliação 3D</h4><span class="url">gs_vr</span>
+      <ul><li>Foto (ou foto de exemplo), marcar os 4 cantos da área, dados do comércio.</li><li>Resultado: Ponto W projetado, o que cabe (Light, Standard, Hub) e o potencial.</li><li>"Enviar avaliação para a GoodWe": fotos e medidas voltam ao pedido e aparecem na Homologação.</li></ul></div>
+  </div>
+
+  <h3>Motorista (celular)</h3>
+  <div class="g2">
+    <div class="card"><h4>Mapa</h4><span class="url">/motorista</span><p>Mapa real de São Paulo. Cada marcador mostra as vagas livres (verde: com vaga; azul: ocupado; cinza: indisponível). O detalhe do ponto traz o preço de agora e a próxima mudança.</p></div>
+    <div class="card"><h4>Digitar código</h4><span class="url">/motorista/vincular</span><p>Explica de onde vem o código. Com o código: ponto, vaga, preço travado e "válido até", os motivos do preço, o carro e um limite opcional em R$.</p></div>
+    <div class="card"><h4>Minha recarga</h4><span class="url">/motorista/recarga</span><p>Bateria, kW, kWh, custo e tempo estimado ao vivo. Encerrar, QR do Pix, recibo e "para onde vai o dinheiro".</p></div>
+    <div class="card"><h4>Volt</h4><span class="url">/motorista/assistente</span><p>Assistente por fase da recarga. Só fala de números reais e só promete o que o sistema faz (pagamento só por Pix).</p></div>
+  </div>
+
+  <h3>Totem (quiosque)</h3>
+  <div class="card r">
+    <p>Uma tela por estado, sempre derivada do banco: parear (6 dígitos), espera, reconhecendo o carro, QR e código (10 min), iniciando, carregando, pausada, encerrando, pagar (Pix), pago, código expirado, manutenção, instalação ou suspenso, sem sinal e sem internet. Com duas vagas ou mais, uma faixa de cartões mostra cada vaga.</p>
+    <ul>
+      <li><b style="color:#f5f5f7">Demonstração:</b> "Simular carro conectado", "Simular retirada do cabo" e "Simular pagamento".</li>
+      <li><b style="color:#f5f5f7">Visitante:</b> "Sem app? Carregue e pague aqui com Pix". Só o visitante encerra pelo totem; quem usou o app encerra pelo app.</li>
+      <li><b style="color:#f5f5f7">Quiosque:</b> 45 s sem toque volta ao início, tela sempre acesa, sem zoom; menu de manutenção com 5 toques no logo.</li>
+    </ul>
+  </div>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 4b -->
+<section class="folha">
+  <header class="cab cont"><span class="n">4</span><div><h2>Cada tela <em>por dentro</em> · continuação</h2></div></header>
+  <h3>Franqueado (notebook)</h3>
+  <div class="g2">
+    <div class="card"><h4>Painel</h4><span class="url">/franqueado</span><p>Período (mês, 7 ou 30 dias) com comparação, receita diária com média de 7 dias, "Agora no ponto" por vaga, "Precisa da sua atenção" e, para ponto novo, o checklist de ativação.</p></div>
+    <div class="card"><h4>Controle de demanda</h4><span class="url">/franqueado/demanda</span><p>Uso da entrada elétrica (normal até 85%, atenção até 92%, crítico acima), potência permitida por vaga e a carga do comércio ao longo do dia.</p></div>
+    <div class="card"><h4>Tarifas e financeiro</h4><span class="url">/franqueado/financeiro</span><p>Preço por hora do dia com piso e teto, margem líquida por kWh, repartição do mês e a lista de cobranças.</p></div>
+    <div class="card"><h4>Meu ponto e totem</h4><span class="url">/franqueado/ponto</span><p>Dados do local, preço base validado contra o sugerido, parear o totem pelo código, ativar o ponto e manutenção das vagas.</p></div>
+  </div>
+
+  <h3>GoodWe (notebook)</h3>
+  <div class="g2">
+    <div class="card r"><h4>Visão da rede</h4><span class="url">/goodwe</span><p>"Agora na rede" (recargas em andamento, kW, valor correndo, pagas há pouco), pontos operando, receita e receita GoodWe com projeção, alertas acionáveis e a tabela de pontos.</p></div>
+    <div class="card"><h4>Homologação</h4><span class="url">/goodwe/homologacao</span><p>Pedidos mais novos primeiro, score e parecer da IA, avaliação 3D com fotos, previsão financeira e as decisões (vistoria, aprovar, reprovar).</p></div>
+  </div>
+
+  <h3>Central da demonstração</h3>
+  <div class="g2">
+    <div class="card"><h4>Roteiro e aparelhos</h4><span class="url">/demo</span><p>O fluxograma ao vivo (destaca o passo atual) e os links prontos de cada aparelho.</p></div>
+    <div class="card"><h4>Palco</h4><span class="url">/demo?vista=palco</span><p>As 4 telas lado a lado, só leitura, sem trocar o login do navegador.</p></div>
+  </div>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="folha">
+  <header class="cab"><span class="n">5</span><div><h2>Como as telas <em>conversam</em></h2></div></header>
+  <p class="lead">A sequência de uma recarga, mostrando quem grava e quem fica sabendo. As setas vermelhas são o tempo real avisando as telas.</p>
+  <figure class="fig">
+    <svg viewBox="0 0 760 570" width="100%" role="img" aria-label="Sequência de uma recarga entre totem, agente, banco, celular, franqueado e GoodWe">
+      <defs>
+        <marker id="s2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#d9d9de"/></marker>
+        <marker id="s2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#5b9cff"/></marker>
+        <marker id="s3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#ff3b45"/></marker>
+      </defs>
+      <g font-size="11.5" font-weight="600" text-anchor="middle" fill="#f5f5f7">
+        <rect x="20" y="8" width="100" height="30" rx="9" fill="#1c1c1e" stroke="#ff3b45" stroke-width="1.5"/><text x="70" y="28">Totem</text>
+        <rect x="140" y="8" width="100" height="30" rx="9" fill="#1c1c1e" stroke="#5b9cff" stroke-width="1.5"/><text x="190" y="28">Agente</text>
+        <rect x="270" y="8" width="120" height="30" rx="9" fill="#242427" stroke="#f5f5f7" stroke-width="1.5"/><text x="330" y="28">Banco</text>
+        <rect x="410" y="8" width="100" height="30" rx="9" fill="#1c1c1e" stroke="#3a3a3f" stroke-width="1.4"/><text x="460" y="28">Celular</text>
+        <rect x="530" y="8" width="100" height="30" rx="9" fill="#1c1c1e" stroke="#3a3a3f" stroke-width="1.4"/><text x="580" y="28">Franqueado</text>
+        <rect x="650" y="8" width="100" height="30" rx="9" fill="#1c1c1e" stroke="#3a3a3f" stroke-width="1.4"/><text x="700" y="28">GoodWe</text>
+      </g>
+      <g stroke="#3a3a3f" stroke-dasharray="3 4"><line x1="70" y1="40" x2="70" y2="562"/><line x1="190" y1="40" x2="190" y2="562"/><line x1="330" y1="40" x2="330" y2="562"/><line x1="460" y1="40" x2="460" y2="562"/><line x1="580" y1="40" x2="580" y2="562"/><line x1="700" y1="40" x2="700" y2="562"/></g>
+      <g font-size="10.2" fill="#d9d9de">
+        <line x1="70" y1="72" x2="326" y2="72" stroke="#d9d9de" stroke-width="1.4" marker-end="url(#s2)"/><text x="78" y="66">1 · carro conectado na vaga</text>
+        <line x1="190" y1="114" x2="326" y2="114" stroke="#5b9cff" stroke-width="1.4" marker-end="url(#s2b)"/><text x="198" y="108" fill="#9cc2ff">2 · abre a sessão ABERTA + código</text>
+        <line x1="330" y1="152" x2="74" y2="152" stroke="#ff3b45" stroke-width="1.6" marker-end="url(#s3)"/><text x="84" y="146" fill="#ff8a92">3 · totem mostra QR e código</text>
+        <line x1="330" y1="152" x2="576" y2="152" stroke="#ff3b45" stroke-width="1.6" marker-end="url(#s3)"/><text x="470" y="146" fill="#ff8a92">"aguardando QR"</text>
+        <line x1="460" y1="194" x2="334" y2="194" stroke="#d9d9de" stroke-width="1.4" marker-end="url(#s2)"/><text x="344" y="188">4 · confirma o código → AUTENTICADO</text>
+        <line x1="190" y1="236" x2="326" y2="236" stroke="#5b9cff" stroke-width="1.4" marker-end="url(#s2b)"/><text x="198" y="230" fill="#9cc2ff">5 · CARREGANDO: kW, kWh, R$ a cada 2 s</text>
+        <line x1="330" y1="276" x2="74" y2="276" stroke="#ff3b45" stroke-width="1.6" marker-end="url(#s3)"/>
+        <line x1="330" y1="276" x2="696" y2="276" stroke="#ff3b45" stroke-width="1.6" marker-end="url(#s3)"/>
+        <circle cx="460" cy="276" r="3.5" fill="#ff3b45"/><circle cx="580" cy="276" r="3.5" fill="#ff3b45"/>
+        <text x="84" y="270" fill="#ff8a92">6 · carga ao vivo em todas as telas</text>
+        <line x1="460" y1="318" x2="334" y2="318" stroke="#d9d9de" stroke-width="1.4" marker-end="url(#s2)"/><text x="344" y="312">7 · encerrar → ENCERRANDO</text>
+        <line x1="190" y1="360" x2="326" y2="360" stroke="#5b9cff" stroke-width="1.4" marker-end="url(#s2b)"/><text x="198" y="354" fill="#9cc2ff">8 · fecha a conta: CONCLUIDO</text>
+        <text x="198" y="371" fill="#a1a1a6">+ cobrança Pix repartida</text>
+        <line x1="330" y1="404" x2="74" y2="404" stroke="#ff3b45" stroke-width="1.6" marker-end="url(#s3)"/><text x="84" y="398" fill="#ff8a92">9 · totem e app mostram o Pix</text>
+        <line x1="460" y1="442" x2="334" y2="442" stroke="#d9d9de" stroke-width="1.4" marker-end="url(#s2)"/><text x="344" y="436">10 · Pix pago → FATURADO</text>
+        <line x1="330" y1="482" x2="74" y2="482" stroke="#ff3b45" stroke-width="1.6" marker-end="url(#s3)"/><text x="84" y="476" fill="#ff8a92">11 · recibo no totem</text>
+        <line x1="330" y1="482" x2="696" y2="482" stroke="#ff3b45" stroke-width="1.6" marker-end="url(#s3)"/><circle cx="580" cy="482" r="3.5" fill="#ff3b45"/>
+        <text x="470" y="476" fill="#ff8a92">extrato e royalty</text>
+        <line x1="190" y1="526" x2="326" y2="526" stroke="#5b9cff" stroke-width="1.4" marker-end="url(#s2b)"/><text x="198" y="520" fill="#9cc2ff">12 · ~20 s depois o carro sai: vaga livre</text>
+      </g>
+    </svg>
+    <figcaption>Ninguém manda mensagem para ninguém: o totem, o agente e o celular só gravam no banco; o tempo real entrega a mudança para quem estiver olhando.</figcaption>
+  </figure>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 5b -->
+<section class="folha">
+  <header class="cab cont"><span class="n">5</span><div><h2>Quem grava <em>o quê</em></h2></div></header>
+  <p class="lead">Cada informação tem dono. A tabela mostra quem escreve cada uma e quem só lê.</p>
+  <table>
+    <thead><tr><th style="width:27%">Informação (tabela no banco)</th><th style="width:40%">Quem grava</th><th>Quem lê</th></tr></thead>
+    <tbody>
+      <tr><td>Pedido de franquia <code>homologacoes</code></td><td>Seja GoodWe (cria) e Homologação (decide)</td><td>Homologação; o acompanhamento no Seja GoodWe</td></tr>
+      <tr><td>Avaliação 3D <code>avaliacoes_local</code> + fotos</td><td>GSVR</td><td>Seja GoodWe e Homologação</td></tr>
+      <tr><td>Ponto e vagas <code>pontos</code> <code>carregadores</code></td><td>Homologação (aprovar cria), Meu ponto (configura, ativa, manutenção), totem (carro no cabo), agente (ocupado ou livre, potência, sinal)</td><td>Todas as telas</td></tr>
+      <tr><td>Pareamento <code>totens</code></td><td>Totem (gera o código) e Meu ponto (pareia)</td><td>Totem e o checklist do franqueado</td></tr>
+      <tr><td>Recarga <code>sessoes</code></td><td>Agente (abre, carrega, fecha), celular (confirma, encerra), totem (visitante)</td><td>Totem, celular, franqueado, GoodWe</td></tr>
+      <tr><td>Telemetria <code>telemetria</code></td><td>Agente</td><td>Curvas no app, no totem e no franqueado</td></tr>
+      <tr><td>Cobrança <code>cobrancas</code></td><td>Agente (cria, já repartida) e celular ou totem (paga)</td><td>Financeiro do franqueado e a GoodWe</td></tr>
+      <tr><td>Perfil e papel <code>perfis</code></td><td>Cadastro e a aprovação (vira franqueado)</td><td>O app inteiro (menu e permissões ao vivo)</td></tr>
+      <tr><td>Rastreio <code>eventos</code></td><td>Todas as ações importantes</td><td>Auditoria</td></tr>
+    </tbody>
+  </table>
+  <div class="g3" style="margin-top:4mm">
+    <div class="stat r"><div class="v">~1<small>s</small></div><div class="l">da gravação no banco até a mudança aparecer nas outras telas</div></div>
+    <div class="stat"><div class="v">2<small>s</small></div><div class="l">ciclo do agente: lê o estado, move a carga, grava os números</div></div>
+    <div class="stat"><div class="v">20<small>s</small></div><div class="l">intervalo do sinal de vida do agente; sem ele o totem mostra "sem sinal"</div></div>
+  </div>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="folha">
+  <header class="cab"><span class="n">6</span><div><h2>Os estados <em>de uma recarga</em></h2></div></header>
+  <p class="lead">A recarga (sessão) passa por estados fixos. Cada tela olha o estado e decide o que mostrar.</p>
+  <figure class="fig">
+    <svg viewBox="0 0 760 230" width="100%" role="img" aria-label="Máquina de estados da sessão de recarga">
+      <defs><marker id="s4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#a1a1a6"/></marker></defs>
+      <g font-size="10.5" font-weight="600" text-anchor="middle" fill="#f5f5f7">
+        <rect x="6" y="70" width="92" height="40" rx="20" fill="#1c1c1e" stroke="#5b9cff" stroke-width="1.6"/><text x="52" y="94">ABERTA</text>
+        <rect x="118" y="70" width="112" height="40" rx="20" fill="#1c1c1e" stroke="#5b9cff" stroke-width="1.6"/><text x="174" y="94">AUTENTICADO</text>
+        <rect x="250" y="70" width="112" height="40" rx="20" fill="rgba(91,156,255,.18)" stroke="#5b9cff" stroke-width="1.6"/><text x="306" y="94">CARREGANDO</text>
+        <rect x="250" y="160" width="112" height="40" rx="20" fill="rgba(255,176,32,.14)" stroke="#ffb020" stroke-width="1.6"/><text x="306" y="184">PAUSADO</text>
+        <rect x="382" y="70" width="112" height="40" rx="20" fill="#1c1c1e" stroke="#a1a1a6" stroke-width="1.4"/><text x="438" y="94">ENCERRANDO</text>
+        <rect x="514" y="70" width="110" height="40" rx="20" fill="rgba(230,0,18,.18)" stroke="#ff3b45" stroke-width="1.6"/><text x="569" y="94">CONCLUIDO</text>
+        <rect x="644" y="70" width="110" height="40" rx="20" fill="rgba(61,220,151,.14)" stroke="#3ddc97" stroke-width="1.6"/><text x="699" y="94">FATURADO</text>
+        <rect x="6" y="160" width="92" height="40" rx="20" fill="#1c1c1e" stroke="#6e6e73" stroke-width="1.4"/><text x="52" y="184" fill="#a1a1a6">EXPIRADA</text>
+      </g>
+      <g stroke="#a1a1a6" stroke-width="1.4" fill="none">
+        <line x1="98" y1="90" x2="116" y2="90" marker-end="url(#s4)"/>
+        <line x1="230" y1="90" x2="248" y2="90" marker-end="url(#s4)"/>
+        <line x1="362" y1="90" x2="380" y2="90" marker-end="url(#s4)"/>
+        <line x1="494" y1="90" x2="512" y2="90" marker-end="url(#s4)"/>
+        <line x1="624" y1="90" x2="642" y2="90" marker-end="url(#s4)"/>
+        <line x1="296" y1="112" x2="296" y2="158" marker-end="url(#s4)"/>
+        <line x1="316" y1="158" x2="316" y2="112" marker-end="url(#s4)"/>
+        <line x1="52" y1="112" x2="52" y2="158" marker-end="url(#s4)"/>
+      </g>
+      <g font-size="9.6" fill="#a1a1a6">
+        <text x="52" y="58" text-anchor="middle">carro conectou</text><text x="52" y="46" text-anchor="middle">código de 4 letras</text>
+        <text x="174" y="58" text-anchor="middle">motorista confirmou</text><text x="174" y="46" text-anchor="middle">preço travado</text>
+        <text x="306" y="58" text-anchor="middle">energia passando</text>
+        <text x="438" y="58" text-anchor="middle">pediram para encerrar</text>
+        <text x="569" y="58" text-anchor="middle">conta fechada</text><text x="569" y="46" text-anchor="middle">Pix a pagar</text>
+        <text x="699" y="58" text-anchor="middle">pago</text>
+        <text x="330" y="140">controle de demanda</text>
+        <text x="66" y="140">10 min sem confirmar ou cabo removido</text>
+      </g>
+    </svg>
+  </figure>
+  <table style="margin-top:5mm">
+    <thead><tr><th style="width:22%">Estado</th><th style="width:39%">O totem mostra</th><th>O celular mostra</th></tr></thead>
+    <tbody>
+      <tr><td>ABERTA</td><td>QR grande, código e a contagem dos 10 minutos</td><td>A recarga encontrada pelo código, com o preço travado</td></tr>
+      <tr><td>AUTENTICADO</td><td>"Tudo certo! Liberando a energia"</td><td>Recarga começando</td></tr>
+      <tr><td>CARREGANDO · PAUSADO</td><td>Bateria, kW, kWh, R$ e tempo para 100%; na pausa, o motivo</td><td>O mesmo, com "Encerrar recarga"</td></tr>
+      <tr><td>CONCLUIDO</td><td>QR do Pix e o valor</td><td>QR do Pix e "Simular pagamento"</td></tr>
+      <tr><td>FATURADO</td><td>Recibo e "pode desconectar"</td><td>Recibo e a repartição do dinheiro</td></tr>
+      <tr><td>EXPIRADA</td><td>"O código expirou. Desconecte e conecte de novo."</td><td>"Esse código não está ativo"</td></tr>
+    </tbody>
+  </table>
+  <p class="nota">O estado mora no banco, não na tela. Se o celular fechar ou a página recarregar no meio da carga, a tela volta exatamente onde estava.</p>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 7 tarifa -->
+<section class="folha">
+  <header class="cab"><span class="n">7</span><div><h2>Como sai o <em>preço do kWh</em></h2></div></header>
+  <p class="lead">O franqueado define o preço base. O sistema ajusta o preço de cada hora sozinho, sempre dentro de limites, e o motorista vê o preço travado antes de começar.</p>
+  <div class="formula">
+    <div class="linha">preço = <b>preço base</b> × faixa do horário × últimas vagas − energia do sol</div>
+    <div class="g3">
+      <div><b>Faixa do horário</b><p class="dim peq" style="margin-top:1mm">Vale (22h às 8h): −10%<br>Normal: o preço base<br>Pico (17h às 19h, dias úteis): +12%<br>No máximo 10% de diferença de uma hora para a outra.</p></div>
+      <div><b>Últimas vagas e sol</b><p class="dim peq" style="margin-top:1mm">Ponto com 2 vagas ou mais: até +8% quando o motorista pega uma das últimas vagas (mais da metade ocupada, contando ele).<br>Com geração solar sobrando no ponto: até −8%.</p></div>
+      <div><b>Limites e trava</b><p class="dim peq" style="margin-top:1mm">Piso: 85% da base e nunca abaixo de energia + taxas + R$ 0,20.<br>Teto: 130% da base.<br>O preço do QR vale 10 minutos e é o que vai para o Pix.</p></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:4.5mm">Um dia útil em São Paulo, com o preço base sugerido de R$ 1,90 <span class="sug">sugerido · ajustável</span></h3>
+  <figure class="fig">
+    <svg viewBox="0 0 760 250" width="100%" role="img" aria-label="Preço do kWh em cada hora de um dia útil: R$ 1,71 no vale, R$ 1,90 no horário normal e R$ 2,13 no pico das 17h às 19h">
+      <!-- escala: R$ 1,50 = y 205 ; R$ 2,50 = y 25 → 180 px por real -->
+      <g stroke="#2c2c30"><line x1="44" y1="205" x2="694" y2="205"/><line x1="44" y1="115" x2="694" y2="115" stroke-dasharray="2 4"/><line x1="44" y1="25" x2="694" y2="25" stroke-dasharray="2 4"/></g>
+      <g font-size="9.5" fill="#6e6e73" text-anchor="end"><text x="38" y="208">1,50</text><text x="38" y="118">2,00</text><text x="38" y="28">2,50</text></g>
+      <!-- teto 2,47 e piso 1,62 -->
+      <line x1="44" y1="30.4" x2="694" y2="30.4" stroke="#ff5560" stroke-width="1" stroke-dasharray="5 4"/>
+      <text x="700" y="28" font-size="9.5" fill="#ff8a92">teto</text><text x="700" y="40" font-size="9.5" fill="#ff8a92">R$ 2,47</text>
+      <line x1="44" y1="183.4" x2="694" y2="183.4" stroke="#a1a1a6" stroke-width="1" stroke-dasharray="5 4"/>
+      <text x="700" y="181" font-size="9.5" fill="#a1a1a6">piso</text><text x="700" y="193" font-size="9.5" fill="#a1a1a6">R$ 1,62</text>
+      <g id="barras"></g>
+      <g font-size="9.5" fill="#6e6e73" text-anchor="middle"><text x="60" y="222">0h</text><text x="222" y="222">6h</text><text x="384" y="222">12h</text><text x="546" y="222">18h</text><text x="681" y="222">23h</text></g>
+      <g font-size="10.5" font-weight="600" text-anchor="middle">
+        <text x="154" y="159" fill="#9cc2ff">R$ 1,71</text>
+        <text x="384" y="125" fill="#f5f5f7">R$ 1,90</text>
+        <text x="546" y="84" fill="#ff8a92">R$ 2,13</text>
+      </g>
+      <text x="370" y="244" font-size="9.5" fill="#6e6e73" text-anchor="middle">vale · normal · pico · as horas 8h, 16h, 20h e 22h são rampas de transição</text>
+    </svg>
+    <figcaption>Calculado pelo próprio motor de tarifa do app, com o ponto vazio e sem sol. Na última vaga livre do pico o preço vai a R$ 2,30; no fim de semana não há pico.</figcaption>
+  </figure>
+
+  <h3 style="margin-top:4mm">O motorista sempre vê o porquê <span class="dim" style="font-weight:400;font-size:9pt">· as linhas que o totem e o celular mostram, geradas pelo motor</span></h3>
+  <div class="g3">
+    <div class="card"><h4>11h, ponto vazio</h4><div class="stat" style="background:none;border:0;padding:0 0 2mm"><div class="v">R$ 1,90<small>/kWh</small></div></div><p>Preço base R$ 1,90/kWh</p></div>
+    <div class="card"><h4>18h, horário de pico</h4><div class="stat" style="background:none;border:0;padding:0 0 2mm"><div class="v">R$ 2,13<small>/kWh</small></div></div><p>Preço base R$ 1,90/kWh<br>Horário de pico (+12%) +R$ 0,23</p></div>
+    <div class="card r"><h4>18h, a última vaga livre</h4><div class="stat" style="background:none;border:0;padding:0 0 2mm"><div class="v">R$ 2,30<small>/kWh</small></div></div><p>Preço base R$ 1,90/kWh<br>Horário de pico (+12%) +R$ 0,23<br>Últimas vagas (+8%) +R$ 0,17</p></div>
+  </div>
+  <p class="nota">Num ponto com painéis solares aparece também a linha do sol, como no totem do Pão de Açúcar Moema: "Energia do sol do ponto (−2%) −R$ 0,03". O preço que o motorista confirma fica travado por 10 minutos e vai inteiro para a cobrança.</p>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 8a valores: kWh -->
+<section class="folha">
+  <header class="cab"><span class="n">8</span><div><h2>Valores, margens <em>e preços sugeridos</em></h2></div></header>
+  <p class="lead">As contas desta seção saem das mesmas funções que o app usa no totem, na cobrança e no simulador da franquia. Todo valor é sugerido: a GoodWe ajusta as regras da rede e o franqueado ajusta o preço base do ponto.</p>
+
+  <h3>Como o sistema chega ao preço sugerido do kWh</h3>
+  <table>
+    <tbody>
+      <tr><td style="width:62%">Custo da energia em São Paulo, com impostos <span class="dim">(premissa por região)</span></td><td class="num">R$ 0,85 /kWh</td></tr>
+      <tr><td>Margem alvo do comércio por kWh</td><td class="num">R$ 0,85 /kWh</td></tr>
+      <tr><td>Taxas sobre o valor cobrado: royalty 6% + fundo 2% + Pix 1,5%</td><td class="num">9,5%</td></tr>
+      <tr><td>Conta: (0,85 + 0,85) ÷ (1 − 0,095), arredondado de R$ 0,05 em R$ 0,05</td><td class="num">R$ 1,88 → R$ 1,90</td></tr>
+      <tr class="destaque"><td>Preço base sugerido em São Paulo <span class="sug">sugerido · ajustável</span></td><td class="num">R$ 1,90 /kWh</td></tr>
+      <tr><td>Menor preço base aceito: (0,85 + 0,20) ÷ (1 − 0,095)</td><td class="num">R$ 1,17 /kWh</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Para onde vai cada R$ 1,90</h3>
+  <div class="barra">
+    <span style="width:44.7%; background:#3a3a3f">energia R$ 0,85</span>
+    <span style="width:7.9%; background:#7a0a12">0,15</span>
+    <span style="width:1.6%; background:#5b9cff"></span>
+    <span style="width:45.8%; background:var(--red)">comércio R$ 0,87</span>
+  </div>
+  <div class="legenda">
+    <div><i style="background:#3a3a3f"></i><span><b>R$ 0,85</b> energia (conta de luz do comércio)</span></div>
+    <div><i style="background:#7a0a12"></i><span><b>R$ 0,15</b> GoodWe: royalty 6% + fundo 2%</span></div>
+    <div><i style="background:#5b9cff"></i><span><b>R$ 0,03</b> tarifa do Pix 1,5%</span></div>
+    <div><i style="background:var(--red)"></i><span><b>R$ 0,87</b> fica com o comércio (46%)</span></div>
+  </div>
+
+  <h3 style="margin-top:6mm">A margem do comércio em cada momento do dia</h3>
+  <table>
+    <thead><tr><th>Momento</th><th class="num">Preço do kWh</th><th class="num">Fica com o comércio</th><th class="num">Margem</th></tr></thead>
+    <tbody>
+      <tr><td>Vale (madrugada)</td><td class="num">R$ 1,71</td><td class="num">R$ 0,69</td><td class="num">40%</td></tr>
+      <tr><td>Normal</td><td class="num">R$ 1,90</td><td class="num">R$ 0,87</td><td class="num">46%</td></tr>
+      <tr><td>Pico (17h às 19h)</td><td class="num">R$ 2,13</td><td class="num">R$ 1,08</td><td class="num">51%</td></tr>
+      <tr><td>Pico, na última vaga livre</td><td class="num">R$ 2,30</td><td class="num">R$ 1,24</td><td class="num">54%</td></tr>
+      <tr class="menos"><td>Piso do ponto (85% da base)</td><td class="num">R$ 1,62</td><td class="num">R$ 0,62</td><td class="num">38%</td></tr>
+      <tr class="menos"><td>Menor preço base aceito</td><td class="num">R$ 1,17</td><td class="num">R$ 0,21</td><td class="num">18%</td></tr>
+    </tbody>
+  </table>
+  <p class="nota">O preço nunca fica abaixo do custo: no pior caso, o comércio ainda leva a margem mínima de R$ 0,20 por kWh, já descontados a energia, o royalty, o fundo e o Pix.</p>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 8b valores: uma recarga -->
+<section class="folha">
+  <header class="cab cont"><span class="n">8</span><div><h2>Uma recarga, <em>real por real</em></h2></div></header>
+  <p class="lead">Duas recargas com o preço sugerido de R$ 1,90 por kWh: a média da rede de demonstração e uma recarga grande, de um BYD Dolphin indo de 20% a 80% da bateria.</p>
+  <table>
+    <thead><tr><th></th><th class="num">Recarga média</th><th class="num">Dolphin 20% → 80%</th></tr></thead>
+    <tbody>
+      <tr><td>Energia entregue</td><td class="num">8,36 kWh</td><td class="num">26,94 kWh</td></tr>
+      <tr><td>Tempo parado no comércio</td><td class="num">~1 h 15 min</td><td class="num">~4 h a 7 kW</td></tr>
+      <tr class="soma"><td>O motorista paga</td><td class="num">R$ 15,88</td><td class="num">R$ 51,19</td></tr>
+      <tr class="menos"><td>(−) Energia</td><td class="num">R$ 7,11</td><td class="num">R$ 22,90</td></tr>
+      <tr class="menos"><td>(−) Royalty GoodWe 6%</td><td class="num">R$ 0,95</td><td class="num">R$ 3,07</td></tr>
+      <tr class="menos"><td>(−) Fundo de marketing 2%</td><td class="num">R$ 0,32</td><td class="num">R$ 1,02</td></tr>
+      <tr class="menos"><td>(−) Tarifa do Pix 1,5%</td><td class="num">R$ 0,24</td><td class="num">R$ 0,77</td></tr>
+      <tr class="destaque"><td>Fica com o comércio, só da recarga</td><td class="num">R$ 7,26</td><td class="num">R$ 23,43</td></tr>
+      <tr><td>+ Margem média na loja <span class="dim">(premissa, abaixo)</span></td><td class="num">R$ 4,90</td><td class="num">R$ 4,90</td></tr>
+      <tr class="soma"><td>Ganho do comércio por recarga</td><td class="num">R$ 12,16</td><td class="num">R$ 28,33</td></tr>
+    </tbody>
+  </table>
+  <p class="peq dim">A repartição é a função <code>repartir</code> do app, a mesma que gera a cobrança de cada recarga. A margem na loja usa as premissas do modelo: metade dos motoristas compra (50%), o ticket médio é R$ 28 e a margem do varejo é 35%; 0,5 × 28 × 0,35 = R$ 4,90.</p>
+
+  <div class="g3" style="margin-top:5mm">
+    <div class="stat r"><div class="v">46%</div><div class="l">do valor da recarga fica com o comércio no preço sugerido, além do que ele vende na loja</div></div>
+    <div class="stat"><div class="v">8%</div><div class="l">vai para a GoodWe (royalty 6% e fundo de marketing 2%), só sobre a recarga</div></div>
+    <div class="stat"><div class="v">0%</div><div class="l">de royalty sobre as vendas da loja: o que o cliente compra é todo do comerciante</div></div>
+  </div>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 8c valores: por mês -->
+<section class="folha">
+  <header class="cab cont"><span class="n">8</span><div><h2>Um ponto <em>por mês</em>, por formato</h2></div></header>
+  <p class="lead">Cenário típico: cada vaga usada 3,5 horas por dia, 30 dias, preço base sugerido de R$ 1,90. A conta é a mesma previsão que o app mostra na homologação e no ponto em instalação.</p>
+  <table>
+    <thead><tr><th></th><th class="num">Light · 1 vaga 7 kW</th><th class="num">Standard · 2 vagas 7 kW</th><th class="num">Hub · 4 vagas 11 kW</th></tr></thead>
+    <tbody>
+      <tr><td>Investimento <span class="sug">sugerido · ajustável</span></td><td class="num">R$ 20.500</td><td class="num">R$ 37.000</td><td class="num">R$ 78.500</td></tr>
+      <tr><td>Taxa de franquia <span class="sug">sugerido · ajustável</span></td><td class="num">R$ 8.000</td><td class="num">R$ 14.000</td><td class="num">R$ 24.000</td></tr>
+      <tr class="grupo"><td colspan="4">Por mês</td></tr>
+      <tr><td>Energia entregue</td><td class="num">704 kWh</td><td class="num">1.407 kWh</td><td class="num">2.814 kWh</td></tr>
+      <tr><td>Recargas</td><td class="num">84</td><td class="num">168</td><td class="num">337</td></tr>
+      <tr class="soma"><td>Faturamento da recarga</td><td class="num">R$ 1.337</td><td class="num">R$ 2.673</td><td class="num">R$ 5.347</td></tr>
+      <tr class="menos"><td>(−) Energia</td><td class="num">R$ 598</td><td class="num">R$ 1.196</td><td class="num">R$ 2.392</td></tr>
+      <tr class="menos"><td>(−) Royalty 6% + fundo 2%</td><td class="num">R$ 107</td><td class="num">R$ 214</td><td class="num">R$ 428</td></tr>
+      <tr class="menos"><td>(−) Tarifa do Pix 1,5%</td><td class="num">R$ 20</td><td class="num">R$ 40</td><td class="num">R$ 80</td></tr>
+      <tr class="menos"><td>(−) Mensalidade da plataforma <span class="sug">sugerido · ajustável</span></td><td class="num">R$ 180</td><td class="num">R$ 180</td><td class="num">R$ 180</td></tr>
+      <tr class="soma"><td>Sobra da recarga</td><td class="num">R$ 432</td><td class="num">R$ 1.043</td><td class="num">R$ 2.267</td></tr>
+      <tr><td>+ Margem na loja <span class="dim">(premissa)</span></td><td class="num">R$ 412</td><td class="num">R$ 825</td><td class="num">R$ 1.649</td></tr>
+      <tr class="destaque"><td>Resultado do comércio</td><td class="num">R$ 844</td><td class="num">R$ 1.868</td><td class="num">R$ 3.916</td></tr>
+      <tr class="grupo"><td colspan="4">Retorno</td></tr>
+      <tr><td>Do investimento</td><td class="num">24 meses</td><td class="num">20 meses</td><td class="num">20 meses</td></tr>
+      <tr><td>Do investimento + taxa de franquia</td><td class="num">34 meses</td><td class="num">27 meses</td><td class="num">26 meses</td></tr>
+    </tbody>
+  </table>
+  <p class="peq dim">Valores arredondados ao real; a soma de uma coluna pode diferir em R$ 1. Energia por hora de recarga (6,7 kWh) e por recarga (8,4 kWh) são as médias da rede de demonstração.</p>
+
+  <h3 style="margin-top:5mm">O que a GoodWe recebe de cada ponto</h3>
+  <table>
+    <thead><tr><th></th><th class="num">Light</th><th class="num">Standard</th><th class="num">Hub</th></tr></thead>
+    <tbody>
+      <tr><td>Royalty 6% por mês</td><td class="num">R$ 80</td><td class="num">R$ 160</td><td class="num">R$ 321</td></tr>
+      <tr><td>Mensalidade da plataforma</td><td class="num">R$ 180</td><td class="num">R$ 180</td><td class="num">R$ 180</td></tr>
+      <tr class="destaque"><td>Receita recorrente da GoodWe por mês</td><td class="num">R$ 260</td><td class="num">R$ 340</td><td class="num">R$ 501</td></tr>
+      <tr><td>Fundo de marketing 2% (vai para a divulgação da rede)</td><td class="num">R$ 27</td><td class="num">R$ 53</td><td class="num">R$ 107</td></tr>
+      <tr><td>Taxa de franquia, uma vez</td><td class="num">R$ 8.000</td><td class="num">R$ 14.000</td><td class="num">R$ 24.000</td></tr>
+    </tbody>
+  </table>
+  <p class="peq dim">Fora da conta: a venda dos equipamentos GoodWe (carregador, inversor, painéis e bateria) que compõem o investimento.</p>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 8d valores: sensibilidade e premissas -->
+<section class="folha">
+  <header class="cab cont"><span class="n">8</span><div><h2>O que muda o resultado <em>e quem ajusta</em></h2></div></header>
+  <p class="lead">O número que mais pesa é o uso de cada vaga. Por isso a homologação só aprova locais com previsão de pelo menos 2,3 horas por dia por vaga.</p>
+  <table>
+    <thead><tr><th>Uso por vaga</th><th class="num">Light</th><th class="num">Standard</th><th class="num">Hub</th></tr></thead>
+    <tbody>
+      <tr><td>2,3 h/dia <span class="dim">(mínimo da homologação)</span></td><td class="num">R$ 493 · 42 meses</td><td class="num">R$ 1.166 · 32 meses</td><td class="num">R$ 2.512 · 31 meses</td></tr>
+      <tr class="destaque"><td>3,5 h/dia <span class="dim">(cenário típico)</span></td><td class="num">R$ 844 · 24 meses</td><td class="num">R$ 1.868 · 20 meses</td><td class="num">R$ 3.916 · 20 meses</td></tr>
+      <tr><td>5,0 h/dia <span class="dim">(ponto forte)</span></td><td class="num">R$ 1.283 · 16 meses</td><td class="num">R$ 2.746 · 14 meses</td><td class="num">R$ 5.672 · 14 meses</td></tr>
+    </tbody>
+  </table>
+  <p class="peq dim">Resultado do comércio por mês · retorno do investimento, com o preço base sugerido de R$ 1,90.</p>
+
+  <h3 style="margin-top:5mm">Quem pode mudar cada número</h3>
+  <table>
+    <thead><tr><th style="width:36%">Valor</th><th style="width:22%">Hoje (sugerido)</th><th>Quem ajusta e como</th></tr></thead>
+    <tbody>
+      <tr><td>Preço base do kWh do ponto</td><td>R$ 1,90 em SP</td><td><b style="color:#f5f5f7">Franqueado</b>, em Meu ponto. O app recusa abaixo do custo (R$ 1,17 em SP) e acima do dobro do sugerido, e avisa quando fica abaixo do sugerido.</td></tr>
+      <tr><td>Faixas de horário, últimas vagas, sol, piso e teto</td><td>−10% / +12% / +8% / −8% / 85% / 130%</td><td rowspan="3"><b style="color:#f5f5f7">GoodWe</b>, nas regras da rede. No MVP elas ficam num arquivo só (<code>catalogo.ts</code>); mudar um número muda junto o totem, o celular, a cobrança, a homologação e o simulador da franquia.</td></tr>
+      <tr><td>Royalty, fundo e mensalidade da plataforma</td><td>6% / 2% / R$ 180</td></tr>
+      <tr><td>Investimento e taxa de franquia por formato</td><td>tabela da página anterior</td></tr>
+      <tr><td>Tarifa do Pix</td><td>1,5%</td><td>Depende do contrato com o meio de pagamento (no MVP o Pix é simulado).</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:5mm">Premissas e pontos em aberto</h3>
+  <div class="g2">
+    <div class="card"><h4>Premissas do modelo</h4><ul>
+      <li>Energia a R$ 0,85/kWh em SP, com impostos; o custo real vem da conta de luz do comércio.</li>
+      <li>Varejo: 50% dos motoristas compram, ticket de R$ 28, margem de 35%.</li>
+      <li>Médias da rede de demonstração: 6,7 kWh por hora de recarga e 8,4 kWh por recarga.</li>
+      <li>Mês de 30 dias, sem financiamento e sem depreciação.</li></ul></div>
+    <div class="card r"><h4>Antes de prometer margem</h4><ul>
+      <li>ICMS e demais tributos sobre a venda de recarga: precisam de análise de um tributarista.</li>
+      <li>Preço final do investimento: sai da vistoria e do projeto elétrico de cada local.</li>
+      <li>Tarifa do Pix: depende do contrato com o banco ou gateway.</li></ul></div>
+  </div>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 9a URLs -->
+<section class="folha">
+  <header class="cab"><span class="n">9</span><div><h2>Endereços <em>e parâmetros</em></h2></div></header>
+  <p class="lead">Cada tela tem um endereço próprio. No site publicado (GitHub Pages) todos começam com <code>https://jbelkior1.github.io/gs_goodwe</code>; em desenvolvimento, com <code>http://localhost:5191</code>.</p>
+  <table class="compacta">
+    <thead><tr><th style="width:31%">URL</th><th style="width:19%">Tela</th><th>O que faz</th><th style="width:11%">Login</th></tr></thead>
+    <tbody>
+      <tr class="grupo"><td colspan="4">Público</td></tr>
+      <tr><td class="c"><code>/</code></td><td>Portal</td><td>Porta de entrada: escolhe o papel (motorista, totem, franqueado, GoodWe) e leva à franquia.</td><td>Não</td></tr>
+      <tr><td class="c"><code>/seja-goodwe</code></td><td>Seja GoodWe</td><td>Página da franquia + avaliação 3D + pedido + acompanhamento.</td><td>Para enviar</td></tr>
+      <tr><td class="c"><code>/entrar</code></td><td>Entrar</td><td>Entrar ou criar conta (motorista ou comércio). Contas de demonstração em um toque.</td><td>—</td></tr>
+      <tr><td class="c">GSVR <code>jbelkior1.github.io/gs_vr</code></td><td>Avaliação 3D</td><td>Outro site: foto, área marcada, Ponto W projetado, "cabe ou não", envio para a GoodWe.</td><td>Não</td></tr>
+      <tr class="grupo"><td colspan="4">Motorista (celular)</td></tr>
+      <tr><td class="c"><code>/motorista</code></td><td>Mapa</td><td>Pontos no mapa, vagas livres, preço de agora e como carregar.</td><td>Não</td></tr>
+      <tr><td class="c"><code>/motorista/vincular</code></td><td>Digitar código</td><td>Confirma a recarga pelo código do totem (o QR já traz <code>?c=CODIGO</code>) e mostra o preço travado.</td><td>Sim</td></tr>
+      <tr><td class="c"><code>/motorista/recarga</code></td><td>Minha recarga</td><td>Carga ao vivo, encerrar, Pix, recibo.</td><td>Sim</td></tr>
+      <tr><td class="c"><code>/motorista/assistente</code></td><td>Volt</td><td>Assistente que responde dúvidas com os números da recarga em andamento.</td><td>Não</td></tr>
+      <tr class="grupo"><td colspan="4">Totem (tablet ou monitor no ponto)</td></tr>
+      <tr><td class="c"><code>/totem?tela=cheia</code></td><td>Totem novo</td><td>Sem ponto ligado: mostra o código de 6 dígitos para parear.</td><td>Não</td></tr>
+      <tr><td class="c"><code>/totem?ponto=p-002&amp;tela=cheia</code></td><td>Totem do ponto</td><td>Quiosque do ponto: espera, QR, carga, Pix, recibo. Lembra o ponto depois da primeira vez.</td><td>Não</td></tr>
+      <tr class="grupo"><td colspan="4">Franqueado (notebook)</td></tr>
+      <tr><td class="c"><code>/franqueado</code></td><td>Painel</td><td>Receita, resultado, uso por vaga, "Agora no ponto", "Precisa da sua atenção", checklist de ativação.</td><td>Sim*</td></tr>
+      <tr><td class="c"><code>/franqueado/demanda</code></td><td>Controle de demanda</td><td>Entrada elétrica ao vivo e a potência de cada vaga.</td><td>Sim*</td></tr>
+      <tr><td class="c"><code>/franqueado/financeiro</code></td><td>Tarifas e financeiro</td><td>Tarifa do dia, margem por kWh, para onde vai o dinheiro, cobranças.</td><td>Sim*</td></tr>
+      <tr><td class="c"><code>/franqueado/ponto</code></td><td>Meu ponto e totem</td><td>Configuração, preço base, parear o totem, ativar, manutenção.</td><td>Sim*</td></tr>
+    </tbody>
+  </table>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 9b parâmetros -->
+<section class="folha">
+  <header class="cab cont"><span class="n">9</span><div><h2>Endereços · <em>continuação e parâmetros</em></h2></div></header>
+  <table class="compacta">
+    <thead><tr><th style="width:31%">URL</th><th style="width:19%">Tela</th><th>O que faz</th><th style="width:11%">Login</th></tr></thead>
+    <tbody>
+      <tr class="grupo"><td colspan="4">GoodWe (notebook)</td></tr>
+      <tr><td class="c"><code>/goodwe</code></td><td>Visão da rede</td><td>"Agora na rede", números do mês, alertas, mapa e tabela de pontos.</td><td>Sim*</td></tr>
+      <tr><td class="c"><code>/goodwe/homologacao</code></td><td>Homologação</td><td>Fila de pedidos com score da IA e avaliação 3D; aprovar, vistoria ou reprovar.</td><td>Sim*</td></tr>
+      <tr class="grupo"><td colspan="4">Demonstração</td></tr>
+      <tr><td class="c"><code>/demo</code></td><td>Central</td><td>Fluxograma ao vivo e os links de cada aparelho.</td><td>Não</td></tr>
+      <tr><td class="c"><code>/demo?vista=palco</code></td><td>Palco</td><td>As 4 telas lado a lado, ao vivo, numa tela só.</td><td>Não</td></tr>
+    </tbody>
+  </table>
+  <p class="peq dim">* Em tela cheia o painel exige a conta daquele papel. Na vitrine (modo demonstração) dá para ver sem login.</p>
+
+  <h3 style="margin-top:5mm">Parâmetros que mudam o comportamento</h3>
+  <table class="compacta">
+    <thead><tr><th style="width:36%">Parâmetro</th><th style="width:21%">Onde</th><th>Efeito</th></tr></thead>
+    <tbody>
+      <tr><td class="c"><code>tela=cheia</code> · <code>tela=vitrine</code></td><td>qualquer área</td><td>Tela cheia: só o ambiente do papel, como no aparelho real. Vitrine: com a barra de todos os papéis. Fica lembrado no aparelho.</td></tr>
+      <tr><td class="c"><code>conta=goodwe|franqueado|motorista|comerciante</code></td><td>qualquer área (demo)</td><td>Entra sozinho com a conta de demonstração e some da URL.</td></tr>
+      <tr><td class="c"><code>ponto=p-002</code></td><td>totem, franqueado</td><td>Escolhe o ponto. No totem, fica gravado como o ponto daquele aparelho.</td></tr>
+      <tr><td class="c"><code>guia=1</code> · <code>guia=0</code></td><td>qualquer área (demo)</td><td>Liga ou desliga o guia didático ("Passo N · o que está acontecendo").</td></tr>
+      <tr><td class="c"><code>modo=vertical|horizontal|auto</code></td><td>totem</td><td>Orientação do quiosque (1080×1920 ou 1920×1080).</td></tr>
+      <tr><td class="c"><code>c=YRJY</code></td><td><code>/motorista/vincular</code></td><td>Código da recarga (vem no QR do totem).</td></tr>
+      <tr><td class="c"><code>volta=/caminho</code></td><td><code>/entrar</code></td><td>Para onde voltar depois de entrar.</td></tr>
+      <tr><td class="c"><code>modo=cadastro&amp;tipo=comercio</code></td><td><code>/entrar</code></td><td>Abre direto o cadastro de comércio.</td></tr>
+      <tr><td class="c"><code>avaliacao=av-…</code></td><td><code>/seja-goodwe</code></td><td>Volta do GSVR com a avaliação (fotos e medidas) para anexar ao pedido.</td></tr>
+      <tr><td class="c"><code>solicitacao=h-…</code></td><td><code>/goodwe/homologacao</code></td><td>Abre um pedido específico.</td></tr>
+      <tr><td class="c"><code>embed=1</code></td><td>usado pelo Palco</td><td>Tela embutida, só leitura, sem trocar o login do navegador.</td></tr>
+    </tbody>
+  </table>
+  <p class="nota">Cada origem do navegador guarda o seu próprio login. Por isso, num notebook só, dá para ter GoodWe, franqueado e totem logados ao mesmo tempo usando endereços como <code>goodwe.localhost</code> e <code>totem.localhost</code>.</p>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ 10 links -->
+<section class="folha">
+  <header class="cab"><span class="n">10</span><div><h2>Links e roteiro <em>da apresentação</em></h2></div></header>
+  <p class="lead">Um celular, dois notebooks e um totem. Cada aparelho abre o seu link uma vez; o ponto da demonstração é o Pão de Açúcar Moema (<code>p-002</code>). Todos os endereços começam com <code>https://jbelkior1.github.io/gs_goodwe</code>.</p>
+  <table>
+    <tbody>
+      <tr><td style="width:30%"><b style="color:#f5f5f7">Celular · motorista</b></td><td><code>/motorista?tela=cheia&amp;conta=motorista</code></td></tr>
+      <tr><td><b style="color:#f5f5f7">Totem · pareamento</b></td><td><code>/totem?tela=cheia</code> <span class="dim">(mostra o código de 6 dígitos)</span></td></tr>
+      <tr><td><b style="color:#f5f5f7">Totem · direto no ponto</b></td><td><code>/totem?ponto=p-002&amp;tela=cheia</code></td></tr>
+      <tr><td><b style="color:#f5f5f7">Notebook · franqueado</b></td><td><code>/franqueado?ponto=p-002&amp;tela=cheia&amp;conta=franqueado</code></td></tr>
+      <tr><td><b style="color:#f5f5f7">Notebook · GoodWe</b></td><td><code>/goodwe?tela=cheia&amp;conta=goodwe</code></td></tr>
+      <tr><td><b style="color:#f5f5f7">Tudo numa tela</b></td><td><code>/demo?vista=palco</code></td></tr>
+      <tr><td><b style="color:#f5f5f7">Comerciante</b></td><td><code>/seja-goodwe?conta=comerciante</code></td></tr>
+    </tbody>
+  </table>
+  <p class="nota">No site publicado, cada aparelho entra <b>uma vez</b> com a conta da demonstração: o link abre a tela de entrada com o e-mail preenchido e, depois disso, entra sozinho. O totem não precisa de conta. Acrescente <code>&amp;guia=1</code> em qualquer link para mostrar a faixa didática com o passo do fluxograma.</p>
+
+  <h3 style="margin-top:6mm">Roteiro curto (8 a 10 minutos)</h3>
+  <table>
+    <thead><tr><th style="width:6%">#</th><th style="width:24%">Aparelho</th><th>O que fazer e o que mostrar</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Notebook GoodWe</td><td>Visão da rede: 10 pontos em São Paulo, receita do mês, "Agora na rede" vazio.</td></tr>
+      <tr><td>2</td><td>Totem</td><td>Tela de espera: preço do kWh agora e o porquê, próximo preço, passo a passo.</td></tr>
+      <tr><td>3</td><td>Totem</td><td>"Simular carro conectado" → QR e código. No franqueado: "aguardando o motorista ler o QR".</td></tr>
+      <tr><td>4</td><td>Celular</td><td>Digitar o código → preço travado igual ao do totem → Iniciar recarga.</td></tr>
+      <tr><td>5</td><td>Os quatro</td><td>Carga ao vivo: celular, totem, "Agora no ponto" e "Agora na rede" subindo juntos.</td></tr>
+      <tr><td>6</td><td>Celular → totem</td><td>Encerrar → Pix → Simular pagamento → recibo no totem.</td></tr>
+      <tr><td>7</td><td>Franqueado → GoodWe</td><td>Extrato com a repartição; a GoodWe recebe a parte dela em "Pagas na última meia hora".</td></tr>
+      <tr><td>8</td><td>Comerciante</td><td>(Opcional) Seja GoodWe → avaliação 3D → pedido → aprovar na Homologação.</td></tr>
+    </tbody>
+  </table>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ A anexo -->
+<section class="folha">
+  <header class="cab"><span class="n">A</span><div><h2>Anexo · <em>preparar a demonstração</em></h2></div></header>
+  <h3>Antes de começar (no notebook que roda o sistema)</h3>
+  <ol class="cmd">
+    <li>O sistema já está publicado no GitHub Pages: <code>https://jbelkior1.github.io/gs_goodwe</code>, com a avaliação 3D em <code>https://jbelkior1.github.io/gs_vr</code>.</li>
+    <li>Ligue o agente do ponto num notebook: <code>npm run simulador</code>. Ele faz o papel do carregador e precisa ficar rodando o tempo todo (usa a chave secreta do <code>.env.local</code>, que nunca vai para o site).</li>
+    <li>Em cada aparelho, abra o link da seção 10 e entre uma vez com a conta da demonstração. O totem não precisa de conta.</li>
+    <li>Confira a central em <code>/demo</code>.</li>
+    <li>Sem internet no local: rode o sistema no próprio notebook (<code>npm run dev:rede</code>) e use o IP dele, com <code>VITE_URL_PUBLICA=http://&lt;IP&gt;:5191</code> no <code>.env.local</code>.</li>
+  </ol>
+  <h3 style="margin-top:6mm">Para recomeçar do zero</h3>
+  <table>
+    <thead><tr><th style="width:40%">Comando</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>npm run demo:comerciante</code></td><td>Volta a conta do comerciante ao início (apaga só o que ela criou: pedido, ponto, vagas, recargas).</td></tr>
+      <tr><td><code>npm run demo:atualizar</code></td><td>Traz o histórico de demonstração para perto de hoje (os gráficos não ficam vazios).</td></tr>
+      <tr><td><code>npm run seed -- --limpar</code></td><td>Refaz a rede inteira (10 pontos em São Paulo com 90 dias de histórico).</td></tr>
+    </tbody>
+  </table>
+  <h3 style="margin-top:6mm">Contas de demonstração</h3>
+  <table>
+    <thead><tr><th style="width:40%">Conta</th><th>Papel</th></tr></thead>
+    <tbody>
+      <tr><td><code>goodwe@pontow.app</code></td><td>GoodWe (franqueadora)</td></tr>
+      <tr><td><code>franqueado@pontow.app</code></td><td>Franqueado do Pão de Açúcar Moema (<code>p-002</code>)</td></tr>
+      <tr><td><code>motorista@pontow.app</code></td><td>Motorista (Ana Prado)</td></tr>
+      <tr><td><code>comerciante@pontow.app</code></td><td>Comércio que ainda vai pedir a franquia</td></tr>
+    </tbody>
+  </table>
+  <p class="nota">A senha das contas não fica no site publicado nem neste documento: quem apresenta entra uma vez em cada aparelho, e daí em diante os links com <code>conta=</code> entram sozinhos. Os nomes de marcas da rede (Graal, Pão de Açúcar, Carrefour…) são <b>dados de demonstração</b>, sem parceria.</p>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<!-- ============================================================ G glossário -->
+<section class="folha">
+  <header class="cab"><span class="n">G</span><div><h2><em>Glossário</em></h2></div></header>
+  <table>
+    <tbody>
+      <tr><td style="width:26%"><b style="color:#f5f5f7">Ponto</b></td><td>O comércio franqueado com seus carregadores (ex.: Pão de Açúcar Moema).</td></tr>
+      <tr><td><b style="color:#f5f5f7">Vaga</b></td><td>Cada carregador do ponto. Light tem 1, Standard 2 e Hub 4.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Totem</b></td><td>A tela no ponto (tablet ou monitor) que mostra o preço, o QR, a carga e o Pix.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Agente do ponto</b></td><td>O programa que conversa com o carregador. No MVP é o simulador.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Sessão</b></td><td>Uma recarga, do carro conectar até o pagamento.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Código</b></td><td>As 4 letras que o totem mostra quando o carro conecta; valem 10 minutos.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Preço base</b></td><td>O preço do kWh que o franqueado define; o sistema sugere R$ 1,90 em São Paulo.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Preço travado</b></td><td>O preço do kWh que o motorista aceitou; não muda até o fim da recarga.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Piso e teto</b></td><td>Os limites do preço de cada hora: nunca abaixo do custo com margem mínima, nunca acima de 130% da base.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Cobrança</b></td><td>O Pix gerado no fim da recarga, já com a repartição.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Repartição</b></td><td>A divisão do valor pago: energia, royalty 6%, fundo 2%, Pix 1,5% e o que fica com o comércio.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Royalty</b></td><td>A parte da GoodWe, só sobre a recarga, nunca sobre as vendas da loja.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Controle de demanda</b></td><td>Divide a potência entre a loja e os carros sem passar do limite do disjuntor.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Pareamento</b></td><td>Ligar um totem a um ponto pelo código de 6 dígitos.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Homologação</b></td><td>A análise da GoodWe sobre um pedido de franquia (score, vistoria, aprovação).</td></tr>
+      <tr><td><b style="color:#f5f5f7">Uso por vaga</b></td><td>Horas por dia em que cada carregador está carregando; a meta mínima é 2,3 h.</td></tr>
+      <tr><td><b style="color:#f5f5f7">GSVR</b></td><td>O site de avaliação 3D do local por foto (repositório gs_vr).</td></tr>
+      <tr><td><b style="color:#f5f5f7">Tempo real</b></td><td>O recurso do banco que avisa as telas quando algo muda.</td></tr>
+      <tr><td><b style="color:#f5f5f7">Vitrine e tela cheia</b></td><td>Vitrine: todos os papéis numa tela para demonstrar. Tela cheia: só o ambiente de um papel, como no aparelho real.</td></tr>
+    </tbody>
+  </table>
+  <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
+</section>
+
+<script>
+  // barras do gráfico de tarifa: valores calculados pelo motor do app (curvaDoDia, base R$ 1,90, ponto vazio, dia útil)
+  (function () {
+    var precos = [1.71,1.71,1.71,1.71,1.71,1.71,1.71,1.71,1.81,1.9,1.9,1.9,1.9,1.9,1.9,1.9,2.01,2.13,2.13,2.13,2.01,1.9,1.81,1.71];
+    var g = document.getElementById('barras'), ns = 'http://www.w3.org/2000/svg';
+    precos.forEach(function (p, h) {
+      var y = 205 - (p - 1.5) * 180, x = 50 + h * 27;
+      var cor = (h >= 17 && h <= 19) ? '#ff3b45' : (h === 16 || h === 20) ? '#a3313a' : (h <= 7 || h === 23) ? '#5b9cff' : (h === 8 || h === 22) ? '#40669e' : '#6e6e73';
+      var r = document.createElementNS(ns, 'rect');
+      r.setAttribute('x', x); r.setAttribute('y', y); r.setAttribute('width', 20); r.setAttribute('height', 205 - y); r.setAttribute('rx', 3); r.setAttribute('fill', cor);
+      g.appendChild(r);
+    });
+  })();
+  // aviso de página que transborda (só aparece se algo não couber na folha)
+  window.addEventListener('load', function () {
+    (document.fonts ? document.fonts.ready : Promise.resolve()).then(function () {
+      document.querySelectorAll('.folha').forEach(function (f) {
+        var a = f.scrollHeight - f.clientHeight;
+        if (a > 1) { var m = document.createElement('div'); m.className = 'transborda'; m.textContent = 'TRANSBORDA ' + a + 'px'; f.appendChild(m); }
+      });
+    });
+  });
+</script>
+</body>
+</html>

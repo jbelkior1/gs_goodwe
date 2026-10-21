@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { base, kpisDaRede, sessoesAtivas, pontosParaMotorista } from '../../domain/db';
-import { num, brl } from '../../ui/kit';
+import { base, kpisDaRede, sessoesAtivas, pontosParaMotorista, participacaoDoComercio } from '../../domain/db';
+import { brl, kwh, num, pct, plural, tarifaKWh } from '../../domain/formato';
 import { Icone, type NomeIcone } from '../../ui/icones';
 
 /**
@@ -22,12 +22,15 @@ interface Painel {
   destaque: (d: ReturnType<typeof dados>) => { valor: string; rotulo: string }[];
 }
 
+/** a central da demonstração só aparece no modo demonstração */
+const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
+
 const dados = () => {
   const kpis = kpisDaRede();
   const ativas = sessoesAtivas();
   const pontos = pontosParaMotorista();
-  const precoMin = Math.min(...pontos.map((p) => p.precoAgora));
-  return { kpis, ativas: ativas.length, pontos: pontos.length, precoMin };
+  const precoMin = pontos.length ? Math.min(...pontos.map((p) => p.precoAgora)) : null;
+  return { kpis, ativas: ativas.length, pontos: pontos.length, precoMin, naLoja: participacaoDoComercio() };
 };
 
 const PAINEIS: Painel[] = [
@@ -37,11 +40,11 @@ const PAINEIS: Painel[] = [
     ico: 'carro',
     nome: 'Motorista',
     quem: 'quem dirige o elétrico',
-    descricao: 'Acha o ponto no mapa, trava o preço antes de plugar, acompanha a recarga e paga pelo Pix.',
+    descricao: 'Acha o ponto no mapa, lê o QR que o totem mostra para travar o preço, acompanha a recarga e paga pelo Pix.',
     aparelho: 'App · celular',
     destaque: (d) => [
-      { valor: String(d.pontos), rotulo: 'pontos abertos' },
-      { valor: brl(d.precoMin), rotulo: 'menor preço/kWh' },
+      { valor: num(d.pontos), rotulo: 'pontos abertos' },
+      { valor: d.precoMin === null ? '—' : tarifaKWh(d.precoMin), rotulo: 'menor preço agora' },
     ],
   },
   {
@@ -49,11 +52,11 @@ const PAINEIS: Painel[] = [
     rota: '/totem',
     ico: 'raio',
     nome: 'Totem',
-    quem: 'quem chega sem o app',
-    descricao: 'Autoatendimento no eletroposto, com o assistente Volt respondendo em tempo real.',
+    quem: 'o quiosque do ponto',
+    descricao: 'Mostra o QR com o código da recarga assim que o carro é conectado, e atende também quem chega sem o app.',
     aparelho: 'Quiosque · tela vertical',
     destaque: (d) => [
-      { valor: String(d.ativas), rotulo: 'recargas agora' },
+      { valor: num(d.ativas), rotulo: 'recargas agora' },
       { valor: 'Volt', rotulo: 'assistente ao vivo' },
     ],
   },
@@ -66,8 +69,8 @@ const PAINEIS: Painel[] = [
     descricao: 'Faturamento da unidade, controle de demanda da entrada elétrica e repasse do mês.',
     aparelho: 'Painel · desktop',
     destaque: (d) => [
-      { valor: String(d.kpis.pontosTotal), rotulo: 'unidades na rede' },
-      { valor: '70%', rotulo: 'do bruto fica na loja' },
+      { valor: num(d.kpis.pontosOperando), rotulo: 'pontos operando' },
+      { valor: d.naLoja === null ? '—' : pct(d.naLoja), rotulo: 'do bruto fica na loja' },
     ],
   },
   {
@@ -80,7 +83,7 @@ const PAINEIS: Painel[] = [
     aparelho: 'Torre de controle · desktop',
     destaque: (d) => [
       { valor: brl(d.kpis.faturamentoRedeMes), rotulo: 'faturamento no mês' },
-      { valor: `${num(d.kpis.energiaMesKWh)} kWh`, rotulo: 'energia entregue' },
+      { valor: kwh(d.kpis.energiaMesKWh), rotulo: 'energia entregue' },
     ],
   },
 ];
@@ -105,8 +108,8 @@ export default function Portal() {
           </div>
         </div>
         <span className="meta portal-status">
-          <span className="dot pulse" style={{ color: 'var(--k-ok)' }} />
-          {d.ativas} SESSÕES ATIVAS · {base.pontos.filter((p) => p.ativo).length} PONTOS ONLINE
+          <span className="dot pulse" style={{ color: 'var(--pos)' }} />
+          {plural(d.ativas, 'sessão ativa', 'sessões ativas').toUpperCase()} · {plural(d.kpis.pontosOperando, 'ponto operando', 'pontos operando').toUpperCase()}
         </span>
       </header>
 
@@ -155,9 +158,21 @@ export default function Portal() {
         ))}
       </section>
 
+      <section className="portal-franquia">
+        <span>Tem um comércio e quer um ponto de recarga?</span>
+        <button className="btn primary" onClick={() => navigate('/seja-goodwe')}>Seja GoodWe</button>
+      </section>
+
+      {DEMO && (
+        <section className="portal-franquia">
+          <span>Vai apresentar o Ponto W?</span>
+          <button className="btn" onClick={() => navigate('/demo')}>Central da demonstração</button>
+        </section>
+      )}
+
       <footer className="portal-rodape meta">
         <span>GOODWE ENERGIA · EV CHALLENGE · DADOS SIMULADOS</span>
-        <span>{base.sessoes.length.toLocaleString('pt-BR')} SESSÕES NA BASE</span>
+        <span>{plural(base.sessoes.length, 'SESSÃO', 'SESSÕES')} NA BASE</span>
       </footer>
     </div>
   );

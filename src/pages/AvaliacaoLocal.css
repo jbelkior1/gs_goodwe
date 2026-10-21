@@ -1,0 +1,53 @@
+/* Avaliação do local (gs_vr): cartão de leitura usado no Seja GoodWe e na Homologação */
+
+.al { display: grid; gap: 16px; }
+
+.al-exemplo { margin: 0; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--warn-line); background: var(--warn-soft); color: var(--warn); }
+
+.al-fotos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.al-foto { margin: 0; display: grid; gap: 6px; align-content: start; }
+.al-foto figcaption { font-size: 11px; color: var(--k-label); }
+.al-foto-btn {
+  display: block; width: 100%; padding: 0; overflow: hidden; cursor: zoom-in;
+  border: 1px solid var(--k-line); border-radius: var(--radius-sm); background: var(--k-bg-2);
+  transition: border-color .15s ease;
+}
+.al-foto-btn:hover { border-color: var(--k-hair); }
+.al-foto-btn:focus-visible { outline: none; border-color: var(--k-red); box-shadow: 0 0 0 3px var(--k-redsoft); }
+.al-foto img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.al-foto-falta {
+  display: grid; place-items: center; aspect-ratio: 4 / 3; border: 1px dashed var(--k-hair);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--k-dim);
+}
+
+.al-medidas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.al-medidas dd { margin: 4px 0 0; font-size: 19px; font-weight: 500; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+
+.al-bloco { display: grid; gap: 8px; }
+.al-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.al-nota { margin: 0; }
+.al-aviso { padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid; font-size: 12.5px; line-height: 1.5; }
+.al-aviso.warn { border-color: var(--warn-line); background: var(--warn-soft); }
+.al-aviso.neg { border-color: var(--neg-line); background: var(--neg-soft); }
+
+.al-viab { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+.al-score { margin-top: 4px; font-size: 24px; font-weight: 500; letter-spacing: -.03em; line-height: 1.1; }
+.al-score small { font-size: 12px; font-weight: 400; letter-spacing: 0; color: var(--k-dim); }
+
+.al-detalhes { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; line-height: 1.5; }
+
+.al-lightbox {
+  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 56px 16px 20px; background: rgba(0, 0, 0, .9); cursor: zoom-out;
+}
+.al-lightbox img { max-width: 100%; max-height: calc(100dvh - 120px); object-fit: contain; border-radius: var(--radius-sm); cursor: default; }
+.al-lightbox-legenda { font-size: 12px; color: var(--k-label); }
+.al-fechar { position: absolute; top: 12px; right: 12px; min-height: 40px; cursor: pointer; }
+
+@media (max-width: 420px) {
+  .al-medidas dd { font-size: 17px; }
+}
+
+/* fila da Homologação: câmera ao lado do nome das solicitações com avaliação */
+.fila-nome { display: inline-flex; align-items: center; gap: 6px; }
+.fila-cam { display: inline-flex; color: var(--info); }

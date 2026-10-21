@@ -1,0 +1,154 @@
+/* Seja GoodWe: página de franquia (proposta, formatos, pré-análise, pedido e acompanhamento) */
+
+.sg { min-height: 100dvh; background: var(--k-bg); color: var(--k-text); }
+
+.sg-topo {
+  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px; background: rgba(0, 0, 0, .86); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--k-line);
+}
+.sg-voltar { display: inline-flex; align-items: center; gap: 6px; min-width: 64px; min-height: 34px; font-size: 12px; color: var(--k-dim); }
+.sg-voltar:hover { color: var(--k-text); }
+.sg-marca {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-size: 11px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; text-align: center;
+}
+.sg-usuario { min-width: 64px; text-align: right; font-size: 12px; color: var(--k-dim); }
+
+.sg-pagina { max-width: 1080px; margin: 0 auto; padding: 36px 20px 72px; display: grid; gap: 44px; }
+.sg-pagina h2 { font-size: 17px; letter-spacing: -.02em; }
+/* o cabeçalho fixo (~56px) não pode cobrir o título da seção ao rolar até ela */
+.sg-pagina [id] { scroll-margin-top: 70px; }
+
+.sg-hero h1 { margin: 8px 0 10px; font-size: clamp(34px, 6vw, 54px); letter-spacing: -.04em; line-height: 1.05; }
+.sg-hero p { max-width: 580px; margin: 0 0 22px; font-size: 16px; line-height: 1.55; color: var(--k-dim); }
+
+.sg-valor { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.sg-valor svg { color: var(--k-red2); }
+.sg-valor h3 { margin: 12px 0 6px; font-size: 15px; }
+.sg-valor p { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--k-dim); }
+
+/* formulário: formatos em cima; entradas à esquerda, resultado ao lado, pedido embaixo das entradas */
+.sg-form {
+  display: grid; align-items: start; gap: 20px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  grid-template-areas: "avaliacao avaliacao" "formatos formatos" "entradas resultado" "pedido resultado";
+}
+.sg-avaliacao { grid-area: avaliacao; }
+.sg-formatos { grid-area: formatos; }
+.sg-entradas { grid-area: entradas; }
+.sg-resultado { grid-area: resultado; position: sticky; top: 64px; }
+.sg-pedido { grid-area: pedido; }
+.sg-bloco > h2 { margin-bottom: 14px; }
+.sg-resultado .row h2 { margin-bottom: 0; }
+
+.sg-opcoes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.card.sg-formato { position: relative; display: flex; flex-direction: column; gap: 4px; padding-right: 44px; cursor: pointer; }
+.sg-formato input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.sg-formato::before {
+  content: ''; position: absolute; top: 18px; right: 16px; width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--k-hair); background: transparent;
+}
+.card.sg-formato.on { border-color: var(--k-red); box-shadow: inset 0 0 0 1px var(--k-red); background: linear-gradient(var(--k-redsoft), var(--k-redsoft)), var(--k-panel); }
+.sg-formato.on::before { border-color: var(--k-red); background: radial-gradient(circle, var(--k-red) 0 4.5px, transparent 5.5px); }
+.sg-formato:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--k-redsoft); }
+.sg-formato-nome { font-size: 19px; font-weight: 500; letter-spacing: -.02em; }
+.sg-formato-lema { font-size: 11.5px; color: var(--k-dim); }
+.sg-formato dl { display: grid; gap: 8px; margin: 12px 0 0; }
+.sg-formato dl > div { display: flex; justify-content: space-between; gap: 10px; padding-top: 8px; border-top: 1px solid var(--k-line-2); font-size: 12px; }
+.sg-formato dt { color: var(--k-dim); }
+.sg-formato dd { margin: 0; font-weight: 500; text-align: right; }
+
+.sg-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.sg-campo { display: flex; flex-direction: column; gap: 6px; }
+.sg-campo label { font-size: 12px; font-weight: 500; }
+.sg-input {
+  width: 100%; min-height: 44px; padding: 9px 13px; font: inherit; font-size: 16px; /* 16px evita zoom no iPhone */
+  color: var(--k-text); background: var(--k-bg-2); border: 1px solid var(--k-line); border-radius: var(--radius-sm);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.sg-input::placeholder { color: var(--k-dim2); }
+.sg-input:hover { border-color: var(--k-hair); }
+.sg-input:focus-visible { outline: none; border-color: var(--k-red); box-shadow: 0 0 0 3px var(--k-redsoft); }
+.sg-input[aria-invalid="true"] { border-color: var(--k-red); }
+select.sg-input option { background: var(--k-panel); color: var(--k-text); }
+.sg-ajuda { font-size: 11px; line-height: 1.5; color: var(--k-dim); }
+.sg-ajuda.alerta { color: var(--k-warn); }
+
+.sg-erro, .sg-ok { padding: 10px 12px; border-radius: var(--radius-sm); border-left-width: 2px; border-style: solid; border-width: 1px 1px 1px 2px; font-size: 12.5px; line-height: 1.5; }
+.sg-erro { border-color: var(--k-red); background: var(--k-redsoft); }
+.sg-ok { border-color: rgba(61, 220, 151, .32); border-left-color: var(--k-ok); background: rgba(61, 220, 151, .07); }
+.sg-enviar { min-height: 44px; padding: 0 22px; font-size: 13px; }
+
+/* passo "Avalie o seu local em 3D": em destaque, como o formato escolhido */
+.card.sg-avaliacao {
+  border-color: var(--k-red); box-shadow: inset 0 0 0 1px var(--k-red);
+  background: linear-gradient(var(--k-redsoft), var(--k-redsoft)), var(--k-panel);
+}
+.sg-avaliacao > .row { margin-bottom: 14px; }
+.sg-avaliacao > .row h2 { margin: 0; }
+.sg-avaliacao-texto { margin: 0; max-width: 640px; font-size: 13.5px; line-height: 1.6; color: var(--k-text); }
+.sg-aviso-av { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--warn-line); background: var(--warn-soft); font-size: 12.5px; line-height: 1.5; }
+.sg-link { padding: 0; border: 0; background: none; color: var(--k-red2); font: inherit; text-decoration: underline; cursor: pointer; }
+.sg-com-avaliacao { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+
+/* pré-análise */
+.sg-numeros { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 16px; }
+.sg-numeros strong { display: block; margin-top: 6px; font-size: 28px; font-weight: 500; letter-spacing: -.03em; line-height: 1.1; }
+.sg-numeros small { font-size: 12px; font-weight: 400; letter-spacing: 0; color: var(--k-dim); }
+.sg-escala { position: relative; height: 8px; border-radius: 4px; background: rgba(244, 242, 238, .09); }
+.sg-escala-fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--k-dim); transition: width .25s ease; }
+.sg-escala-fill.green { background: var(--k-ok); }
+.sg-escala-fill.amber { background: var(--k-warn); }
+.sg-escala-fill.red { background: var(--k-red); }
+.sg-escala-marca { position: absolute; top: -4px; bottom: -4px; width: 2px; border-radius: 1px; background: var(--k-text); }
+.sg-escala-leg { display: flex; justify-content: space-between; gap: 8px; margin-top: 7px; font-size: 10.5px; color: var(--k-dim); }
+.sg-veredito { margin: 14px 0; font-size: 13px; line-height: 1.55; }
+.sg-fatores { list-style: none; display: grid; gap: 10px; margin: 0 0 14px; padding: 0; }
+.sg-fatores li { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 40px; align-items: center; gap: 10px; font-size: 12px; }
+.sg-barra { height: 5px; border-radius: 3px; overflow: hidden; background: rgba(244, 242, 238, .09); }
+.sg-barra span { display: block; height: 100%; background: rgba(244, 242, 238, .55); }
+.sg-pct { text-align: right; color: var(--k-dim); }
+
+/* etapas do fluxo */
+.sg-etapas ol { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 14px 0 0; padding: 0; }
+.sg-etapas li { display: flex; flex-direction: column; gap: 4px; padding: 16px; }
+.sg-num {
+  display: grid; place-items: center; width: 26px; height: 26px; margin-bottom: 6px; border-radius: 50%;
+  border: 1px solid var(--k-red); background: var(--k-redsoft); color: var(--k-red2); font-size: 12px; font-weight: 600;
+}
+.sg-etapas b { font-size: 13px; font-weight: 500; }
+.sg-quem { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--k-dim2); }
+.sg-etapas p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--k-dim); }
+
+/* acompanhamento do pedido */
+.sg-acompanhar { display: grid; gap: 14px; scroll-margin-top: 70px; }
+.sg-pedido-card { display: grid; gap: 4px; }
+.sg-linha { list-style: none; margin: 16px 0 10px; padding: 0; }
+.sg-linha li { position: relative; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 14px; padding-bottom: 18px; }
+.sg-linha li:last-child { padding-bottom: 0; }
+.sg-linha li:not(:last-child)::after { content: ''; position: absolute; left: 12px; top: 28px; bottom: 2px; width: 2px; background: var(--k-line); }
+.sg-linha li.feita:not(:last-child)::after { background: var(--k-ok); }
+.sg-marco { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--k-line); background: var(--k-bg-2); }
+.sg-linha .feita .sg-marco { border-color: var(--k-ok); background: rgba(61, 220, 151, .1); color: var(--k-ok); }
+.sg-linha .atual .sg-marco { border-color: var(--k-red); background: var(--k-redsoft); box-shadow: 0 0 0 4px var(--k-redsoft); }
+.sg-linha .bloqueada .sg-marco { border-color: var(--k-red); background: var(--k-redsoft); color: var(--k-red2); }
+.sg-linha b { font-size: 13.5px; font-weight: 500; }
+.sg-linha .pendente b { color: var(--k-dim); }
+.sg-linha p { margin: 2px 0 0; font-size: 12px; line-height: 1.5; color: var(--k-dim); }
+.sg-agora { margin-left: 8px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--k-red2); }
+
+@media (max-width: 880px) {
+  .sg-form { grid-template-columns: minmax(0, 1fr); grid-template-areas: "avaliacao" "formatos" "entradas" "resultado" "pedido"; }
+  .sg-resultado { position: static; }
+}
+@media (max-width: 800px) {
+  .sg-valor { grid-template-columns: 1fr; }
+  .sg-opcoes { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .sg-grade { grid-template-columns: 1fr; }
+  .sg-topo { padding-left: 16px; padding-right: 16px; }
+  .sg-pagina { padding: 28px 16px 56px; gap: 36px; }
+  .sg-marca .brand-logo { display: none; }
+}

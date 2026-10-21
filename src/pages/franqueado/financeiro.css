@@ -1,0 +1,19 @@
+/* Financeiro do franqueado: legenda do gráfico de tarifa, barra da margem e lista da pizza */
+.fin-legenda {
+  display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px;
+  font-size: 11px; color: var(--k-dim);
+}
+.fin-legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.fin-cor { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex: 0 0 10px; }
+.fin-cor.fin-agora { background: transparent; border: 1.5px solid var(--k-text); }
+.fin-lin { display: inline-block; width: 16px; height: 0; border-top: 2px dashed; }
+
+/* barra da margem por kWh: energia, GoodWe, gateway e o que fica com o comércio */
+.fin-barra { display: flex; gap: 2px; height: 14px; margin: 8px 0 10px; border-radius: 4px; overflow: hidden; }
+.fin-barra > span { flex-basis: 0; min-width: 2px; }
+
+.fin-partes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.fin-partes li { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--k-dim); }
+.fin-partes li > span:nth-child(2) { flex: 1; min-width: 0; }
+.fin-partes .val { color: var(--k-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fin-partes .val .muted { color: var(--k-dim); }
