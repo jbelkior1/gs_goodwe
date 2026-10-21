@@ -1,9 +1,15 @@
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { telaCheia } from './app/tela';
 import Layout from './app/Layout';
 import AppMotorista from './app/AppMotorista';
 import { Quiosque } from './ui/Quiosque';
+import { GuiaDemo } from './ui/GuiaDemo';
 import { useApp } from './app/estado';
+import { bancoConfigurado } from './data/supabase';
+import { lerPontoGuardado } from './data/totens';
+import Demo from './pages/demo/Demo';
+import { DemoGlobal } from './pages/demo/DemoGlobal';
 import Entrar from './pages/entrar/Entrar';
 import Mapa from './pages/motorista/Mapa';
 import Vincular from './pages/motorista/Vincular';
@@ -52,10 +58,31 @@ function CascaTotem() {
   return telaCheia('totem', search) ? <Outlet /> : <Layout />;
 }
 
+/**
+ * Guia didático do totem em tela cheia: faixa por fora do totem, sem mexer nas telas dele. Usa o mesmo
+ * ponto que o aparelho usa (?ponto= ou o que ficou guardado) e relê o que ficou guardado de tempos em
+ * tempos, porque o pareamento grava o ponto sem avisar a base.
+ */
+function GuiaDoTotem() {
+  const { search } = useLocation();
+  const [, relogio] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => relogio((n) => n + 1), 4000);
+    return () => window.clearInterval(id);
+  }, []);
+  const ponto = new URLSearchParams(search).get('ponto') ?? lerPontoGuardado();
+  return <GuiaDemo ambiente="totem" posicao="topo-fixo" pontoId={ponto ?? undefined} semPonto={!ponto && bancoConfigurado} />;
+}
+
 function TotemNaTela() {
   const { search } = useLocation();
   return telaCheia('totem', search)
-    ? <Quiosque>{(o) => <Totem orientacao={o} aparelho />}</Quiosque>
+    ? (
+      <>
+        <GuiaDoTotem />
+        <Quiosque>{(o) => <Totem orientacao={o} aparelho />}</Quiosque>
+      </>
+    )
     : <Totem />;
 }
 
@@ -63,10 +90,16 @@ export default function App() {
   // lê o contexto para recriar as telas a cada atualização do banco em tempo real
   useApp();
   return (
+    <>
+    {/* ?conta= e ?guia= da demonstração, em qualquer rota */}
+    <DemoGlobal />
     <Routes>
       {/* porta de entrada: escolha do painel */}
       <Route path="/" element={<Portal />} />
       <Route path="/entrar" element={<Entrar />} />
+
+      {/* central da demonstração: fluxograma ao vivo, links dos aparelhos e o palco */}
+      <Route path="/demo" element={<Demo />} />
 
       {/* totem — vitrine no notebook ou quiosque em tela cheia no aparelho real */}
       <Route element={<CascaTotem />}>
@@ -105,5 +138,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }

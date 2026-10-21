@@ -61,11 +61,16 @@ export default function Entrar() {
     if (campo) document.getElementById(`ent-${campo}`)?.focus();
   };
 
-  /** Sem ?volta=, quem entra vai para a tela do seu papel (lido do perfil). */
-  const destinoDoPapel = async (uid: string): Promise<string> => {
+  /**
+   * Sem ?volta=, quem entra vai para a tela do seu papel (lido do perfil). Quem criou conta de comércio
+   * e ainda não virou franqueado (o perfil segue como motorista) volta para o pedido de franquia.
+   */
+  const destinoDoPapel = async (uid: string, tipoDaConta?: unknown): Promise<string> => {
     try {
       const { data } = await sb.from('perfis').select('papel').eq('id', uid).maybeSingle();
-      return DESTINO_PAPEL[(data as { papel?: Papel } | null)?.papel ?? 'motorista'] ?? '/';
+      const papel = (data as { papel?: Papel } | null)?.papel ?? 'motorista';
+      if (papel === 'motorista' && tipoDaConta === 'comercio') return DESTINO_TIPO.comercio;
+      return DESTINO_PAPEL[papel] ?? '/';
     } catch { return '/'; }
   };
 
@@ -76,7 +81,7 @@ export default function Entrar() {
       falhar(traduzirErro(error));
       return;
     }
-    nav(volta || vai || await destinoDoPapel(data.user.id));
+    nav(volta || vai || await destinoDoPapel(data.user.id, data.user.user_metadata?.tipo));
   };
 
   const cadastrar = async () => {

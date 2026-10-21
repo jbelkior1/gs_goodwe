@@ -243,6 +243,8 @@ export interface SolicitacaoHomologacao {
   parecer: string;
   solicitanteId?: string | null;
   pontoId?: string | null;
+  /** avaliação do local feita no gs_vr (avaliacoes_local."id"); vazio quando o pedido não tem */
+  avaliacaoId?: string | null;
 }
 
 // ---------------------------------------------------------------- IA

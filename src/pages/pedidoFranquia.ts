@@ -34,6 +34,30 @@ export function cnpjValido(s: string): boolean {
   return d1 === Number(d[12]) && digito(d.slice(0, 13)) === Number(d[13]);
 }
 
+// ------------------------------------------------------------------ números digitados
+/**
+ * Número como se escreve no Brasil: "38,1" (vírgula decimal), "1.200" (ponto de milhar) e "1.200,5".
+ * Só pontos em grupos de três ("1.200", "1.200.000") são milhar; um ponto isolado com outro número de
+ * casas ("12.5") continua decimal, para quem cola um valor com ponto. Se aparecem os dois sinais, o último
+ * é o decimal. Texto que não é número vira 0 (o formulário pede o valor de novo).
+ */
+export function lerNumero(s: string): number {
+  const t = s.trim().replace(/\s/g, '');
+  if (!/^[\d.,]+$/.test(t)) return 0;
+  const virgula = t.lastIndexOf(',');
+  const ponto = t.lastIndexOf('.');
+  let normal: string;
+  if (virgula >= 0 && ponto >= 0) normal = virgula > ponto ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
+  else if (virgula >= 0) normal = t.replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) normal = t.replace(/\./g, '');
+  else normal = t;
+  const n = Number(normal);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Número para o campo de texto, com vírgula decimal e sem milhar: 38.1 → "38,1". */
+export const numeroParaCampo = (n: number): string => String(n).replace('.', ',');
+
 // ------------------------------------------------------------------ etapas do fluxo
 /** As 7 etapas da franquia, na ordem do fluxograma do produto. `quem` diz de quem é a vez. */
 export const ETAPAS_FRANQUIA = [

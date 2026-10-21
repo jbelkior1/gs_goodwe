@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp, type Persona } from './estado';
-import { base, obterPonto, pontoAtivo, statusDoPonto, dadosAte } from '../domain/db';
-import { dataHora, plural } from '../domain/formato';
+import { base, obterPonto, pontoAtivo, statusDoPonto, dadosAte, conexaoTempoReal } from '../domain/db';
+import { dataHora, horaMin, plural } from '../domain/formato';
 import { bancoConfigurado } from '../data/supabase';
 import { comTela, telaDoNavegador } from './tela';
 import { Badge, Nota, StatusBadge } from '../ui/kit';
 import { Icone, type NomeIcone } from '../ui/icones';
 import { Totem3D } from '../ui/Totem3D';
+import { GuiaDemo } from '../ui/GuiaDemo';
+import { EMBUTIDO, useGuiaVisivel } from '../pages/demo/ambienteDemo';
 
 /** a troca de painel é da vitrine: só aparece no modo demonstração */
 const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
@@ -175,6 +177,9 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
     return () => { document.removeEventListener('pointerdown', fora); document.removeEventListener('keydown', esc); };
   }, [menuConta]);
   const ate = dadosAte();
+  const guia = useGuiaVisivel();
+  // sem a conexão em tempo real a tela fica parada: avisa até quando os dados valem
+  const reconectando = bancoConfigurado && conexaoTempoReal === 'reconectando';
 
   // deep link (ou F5 numa rota interna) precisa acertar o perfil e a moldura
   const personaAtual = personaDaRota(location.pathname) ?? persona;
@@ -197,7 +202,7 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
   };
 
   return (
-    <div className={`app app-${personaAtual}${cheia ? ' app-cheia' : ''}`}>
+    <div className={`app app-${personaAtual}${cheia ? ' app-cheia' : ''}${EMBUTIDO ? ' app-embed' : ''}`}>
       <aside className="sidebar">
         <Link to={cheia ? ROTA_INICIAL[personaAtual] : '/'} className="brand" title={cheia ? ROTULO[personaAtual].nome : 'Voltar para a escolha de painel'}>
           <div className="brand-logo"><Icone nome="raio" tamanho={16} /></div>
@@ -220,6 +225,10 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
               {ROTULO[p].nome}
             </button>
           ))}
+          <Link className="persona-btn" to="/demo">
+            <span className="ico"><Icone nome="mapaLupa" tamanho={15} /></span>
+            Central da demonstração
+          </Link>
         </div>}
 
         <nav className="nav">
@@ -242,7 +251,7 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
         </nav>
 
         <div className="sidebar-foot" ref={contaRef}>
-          {perfil ? (
+          {EMBUTIDO ? null : perfil ? (
             <>
               {menuConta && (
                 <div className="conta-menu" role="menu">
@@ -270,22 +279,26 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
           <div
             className={`vivo ${bancoConfigurado ? '' : 'simulado'}`}
             title={ate ? `Dados até ${dataHora(ate)}` : undefined}
+            style={reconectando ? { color: 'var(--warn)' } : undefined}
           >
-            <span className={`dot ${bancoConfigurado ? 'pulse' : ''}`} />
-            {bancoConfigurado ? 'ao vivo' : ate ? `dados simulados até ${dataHora(ate)}` : 'dados simulados'}
+            <span className={`dot ${bancoConfigurado && !reconectando ? 'pulse' : ''}`} style={reconectando ? { color: 'var(--warn)' } : undefined} />
+            {reconectando
+              ? `reconectando · ${ate ? `dados até ${horaMin(ate)}` : 'sem dados ainda'}`
+              : bancoConfigurado ? 'ao vivo' : ate ? `dados simulados até ${dataHora(ate)}` : 'dados simulados'}
           </div>
-          {cheia && DEMO && <button className="btn sm" onClick={() => mudarTela('vitrine')}>Sair da tela cheia</button>}
+          {cheia && DEMO && !EMBUTIDO && <button className="btn sm" onClick={() => mudarTela('vitrine')}>Sair da tela cheia</button>}
         </div>
       </aside>
 
-      <div className="main">
+      <div className={`main${guia ? ' main-guia' : ''}`}>
+        {guia && <GuiaDemo ambiente={personaAtual} posicao="fluxo" />}
         <header className="topbar">
           <div className="topbar-tit">
             <h1>{titulo.t}</h1>
             <div className="sub">{titulo.s}</div>
           </div>
           <div className="topbar-actions">
-            {personaAtual === 'franqueado' && (pontosVisiveis.length > 1 ? (
+            {personaAtual === 'franqueado' && (pontosVisiveis.length > 1 && !EMBUTIDO ? (
               <select
                 className="btn"
                 aria-label="Unidade"
@@ -303,7 +316,7 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
               <span className="strong">{ponto.nome} <span className="muted">· {ponto.formato}</span></span>
             ))}
             {personaAtual === 'franqueado' && ponto && <StatusBadge estado={statusDoPonto(ponto)} />}
-            {!cheia && (
+            {!cheia && !EMBUTIDO && (
               <button className="btn" onClick={() => mudarTela('cheia')} title="Abre só este ambiente, como no aparelho real">
                 <IconeTelaCheia />Abrir em tela cheia
               </button>
@@ -318,7 +331,7 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
         </header>
 
         <main className={`content content-${personaAtual}`}>
-          {cheia && bancoConfigurado && (personaAtual === 'franqueado' || personaAtual === 'goodwe') && perfil?.papel !== personaAtual
+          {cheia && !EMBUTIDO && bancoConfigurado && (personaAtual === 'franqueado' || personaAtual === 'goodwe') && perfil?.papel !== personaAtual
             ? <Porta persona={personaAtual} atual={perfil ? `${perfil.nome} (${perfil.papel})` : undefined} />
             : personaAtual === 'franqueado' && !ponto
               ? <Nota titulo="Ponto não encontrado" tom="amber">Este ponto saiu da rede. Escolha outro ponto.</Nota>

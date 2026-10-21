@@ -1,4 +1,5 @@
 import { exigirBanco } from './supabase';
+import { vincularAvaliacao } from './avaliacoes';
 import { base, cotacaoDaSessao, obterPonto, obterSessao, regiaoDoPonto } from '../domain/db';
 import { analisarViabilidade } from '../domain/engine/ia';
 import { cent, sugerirPrecoBase, validarPrecoBase } from '../domain/engine/tarifa';
@@ -104,13 +105,17 @@ export async function definirManutencao(carregadorId: string, ligar: boolean) {
 export async function enviarSolicitacao(d: {
   comercio: string; cnpj: string; regiaoId: string; segmento: SegmentoComercio; formatoDesejado: FormatoFranquia;
   cargaDisponivelKW: number; fluxoDiarioPessoas: number;
+  /** avaliação do local feita no gs_vr (opcional): vai junto no pedido e é amarrada a ele */
+  avaliacaoId?: string;
 }, solicitanteId: string) {
   const regiao = REGIOES.find((r) => r.id === d.regiaoId) ?? REGIOES[0];
   const a = analisarViabilidade(d, regiao);
+  const id = novoId('h');
   await ok(exigirBanco().from('homologacoes').insert({
-    id: novoId('h'), ...d, status: 'ANALISE', scoreViabilidade: a.score, horasUsoPrevistas: a.horasUsoPrevistas,
+    id, ...d, status: 'ANALISE', scoreViabilidade: a.score, horasUsoPrevistas: a.horasUsoPrevistas,
     parecer: a.parecer, solicitanteId,
   }));
+  if (d.avaliacaoId) await vincularAvaliacao(d.avaliacaoId, id, solicitanteId);
 }
 
 /** GoodWe decide. Aprovar cria o franqueado, o ponto (em instalação) e as vagas do formato. */

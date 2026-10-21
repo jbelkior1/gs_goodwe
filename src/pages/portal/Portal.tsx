@@ -22,6 +22,9 @@ interface Painel {
   destaque: (d: ReturnType<typeof dados>) => { valor: string; rotulo: string }[];
 }
 
+/** a central da demonstração só aparece no modo demonstração */
+const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
+
 const dados = () => {
   const kpis = kpisDaRede();
   const ativas = sessoesAtivas();
@@ -159,6 +162,13 @@ export default function Portal() {
         <span>Tem um comércio e quer um ponto de recarga?</span>
         <button className="btn primary" onClick={() => navigate('/seja-goodwe')}>Seja GoodWe</button>
       </section>
+
+      {DEMO && (
+        <section className="portal-franquia">
+          <span>Vai apresentar o Ponto W?</span>
+          <button className="btn" onClick={() => navigate('/demo')}>Central da demonstração</button>
+        </section>
+      )}
 
       <footer className="portal-rodape meta">
         <span>GOODWE ENERGIA · EV CHALLENGE · DADOS SIMULADOS</span>

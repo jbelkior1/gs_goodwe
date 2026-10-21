@@ -1,0 +1,155 @@
+/* ==========================================================================
+   MAPA DA REDE — Leaflet com blocos escuros do CARTO (src/ui/MapaRede.tsx)
+   Prefixo mr-: não depende das regras .mapa* antigas do styles.css, que ficaram sem uso.
+   ========================================================================== */
+
+.mr {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--k-line); border-radius: var(--radius);
+  background: #0b0b0d;
+}
+
+.mr-palco { position: relative; }
+
+/* o contêiner do Leaflet: proporção própria, fundo escuro enquanto os blocos carregam */
+.mr-mapa {
+  width: 100%; aspect-ratio: 5 / 4;
+  background: #0b0b0d; font: inherit; outline: none;
+}
+.mr-compacto .mr-mapa { aspect-ratio: 4 / 3; }
+.mr-mapa:focus-visible { box-shadow: inset 0 0 0 2px var(--k-red); }
+/* dentro da moldura de celular da vitrine e em tela de celular, o mapa fica quadrado */
+.celular-tela .mr-compacto .mr-mapa { aspect-ratio: 1 / 1; }
+@media (max-width: 780px) {
+  .mr-mapa, .mr-compacto .mr-mapa { aspect-ratio: 1 / 1; }
+}
+
+/* ---------------------------------------------------------------- marcadores */
+.mr-icone { background: none; border: none; }
+
+.mr-pino {
+  position: absolute; inset: 0; margin: auto;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--pos); color: #04140c;
+  border: 2px solid rgba(8, 8, 10, .9);
+  box-shadow: 0 0 0 1px rgba(61, 220, 151, .55), 0 4px 14px rgba(0, 0, 0, .6);
+  font: 600 13px/1 var(--mono);
+  cursor: pointer; transition: transform .15s ease, box-shadow .15s ease;
+}
+.mr-pino-n { pointer-events: none; }
+
+/* vaga livre = positivo (verde); sem vaga = ocupado (azul); sem operar = cinza. Vermelho da marca não é estado. */
+.mr-pino.cheio { background: var(--info); color: #04101b; box-shadow: 0 0 0 1px rgba(90, 176, 255, .55), 0 4px 14px rgba(0, 0, 0, .6); }
+.mr-pino.fora { background: #3a3a3e; color: rgba(244, 242, 238, .7); box-shadow: 0 0 0 1px rgba(244, 242, 238, .22), 0 4px 14px rgba(0, 0, 0, .6); }
+
+/* onda que sai do marcador com vaga livre */
+.mr-pino.livre::after {
+  content: ''; position: absolute; inset: -2px; border-radius: 50%;
+  border: 2px solid var(--pos); opacity: 0; pointer-events: none;
+  animation: mrPulso 2.8s ease-out infinite;
+}
+@keyframes mrPulso {
+  0% { transform: scale(1); opacity: .75; }
+  70%, 100% { transform: scale(1.75); opacity: 0; }
+}
+
+.mr-pino:hover { transform: scale(1.1); }
+.mr-pino.ativo {
+  transform: scale(1.2); border-color: var(--k-text);
+  box-shadow: 0 0 0 3px rgba(244, 242, 238, .32), 0 6px 18px rgba(0, 0, 0, .7);
+}
+.leaflet-marker-icon:focus-visible { outline: none; }
+.leaflet-marker-icon:focus-visible .mr-pino { box-shadow: 0 0 0 3px var(--k-red), 0 6px 18px rgba(0, 0, 0, .7); }
+
+/* nome ao lado do marcador, só com a vista aproximada (senão os nomes se atropelam) */
+.mr-pino-nome {
+  display: none; position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+  max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 3px 9px; border: 1px solid var(--k-line); border-radius: 999px;
+  background: rgba(10, 10, 11, .88); color: var(--k-text);
+  font: 500 11px/1.3 Inter, system-ui, sans-serif; pointer-events: none;
+}
+.mr-zoom-alto .mr-pino-nome { display: block; }
+/* vista afastada: marcadores menores para a cidade inteira caber sem sobrepor */
+.mr-zoom-baixo .mr-pino { width: 22px; height: 22px; font-size: 10.5px; border-width: 1.5px; }
+
+/* ---------------------------------------------------------------- dica ao passar o mouse / tocar */
+.leaflet-tooltip.mr-dica {
+  min-width: 168px; max-width: 230px; padding: 9px 11px; white-space: normal;
+  border: 1px solid var(--k-line); border-radius: var(--radius-sm);
+  background: rgba(10, 10, 11, .96); color: var(--k-text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .55);
+  font: 400 12px/1.4 Inter, system-ui, sans-serif;
+}
+.leaflet-tooltip-top.mr-dica::before { border-top-color: rgba(10, 10, 11, .96); }
+.mr-dica-nome { font-size: 12px; font-weight: 500; }
+.mr-dica-meta { margin-top: 2px; font-size: 11px; color: var(--k-dim); }
+.mr-dica-num {
+  display: flex; justify-content: space-between; gap: 10px; margin-top: 7px;
+  font: 400 11px var(--mono); color: var(--k-label);
+}
+.mr-dica-num .livre { color: var(--pos); }
+.mr-dica-num .cheio { color: var(--info); }
+.mr-dica-num .fora { color: var(--k-dim); }
+
+/* ---------------------------------------------------------------- controles do Leaflet no tema escuro */
+.mr .leaflet-bar { border: 1px solid var(--k-line); border-radius: 10px; box-shadow: none; overflow: hidden; }
+.mr .leaflet-bar a {
+  width: 34px; height: 34px; line-height: 34px;
+  background: rgba(10, 10, 11, .92); color: var(--k-text); border-bottom: 1px solid var(--k-line);
+}
+.mr .leaflet-bar a:last-child { border-bottom: none; }
+.mr .leaflet-bar a:hover, .mr .leaflet-bar a:focus-visible { background: var(--k-panel-2); color: var(--k-text); }
+.mr .leaflet-control-zoom { margin-bottom: 6px; }
+.mr .leaflet-control-attribution {
+  margin: 0; padding: 2px 7px; background: rgba(10, 10, 11, .72);
+  color: var(--k-dim); font-size: 10px; border-radius: 6px 0 0 0;
+}
+.mr .leaflet-control-attribution a { color: var(--k-label); }
+.mr .leaflet-control-attribution a:hover { color: var(--k-text); }
+
+/* ---------------------------------------------------------------- botão, dica de toque e legenda */
+.mr-enquadrar {
+  position: absolute; top: 10px; right: 10px; z-index: 1000;
+  min-height: 32px; padding: 0 13px;
+  border: 1px solid var(--k-line); border-radius: 999px;
+  background: rgba(10, 10, 11, .92); color: var(--k-text);
+  font: 500 12px Inter, system-ui, sans-serif; cursor: pointer;
+}
+.mr-enquadrar:hover { background: var(--k-panel-2); }
+.mr-enquadrar:focus-visible { outline: none; border-color: var(--k-red); box-shadow: 0 0 0 3px var(--k-redsoft); }
+
+.mr-dica-toque {
+  display: none; position: absolute; inset: 0; z-index: 900;
+  place-items: center; padding: 0 24px; text-align: center;
+  background: rgba(0, 0, 0, .5); color: var(--k-text); font-size: 13px;
+  pointer-events: none; opacity: 0; transition: opacity .25s ease;
+}
+@media (pointer: coarse) {
+  .mr-dica-toque { display: grid; }
+  .mr.mr-mostra-dica .mr-dica-toque { opacity: 1; }
+}
+
+.mr-legenda {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px;
+  padding: 8px 12px; border-top: 1px solid var(--k-line-2);
+  letter-spacing: .03em;
+}
+.mr-legenda > span { display: inline-flex; align-items: center; gap: 6px; }
+.mr-legenda-total { margin-left: auto; }
+.mr-ponto { width: 7px; height: 7px; border-radius: 50%; }
+.mr-ponto.livre { background: var(--pos); }
+.mr-ponto.cheio { background: var(--info); }
+.mr-ponto.fora { background: #6a6a70; }
+
+/* dedo é mais largo que o mouse: alvos maiores */
+@media (pointer: coarse) {
+  .mr-enquadrar { min-height: 40px; padding: 0 16px; }
+  .mr .leaflet-bar a { width: 40px; height: 40px; line-height: 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mr-pino.livre::after { animation: none; }
+  .mr-pino, .mr-dica-toque { transition: none; }
+}

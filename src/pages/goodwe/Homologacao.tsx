@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { base, obterRegiao, previsaoDeUso } from '../../domain/db';
 import { analisarViabilidade, cargaNecessariaKW } from '../../domain/engine/ia';
 import { decidirSolicitacao } from '../../data/acoes';
+import { obterAvaliacao, type AvaliacaoLocal } from '../../data/avaliacoes';
+import { AvaliacaoLocalVista, IconeCamera } from '../AvaliacaoLocal';
 import { useApp } from '../../app/estado';
 import { FORMATOS, REGRAS } from '../../domain/catalogo';
 import { brl, horas, kw, kwh, num, plural, relativo } from '../../domain/formato';
@@ -18,6 +20,9 @@ const ORDENS: { id: Ordem; rotulo: string }[] = [
   { id: 'score', rotulo: 'Maior score' },
   { id: 'antigas', rotulo: 'Mais antigas' },
 ];
+
+/** Avaliação do local (gs_vr) da solicitação selecionada, com o id a que se refere (a tela troca de pedido antes de a leitura voltar). */
+type CargaAvaliacao = { id: string; estado: 'carregando' | 'erro' | 'vazia' } | { id: string; estado: 'ok'; av: AvaliacaoLocal };
 
 const EM_ABERTO = ['ANALISE', 'VISTORIA', 'PENDENTE_DOC'];
 const diasDesde = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -37,6 +42,20 @@ export default function Homologacao() {
         ? a.criadoEm.localeCompare(b.criadoEm)
         : b.criadoEm.localeCompare(a.criadoEm));
   const atual = solicitacoes.find((h) => h.id === selecionada) ?? solicitacoes[0];
+
+  const avaliacaoId = atual?.avaliacaoId ?? '';
+  const [carga, setCarga] = useState<CargaAvaliacao | null>(null);
+  useEffect(() => {
+    if (!avaliacaoId) return;
+    let vivo = true;
+    obterAvaliacao(avaliacaoId)
+      .then((av) => { if (vivo) setCarga(av ? { id: avaliacaoId, estado: 'ok', av } : { id: avaliacaoId, estado: 'vazia' }); })
+      .catch(() => { if (vivo) setCarga({ id: avaliacaoId, estado: 'erro' }); });
+    return () => { vivo = false; };
+  }, [avaliacaoId]);
+  // enquanto a leitura deste pedido não volta (ou a que está na mão é de outro), vale "carregando"
+  const avaliacao: CargaAvaliacao | null = !avaliacaoId ? null
+    : carga && carga.id === avaliacaoId ? carga : { id: avaliacaoId, estado: 'carregando' };
 
   const regiao = atual ? obterRegiao(atual.regiaoId) : undefined;
   const analise = atual && regiao
@@ -122,7 +141,10 @@ export default function Homologacao() {
                   aria-current={h.id === atual?.id} onClick={() => setSelecionada(h.id)}
                 >
                   <div className="row between">
-                    <span className="strong tiny">{h.comercio}</span>
+                    <span className="strong tiny fila-nome">
+                      {h.comercio}
+                      {h.avaliacaoId && <span className="fila-cam"><IconeCamera tamanho={13} titulo="Com avaliação do local" /></span>}
+                    </span>
                     <StatusBadge estado={h.status} />
                   </div>
                   <div className="tiny muted">
@@ -180,6 +202,26 @@ export default function Homologacao() {
                 {analise.parecer}
               </Nota>
             </Card>
+
+            {atual.avaliacaoId && (
+              <Card
+                title="Avaliação do local (GSVR)"
+                sub="Feita pelo comerciante no gs_vr antes do pedido: foto, marcação da área e Ponto W projetado"
+                action={<span className="selo">por foto</span>}
+              >
+                {avaliacao?.estado === 'ok' && <AvaliacaoLocalVista av={avaliacao.av} formatoPedido={atual.formatoDesejado} />}
+                {avaliacao?.estado === 'carregando' && <div className="tiny muted" role="status">Carregando a avaliação…</div>}
+                {avaliacao?.estado === 'vazia' && (
+                  <Nota tom="warn" titulo="Avaliação não encontrada">O pedido aponta para uma avaliação que não está mais no banco.</Nota>
+                )}
+                {avaliacao?.estado === 'erro' && (
+                  <Nota tom="warn" titulo="Não consegui carregar a avaliação">Atualize a página para tentar de novo.</Nota>
+                )}
+                <div style={{ marginTop: 14 }}>
+                  <Nota tom="info">Pré-análise por foto: a vistoria confere no local.</Nota>
+                </div>
+              </Card>
+            )}
 
             <Card
               title="Previsão financeira"

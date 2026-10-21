@@ -33,8 +33,13 @@ export default function Mapa() {
     })
     .sort((a, b) => b.vagasLivres - a.vagasLivres || a.precoAgora - b.precoAgora);
 
+  // A lista reordena a cada evento do tempo real (vagas e preço mudam), então "o primeiro" muda sozinho.
+  // O ponto aberto fica fixo: é o primeiro da lista na primeira renderização e só troca se a pessoa
+  // escolher outro ou se ele sair da lista.
   const [sel, setSel] = useState<string | undefined>(undefined);
-  const atual = pontos.find((p) => p.ponto.id === sel) ?? pontos[0];
+  const selValido = sel !== undefined && pontos.some((p) => p.ponto.id === sel);
+  if (pontos.length && !selValido) setSel(pontos[0].ponto.id);
+  const atual = pontos.find((p) => p.ponto.id === (selValido ? sel : pontos[0]?.ponto.id));
   const minha = sessaoDoMotorista(perfil?.motoristaId ?? motoristaId);
   const pontoDaMinha = minha ? obterPonto(minha.pontoId) : undefined;
   const tarifa = atual ? tarifaAtual(atual.ponto.id) : undefined;
@@ -65,7 +70,11 @@ export default function Mapa() {
         <>
           <Card title="Pontos da rede" sub="Vagas e preço ao vivo. Toque num ponto para ver como carregar.">
             <MapaRede
-              pontos={pontos.map((p) => ({ ponto: p.ponto, regiao: p.regiao, vagasLivres: p.vagasLivres, totalVagas: p.totalVagas, precoAgora: p.precoAgora }))}
+              pontos={pontos.map((p) => ({
+                ponto: p.ponto, regiao: p.regiao, vagasLivres: p.vagasLivres, totalVagas: p.totalVagas, precoAgora: p.precoAgora,
+                // sem nenhuma vaga em condição de receber carro (manutenção ou sem sinal): marcador cinza
+                indisponivel: p.vagas.every((v) => v.situacao === 'manutencao' || v.situacao === 'sem-sinal'),
+              }))}
               selecionado={atual.ponto.id}
               aoSelecionar={escolher}
               compacto

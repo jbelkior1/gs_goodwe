@@ -1,19 +1,26 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useApp } from '../app/estado';
 import { base, obterPonto } from '../domain/db';
 import { enviarSolicitacao } from '../data/acoes';
+import {
+  idAvaliacaoValido, linkAvaliarLocal, obterAvaliacao, preenchimentoDaAvaliacao,
+  type AvaliacaoLocal, type Preenchimento,
+} from '../data/avaliacoes';
 import { FORMATOS, MODELOS_CARREGADOR, REGIOES, REGRAS, SEGMENTOS } from '../domain/catalogo';
 import { analisarViabilidade, cargaNecessariaKW } from '../domain/engine/ia';
 import { brl, dataHora, horas, kw, num, pct, plural } from '../domain/formato';
 import type { FormatoFranquia, SegmentoComercio, SolicitacaoHomologacao } from '../domain/types';
 import { Icone } from '../ui/icones';
 import { Badge, EstadoBadge } from '../ui/kit';
-import { ETAPAS_FRANQUIA, cnpjValido, linhaDoTempo, mascaraCNPJ } from './pedidoFranquia';
+import { AvaliacaoLocalVista, IconeCamera } from './AvaliacaoLocal';
+import { ETAPAS_FRANQUIA, cnpjValido, linhaDoTempo, lerNumero, mascaraCNPJ, numeroParaCampo } from './pedidoFranquia';
 import './SejaGoodwe.css';
 
 const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
 const CHAVE_RASCUNHO = 'pontow.pedido';
+/** id da avaliação do local (gs_vr): sobrevive a um login no meio do caminho, como o rascunho */
+const CHAVE_AVALIACAO = 'pontow.avaliacao';
 const FORMATOS_LISTA = Object.keys(FORMATOS) as FormatoFranquia[];
 const LEMA: Record<FormatoFranquia, string> = {
   Light: 'Para começar pequeno',
@@ -52,28 +59,100 @@ function lerRascunho(): Rascunho {
   } catch { return PADRAO; }
 }
 
-const lerNumero = (s: string): number => { const n = Number(s.replace(',', '.')); return Number.isFinite(n) ? n : 0; };
+type EstadoAvaliacao =
+  | { tipo: 'nenhuma' } | { tipo: 'carregando' } | { tipo: 'erro' } | { tipo: 'naoEncontrada' }
+  | { tipo: 'ok'; av: AvaliacaoLocal };
+/** Resultado da leitura de uma avaliação (por id e tentativa): o "carregando" é o que ainda não chegou. */
+interface AvaliacaoLida { id: string; tentativa: number; resultado: AvaliacaoLocal | 'erro' | 'naoEncontrada' }
+
+function lerAvaliacaoGuardada(): string {
+  try {
+    const id = sessionStorage.getItem(CHAVE_AVALIACAO) ?? '';
+    return idAvaliacaoValido(id) ? id : '';
+  } catch { return ''; }
+}
+
+/** Campos do formulário que a avaliação traz, e o nome de cada um para avisar o que foi preenchido. */
+function camposDaAvaliacao(p: Preenchimento): { patch: Partial<Rascunho>; rotulos: string[] } {
+  const patch: Partial<Rascunho> = {};
+  const rotulos: string[] = [];
+  if (p.formato) { patch.formato = p.formato; rotulos.push('o formato'); }
+  if (p.segmento) { patch.segmento = p.segmento; rotulos.push('o segmento'); }
+  if (p.regiaoId) { patch.regiaoId = p.regiaoId; rotulos.push('a região'); }
+  if (p.fluxo != null) { patch.fluxo = String(p.fluxo); rotulos.push('o fluxo de pessoas'); }
+  if (p.carga != null) { patch.carga = numeroParaCampo(p.carga); rotulos.push('a carga elétrica'); }
+  return { patch, rotulos };
+}
+
+/** ["o formato", "a região", "o fluxo"] vira "o formato, a região e o fluxo" */
+const listaE = (itens: string[]): string =>
+  itens.length > 1 ? `${itens.slice(0, -1).join(', ')} e ${itens[itens.length - 1]}` : (itens[0] ?? '');
 const irPara = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
 /** Pedido de franquia: proposta, formatos, pré-análise da IA ao vivo e acompanhamento do pedido. */
 export default function SejaGoodwe() {
   const { perfil } = useApp();
+  const [params, setParams] = useSearchParams();
   const [r, setR] = useState<Rascunho>(lerRascunho);
   const [enviando, setEnviando] = useState(false);
   const [msg, setMsg] = useState<{ tom: 'erro' | 'ok'; texto: string } | null>(null);
   const [campoErro, setCampoErro] = useState('');
   const aviso = useRef<HTMLDivElement>(null);
+  // avaliação do local (gs_vr). Voltando do gs_vr o id vem em ?avaliacao=; fora isso, o que ficou guardado
+  const idDaUrl = params.get('avaliacao') ?? '';
+  const idDaUrlValido = idAvaliacaoValido(idDaUrl) ? idDaUrl : '';
+  const [avaliacaoId, setAvaliacaoId] = useState(() => idDaUrlValido || lerAvaliacaoGuardada());
+  const [lida, setLida] = useState<AvaliacaoLida | null>(null);
+  const [preenchidos, setPreenchidos] = useState<string[]>([]);
+  const [recarga, setRecarga] = useState(0);
+  // só quem acabou de voltar do gs_vr ganha o preenchimento; ao recarregar, vale o que a pessoa já editou
+  const aplicarDaUrl = useRef(idDaUrlValido);
+  // pedidos que a pessoa já tinha ao enviar: a rolagem espera a lista crescer
+  const [pedidosAntes, setPedidosAntes] = useState<number | null>(null);
+  const rolouApos = useRef<number | null>(null);
 
   useEffect(() => {
     try { sessionStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(r)); } catch { /* sem armazenamento: segue sem rascunho */ }
   }, [r]);
   useEffect(() => { if (msg?.tom === 'erro') aviso.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [msg]);
 
+  // o id sai do endereço e fica guardado (um F5 não reaplica nada)
+  useEffect(() => {
+    if (idDaUrl) setParams((p) => { p.delete('avaliacao'); return p; }, { replace: true });
+  }, [idDaUrl, setParams]);
+
+  useEffect(() => {
+    try {
+      if (avaliacaoId) sessionStorage.setItem(CHAVE_AVALIACAO, avaliacaoId);
+      else sessionStorage.removeItem(CHAVE_AVALIACAO);
+    } catch { /* sem armazenamento: a avaliação só vale até recarregar a página */ }
+  }, [avaliacaoId]);
+
+  useEffect(() => {
+    if (!avaliacaoId) return;
+    let vivo = true;
+    obterAvaliacao(avaliacaoId).then((a) => {
+      if (!vivo) return;
+      setLida({ id: avaliacaoId, tentativa: recarga, resultado: a ?? 'naoEncontrada' });
+      if (a && aplicarDaUrl.current === avaliacaoId) {
+        aplicarDaUrl.current = '';
+        const { patch, rotulos } = camposDaAvaliacao(preenchimentoDaAvaliacao(a.dados));
+        setR((x) => ({ ...x, ...patch }));
+        setPreenchidos(rotulos);
+      }
+    }).catch(() => { if (vivo) setLida({ id: avaliacaoId, tentativa: recarga, resultado: 'erro' }); });
+    return () => { vivo = false; };
+  }, [avaliacaoId, recarga]);
+  const avaliacao: EstadoAvaliacao = !avaliacaoId ? { tipo: 'nenhuma' }
+    : lida && lida.id === avaliacaoId && lida.tentativa === recarga
+      ? (typeof lida.resultado === 'string' ? { tipo: lida.resultado } : { tipo: 'ok', av: lida.resultado })
+      : { tipo: 'carregando' };
+
   function set<K extends keyof Rascunho>(campo: K, valor: Rascunho[K]) { setR((x) => ({ ...x, [campo]: valor })); }
 
   const regiao = REGIOES.find((x) => x.id === r.regiaoId) ?? REGIOES[0];
   const carga = lerNumero(r.carga);
-  const fluxo = lerNumero(r.fluxo);
+  const fluxo = Math.round(lerNumero(r.fluxo)); // o banco guarda o fluxo como inteiro
   const cfg = FORMATOS[r.formato];
   const necessaria = cargaNecessariaKW(r.formato);
   const analise = carga > 0 && fluxo > 0
@@ -85,6 +164,17 @@ export default function SejaGoodwe() {
   const minhas = base.homologacoes
     .filter((h) => perfil && h.solicitanteId === perfil.id)
     .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
+
+  // depois de enviar, rola até "Acompanhe o seu pedido" quando o pedido novo chega à lista (tempo real)
+  useEffect(() => {
+    if (pedidosAntes === null || minhas.length <= pedidosAntes || rolouApos.current === pedidosAntes) return;
+    rolouApos.current = pedidosAntes;
+    irPara('acompanhar');
+  }, [pedidosAntes, minhas.length]);
+
+  const anexar = avaliacao.tipo === 'ok' && !avaliacao.av.homologacaoId ? avaliacao.av : null;
+  const linkVR = linkAvaliarLocal();
+  const descartarAvaliacao = () => { setAvaliacaoId(''); setPreenchidos([]); };
 
   const falhar = (texto: string, campo = '') => {
     setMsg({ tom: 'erro', texto }); setCampoErro(campo);
@@ -98,15 +188,18 @@ export default function SejaGoodwe() {
     if (!cnpjValido(r.cnpj)) return falhar('CNPJ inválido. Confira os 14 números.', 'cnpj');
     if (!(carga > 0)) return falhar('Informe a carga elétrica disponível, em kW. Veja na conta de luz ou pergunte ao eletricista.', 'carga');
     if (!(fluxo > 0)) return falhar('Informe quantas pessoas passam pelo comércio por dia.', 'fluxo');
+    if (avaliacao.tipo === 'carregando') return falhar('A avaliação do local ainda está carregando. Espere um instante e envie de novo.');
     setMsg(null); setCampoErro(''); setEnviando(true);
+    const antes = minhas.length;
     enviarSolicitacao({
       comercio: r.comercio.trim(), cnpj: r.cnpj, regiaoId: r.regiaoId, segmento: r.segmento, formatoDesejado: r.formato,
-      cargaDisponivelKW: carga, fluxoDiarioPessoas: fluxo,
+      cargaDisponivelKW: carga, fluxoDiarioPessoas: fluxo, avaliacaoId: anexar?.id,
     }, perfil.id)
       .then(() => {
         setMsg({ tom: 'ok', texto: 'Pedido enviado. A GoodWe vai analisar e você acompanha cada etapa logo abaixo.' });
         setR((x) => ({ ...x, comercio: '', cnpj: '' }));
-        window.setTimeout(() => irPara('acompanhar'), 150);
+        if (anexar) descartarAvaliacao(); // a avaliação seguiu com o pedido; um novo pedido pede outra
+        setPedidosAntes(antes);
       })
       .catch((e: Error) => falhar(e.message))
       .finally(() => setEnviando(false));
@@ -137,7 +230,7 @@ export default function SejaGoodwe() {
           <p>Leve a recarga de carro elétrico para o seu comércio. O cliente fica de 1 a 2 horas e compra na sua loja.</p>
           <div className="row wrap">
             <button className="btn primary" onClick={() => irPara('pedido')}>Pedir a minha franquia</button>
-            <button className="btn" onClick={() => irPara('pedido')}>Simular o meu ponto</button>
+            <button className="btn" onClick={() => irPara('simulador')}>Simular o meu ponto</button>
           </div>
         </section>
 
@@ -160,8 +253,56 @@ export default function SejaGoodwe() {
         </section>
 
         <form id="pedido" className="sg-form" onSubmit={enviar} noValidate>
+          <div id="avaliar" className="sg-bloco sg-avaliacao card">
+            <div className="row between wrap">
+              <h2>1. Avalie o seu local em 3D</h2>
+              <Badge tom="info">Opcional, mas recomendado</Badge>
+            </div>
+            {avaliacao.tipo === 'ok' ? (
+              <div className="stack" style={{ gap: 14 }}>
+                <AvaliacaoLocalVista av={avaliacao.av} formatoPedido={r.formato} />
+                {avaliacao.av.homologacaoId && (
+                  <p className="sg-aviso-av">Esta avaliação já seguiu com outro pedido. Refaça a avaliação para anexar ao pedido novo.</p>
+                )}
+                {preenchidos.length > 0 && (
+                  <p className="sg-ok" role="status">
+                    Preenchemos {listaE(preenchidos)} com o que você informou na avaliação. Confira nos próximos passos antes de enviar.
+                  </p>
+                )}
+                <div className="row wrap">
+                  {linkVR && <a className="btn" href={linkVR}>Refazer a avaliação</a>}
+                  <button type="button" className="btn" onClick={descartarAvaliacao}>Remover a avaliação</button>
+                </div>
+              </div>
+            ) : (
+              <div className="stack" style={{ gap: 14 }}>
+                {avaliacao.tipo === 'carregando' && <p className="muted" role="status" style={{ margin: 0 }}>Carregando a sua avaliação…</p>}
+                {avaliacao.tipo === 'naoEncontrada' && (
+                  <p className="sg-aviso-av" role="alert">Não encontrei essa avaliação. Faça uma nova ou siga sem ela.</p>
+                )}
+                {avaliacao.tipo === 'erro' && (
+                  <p className="sg-aviso-av" role="alert">
+                    Não consegui carregar a avaliação agora.{' '}
+                    <button type="button" className="sg-link" onClick={() => setRecarga((n) => n + 1)}>Tentar de novo</button>
+                  </p>
+                )}
+                <p className="sg-avaliacao-texto">
+                  Tire uma foto do estacionamento, marque a área e veja o Ponto W projetado no seu espaço, com a medida de
+                  cada formato. Leva 2 minutos, e a GoodWe recebe as fotos e as medidas junto com o seu pedido.
+                </p>
+                <div className="row wrap">
+                  {linkVR
+                    ? <a className="btn primary" href={linkVR}>Avaliar meu local</a>
+                    : <button type="button" className="btn primary" disabled>Avaliar meu local</button>}
+                </div>
+                {!linkVR && <p className="tiny muted" style={{ margin: 0 }}>A avaliação fica disponível quando o app está conectado ao banco.</p>}
+                <p className="tiny muted" style={{ margin: 0 }}>Você volta para esta página sozinho. Dá para pedir a franquia sem avaliar.</p>
+              </div>
+            )}
+          </div>
+
           <div className="sg-bloco sg-formatos">
-            <h2>1. Escolha o formato</h2>
+            <h2>2. Escolha o formato</h2>
             <div className="sg-opcoes" role="radiogroup" aria-label="Formato da franquia">
               {FORMATOS_LISTA.map((f) => {
                 const c = FORMATOS[f];
@@ -183,7 +324,7 @@ export default function SejaGoodwe() {
           </div>
 
           <div className="sg-bloco sg-entradas card" id="simulador">
-            <h2>2. Conte sobre o seu ponto</h2>
+            <h2>3. Conte sobre o seu ponto</h2>
             <div className="sg-grade">
               <div className="sg-campo">
                 <label htmlFor="sg-regiao">Região</label>
@@ -250,7 +391,7 @@ export default function SejaGoodwe() {
           </aside>
 
           <div className="sg-bloco sg-pedido card">
-            <h2>3. Envie o pedido</h2>
+            <h2>4. Envie o pedido</h2>
             {!perfil ? (
               <div className="stack" style={{ gap: 12 }}>
                 <p className="muted" style={{ margin: 0 }}>Crie uma conta de comerciante para enviar o pedido e acompanhar a análise. O que você preencheu fica guardado.</p>
@@ -325,6 +466,9 @@ function Acompanhamento({ h }: { h: SolicitacaoHomologacao }) {
         <div>
           <div className="strong">{h.comercio}</div>
           <div className="tiny muted">Formato {h.formatoDesejado} · enviado em {dataHora(h.criadoEm)}</div>
+          {h.avaliacaoId && (
+            <div className="tiny muted sg-com-avaliacao"><IconeCamera tamanho={13} />Com avaliação do local em 3D</div>
+          )}
         </div>
         <EstadoBadge estado={h.status} />
       </div>
