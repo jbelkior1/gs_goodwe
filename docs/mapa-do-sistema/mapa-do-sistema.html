@@ -801,7 +801,7 @@
 <!-- ============================================================ 9a URLs -->
 <section class="folha">
   <header class="cab"><span class="n">9</span><div><h2>Endereços <em>e parâmetros</em></h2></div></header>
-  <p class="lead">Cada tela tem um endereço próprio. Em desenvolvimento ele começa com <code>http://localhost:5191</code>; na apresentação, com o IP do notebook (<code>http://&lt;IP&gt;:5191</code>).</p>
+  <p class="lead">Cada tela tem um endereço próprio. No site publicado (GitHub Pages) todos começam com <code>https://jbelkior1.github.io/gs_goodwe</code>; em desenvolvimento, com <code>http://localhost:5191</code>.</p>
   <table class="compacta">
     <thead><tr><th style="width:31%">URL</th><th style="width:19%">Tela</th><th>O que faz</th><th style="width:11%">Login</th></tr></thead>
     <tbody>
@@ -809,7 +809,7 @@
       <tr><td class="c"><code>/</code></td><td>Portal</td><td>Porta de entrada: escolhe o papel (motorista, totem, franqueado, GoodWe) e leva à franquia.</td><td>Não</td></tr>
       <tr><td class="c"><code>/seja-goodwe</code></td><td>Seja GoodWe</td><td>Página da franquia + avaliação 3D + pedido + acompanhamento.</td><td>Para enviar</td></tr>
       <tr><td class="c"><code>/entrar</code></td><td>Entrar</td><td>Entrar ou criar conta (motorista ou comércio). Contas de demonstração em um toque.</td><td>—</td></tr>
-      <tr><td class="c">GSVR <code>:5192</code></td><td>Avaliação 3D</td><td>Outro site: foto, área marcada, Ponto W projetado, "cabe ou não", envio para a GoodWe.</td><td>Não</td></tr>
+      <tr><td class="c">GSVR <code>jbelkior1.github.io/gs_vr</code></td><td>Avaliação 3D</td><td>Outro site: foto, área marcada, Ponto W projetado, "cabe ou não", envio para a GoodWe.</td><td>Não</td></tr>
       <tr class="grupo"><td colspan="4">Motorista (celular)</td></tr>
       <tr><td class="c"><code>/motorista</code></td><td>Mapa</td><td>Pontos no mapa, vagas livres, preço de agora e como carregar.</td><td>Não</td></tr>
       <tr><td class="c"><code>/motorista/vincular</code></td><td>Digitar código</td><td>Confirma a recarga pelo código do totem (o QR já traz <code>?c=CODIGO</code>) e mostra o preço travado.</td><td>Sim</td></tr>
@@ -868,19 +868,19 @@
 <!-- ============================================================ 10 links -->
 <section class="folha">
   <header class="cab"><span class="n">10</span><div><h2>Links e roteiro <em>da apresentação</em></h2></div></header>
-  <p class="lead">Um celular, dois notebooks e um totem. Cada aparelho abre o seu link uma vez; o ponto da demonstração é o Pão de Açúcar Moema (<code>p-002</code>). Troque <code>&lt;IP&gt;</code> pelo endereço do notebook que roda o sistema.</p>
+  <p class="lead">Um celular, dois notebooks e um totem. Cada aparelho abre o seu link uma vez; o ponto da demonstração é o Pão de Açúcar Moema (<code>p-002</code>). Todos os endereços começam com <code>https://jbelkior1.github.io/gs_goodwe</code>.</p>
   <table>
     <tbody>
-      <tr><td style="width:30%"><b style="color:#f5f5f7">Celular · motorista</b></td><td><code>http://&lt;IP&gt;:5191/motorista?tela=cheia&amp;conta=motorista</code></td></tr>
-      <tr><td><b style="color:#f5f5f7">Totem · pareamento</b></td><td><code>http://&lt;IP&gt;:5191/totem?tela=cheia</code> <span class="dim">(mostra o código de 6 dígitos)</span></td></tr>
-      <tr><td><b style="color:#f5f5f7">Totem · direto no ponto</b></td><td><code>http://&lt;IP&gt;:5191/totem?ponto=p-002&amp;tela=cheia</code></td></tr>
-      <tr><td><b style="color:#f5f5f7">Notebook · franqueado</b></td><td><code>http://&lt;IP&gt;:5191/franqueado?ponto=p-002&amp;tela=cheia&amp;conta=franqueado</code></td></tr>
-      <tr><td><b style="color:#f5f5f7">Notebook · GoodWe</b></td><td><code>http://&lt;IP&gt;:5191/goodwe?tela=cheia&amp;conta=goodwe</code></td></tr>
-      <tr><td><b style="color:#f5f5f7">Tudo numa tela</b></td><td><code>http://&lt;IP&gt;:5191/demo?vista=palco</code></td></tr>
-      <tr><td><b style="color:#f5f5f7">Comerciante</b></td><td><code>http://&lt;IP&gt;:5191/seja-goodwe?conta=comerciante</code></td></tr>
+      <tr><td style="width:30%"><b style="color:#f5f5f7">Celular · motorista</b></td><td><code>/motorista?tela=cheia&amp;conta=motorista</code></td></tr>
+      <tr><td><b style="color:#f5f5f7">Totem · pareamento</b></td><td><code>/totem?tela=cheia</code> <span class="dim">(mostra o código de 6 dígitos)</span></td></tr>
+      <tr><td><b style="color:#f5f5f7">Totem · direto no ponto</b></td><td><code>/totem?ponto=p-002&amp;tela=cheia</code></td></tr>
+      <tr><td><b style="color:#f5f5f7">Notebook · franqueado</b></td><td><code>/franqueado?ponto=p-002&amp;tela=cheia&amp;conta=franqueado</code></td></tr>
+      <tr><td><b style="color:#f5f5f7">Notebook · GoodWe</b></td><td><code>/goodwe?tela=cheia&amp;conta=goodwe</code></td></tr>
+      <tr><td><b style="color:#f5f5f7">Tudo numa tela</b></td><td><code>/demo?vista=palco</code></td></tr>
+      <tr><td><b style="color:#f5f5f7">Comerciante</b></td><td><code>/seja-goodwe?conta=comerciante</code></td></tr>
     </tbody>
   </table>
-  <p class="nota">Acrescente <code>&amp;guia=1</code> em qualquer link para mostrar a faixa didática com o passo do fluxograma. Para o celular abrir o QR do totem, o sistema precisa rodar pelo IP da rede.</p>
+  <p class="nota">No site publicado, cada aparelho entra <b>uma vez</b> com a conta da demonstração: o link abre a tela de entrada com o e-mail preenchido e, depois disso, entra sozinho. O totem não precisa de conta. Acrescente <code>&amp;guia=1</code> em qualquer link para mostrar a faixa didática com o passo do fluxograma.</p>
 
   <h3 style="margin-top:6mm">Roteiro curto (8 a 10 minutos)</h3>
   <table>
@@ -904,11 +904,11 @@
   <header class="cab"><span class="n">A</span><div><h2>Anexo · <em>preparar a demonstração</em></h2></div></header>
   <h3>Antes de começar (no notebook que roda o sistema)</h3>
   <ol class="cmd">
-    <li>No <code>.env.local</code>, coloque <code>VITE_URL_PUBLICA=http://&lt;IP&gt;:5191</code> (o IP do notebook na Wi-Fi).</li>
-    <li>Suba o sistema pela rede: <code>npm run dev:rede</code></li>
-    <li>Ligue o agente do ponto: <code>npm run simulador</code> (precisa ficar rodando o tempo todo).</li>
-    <li>Para a avaliação 3D local: sirva o gs_vr na porta 5192 e use <code>VITE_URL_GSVR</code>. Depois do merge do gs_vr na <code>main</code>, dá para usar o site publicado.</li>
-    <li>Abra o link de cada aparelho (seção 10) e confira a central em <code>/demo</code>.</li>
+    <li>O sistema já está publicado no GitHub Pages: <code>https://jbelkior1.github.io/gs_goodwe</code>, com a avaliação 3D em <code>https://jbelkior1.github.io/gs_vr</code>.</li>
+    <li>Ligue o agente do ponto num notebook: <code>npm run simulador</code>. Ele faz o papel do carregador e precisa ficar rodando o tempo todo (usa a chave secreta do <code>.env.local</code>, que nunca vai para o site).</li>
+    <li>Em cada aparelho, abra o link da seção 10 e entre uma vez com a conta da demonstração. O totem não precisa de conta.</li>
+    <li>Confira a central em <code>/demo</code>.</li>
+    <li>Sem internet no local: rode o sistema no próprio notebook (<code>npm run dev:rede</code>) e use o IP dele, com <code>VITE_URL_PUBLICA=http://&lt;IP&gt;:5191</code> no <code>.env.local</code>.</li>
   </ol>
   <h3 style="margin-top:6mm">Para recomeçar do zero</h3>
   <table>
@@ -929,7 +929,7 @@
       <tr><td><code>comerciante@pontow.app</code></td><td>Comércio que ainda vai pedir a franquia</td></tr>
     </tbody>
   </table>
-  <p class="nota">A senha das contas fica só no <code>.env.local</code>. Na demonstração não é preciso digitá-la: os links com <code>conta=</code> entram sozinhos. Os nomes de marcas da rede (Graal, Pão de Açúcar, Carrefour…) são <b>dados de demonstração</b>, sem parceria.</p>
+  <p class="nota">A senha das contas não fica no site publicado nem neste documento: quem apresenta entra uma vez em cada aparelho, e daí em diante os links com <code>conta=</code> entram sozinhos. Os nomes de marcas da rede (Graal, Pão de Açúcar, Carrefour…) são <b>dados de demonstração</b>, sem parceria.</p>
   <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
 </section>
 

@@ -27,6 +27,12 @@ jobs:
       - run: npm run build
         env:
           VITE_BASE: /gs_goodwe/
+          # banco de verdade no site publicado: URL e chave publicável são públicas por natureza
+          # (vão para o navegador de qualquer jeito). A senha das contas demo NÃO vai: no site,
+          # cada aparelho entra uma vez pela tela de entrada e o link ?conta= passa a entrar sozinho.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_MODO_DEMO: 'true'
       # o Pages nao tem fallback de SPA; o 404 com o mesmo conteudo cobre as
       # rotas reais (/totem, /franqueado, ...) em acesso direto
       - run: cp dist/index.html dist/404.html

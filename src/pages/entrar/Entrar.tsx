@@ -34,7 +34,8 @@ export default function Entrar() {
   const [tipo, setTipo] = useState<Tipo>(params.get('tipo') === 'comercio' || volta.startsWith('/seja-goodwe') ? 'comercio' : 'motorista');
   const [nome, setNome] = useState('');
   const [veiculoId, setVeiculoId] = useState(VEICULOS[0].id);
-  const [email, setEmail] = useState('');
+  // ?email= vem do link de demonstração no site publicado (lá a senha não fica no código da página)
+  const [email, setEmail] = useState(() => params.get('email') ?? '');
   const [senha, setSenha] = useState('');
   const [verSenha, setVerSenha] = useState(false);
   const [erro, setErro] = useState('');
