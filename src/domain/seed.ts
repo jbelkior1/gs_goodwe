@@ -7,7 +7,8 @@ import {
   VEICULOS,
   CURVA_DEMANDA_HORA,
 } from './catalogo';
-import { repartir } from './engine/tarifa';
+import { calcularTarifa, cent, repartir } from './engine/tarifa';
+import { fimDeSemana, horaLocal } from './tempo';
 import { analisarViabilidade } from './engine/ia';
 import type {
   Carregador,
@@ -189,6 +190,7 @@ export function gerarBase(seed = 20260819): BaseDados {
       const cfg = FORMATOS[ponto.formato];
       const regiao = REGIOES.find((x) => x.id === ponto.regiaoId)!;
       const qualidade = qualidadePonto.get(ponto.id)!;
+      const doDia: Sessao[] = [];   // sessões já geradas neste ponto e dia: dão a ocupação da época
 
       const sessoesDia = Math.max(
         0,
@@ -225,9 +227,13 @@ export function gerarBase(seed = 20260819): BaseDados {
         );
 
         const fim = new Date(inicio.getTime() + duracaoH * 3600000);
-        const fatorPico = 1 + (CURVA_DEMANDA_HORA[hora] - 0.5) * 0.28;
-        const tarifa = Number((ponto.precoBaseKWh * fatorPico).toFixed(2));
-        const custo = Number((energiaKWh * tarifa).toFixed(2));
+        // preço da época pelo mesmo motor do app: hora e dia de Brasília; ocupação = recargas em curso + esta
+        const quando = iso(inicio);
+        const emCurso = doDia.filter((x) => x.inicio <= quando && (x.fim ?? '') > quando).length;
+        const tarifa = calcularTarifa(ponto, regiao, horaLocal(inicio), Math.min(1, (emCurso + 1) / cfg.carregadores), {
+          fimDeSemana: fimDeSemana(inicio), vagasOperantes: cfg.carregadores,
+        }).precoFinalKWh;
+        const custo = cent(energiaKWh * tarifa);
 
         const sessao: Sessao = {
           id: `s-${String(seqSessao).padStart(6, '0')}`,
@@ -247,6 +253,7 @@ export function gerarBase(seed = 20260819): BaseDados {
           custoAcumulado: custo,
         };
         sessoes.push(sessao);
+        doDia.push(sessao);
 
         const rep = repartir(custo, energiaKWh, regiao.custoEnergiaKWh);
         const falhou = r.chance(0.02);
@@ -297,7 +304,11 @@ export function gerarBase(seed = 20260819): BaseDados {
         99,
         Math.round(socInicial + (energiaKWh / veiculo.capacidadeKWh) * 100),
       );
-      const tarifa = Number((ponto.precoBaseKWh * (1 + (CURVA_DEMANDA_HORA[agora.getHours()] - 0.5) * 0.28)).toFixed(2));
+      // preço cotado no início da recarga, pelo motor: ocupação = carros que já estavam no ponto + este
+      const operantes = carregadores.filter((c) => c.pontoId === ponto.id && c.estado !== 'OFFLINE' && c.estado !== 'MANUTENCAO').length;
+      const tarifa = calcularTarifa(ponto, REGIOES.find((x) => x.id === ponto.regiaoId)!, horaLocal(inicio), Math.min(1, (i + 1) / Math.max(1, operantes)), {
+        fimDeSemana: fimDeSemana(inicio), vagasOperantes: operantes,
+      }).precoFinalKWh;
 
       carregador.estado = 'OCUPADO';
 
@@ -315,7 +326,7 @@ export function gerarBase(seed = 20260819): BaseDados {
         estado: 'CARREGANDO',
         autorizacao: r.chance(0.6) ? 'RFID' : 'APP',
         tarifaAplicadaKWh: tarifa,
-        custoAcumulado: Number((energiaKWh * tarifa).toFixed(2)),
+        custoAcumulado: cent(energiaKWh * tarifa),
       };
       sessoes.push(sessao);
 

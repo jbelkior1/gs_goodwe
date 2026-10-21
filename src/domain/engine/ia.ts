@@ -11,6 +11,8 @@ import type {
 } from '../types';
 import { CURVA_DEMANDA_HORA, REGRAS, FORMATOS, MODELOS_CARREGADOR } from '../catalogo';
 import type { FormatoFranquia } from '../types';
+import { brl, horas, kw, kwh, num, pct } from '../formato';
+import { horaLocal } from '../tempo';
 
 /** Potência necessária na entrada: vagas × potência do modelo do formato + 8 kW do comércio. */
 export const cargaNecessariaKW = (formato: FormatoFranquia): number =>
@@ -41,7 +43,7 @@ export function preverDemanda(
   const energiaPorHora = new Array(24).fill(0);
 
   for (const s of sessoesHistoricas) {
-    const h = new Date(s.inicio).getHours();
+    const h = horaLocal(s.inicio);
     porHora[h] += 1;
     energiaPorHora[h] += s.energiaKWh;
   }
@@ -148,16 +150,16 @@ export function analisarViabilidade(
 
   if (notaCarga < 0.75) {
     veredito = 'REPROVAR';
-    parecer = `Entrada elétrica insuficiente: ${s.cargaDisponivelKW} kW disponíveis contra ${cargaNecessaria} kW necessários para o formato ${s.formatoDesejado}. Requer upgrade de padrão antes de reavaliar.`;
+    parecer = `Entrada elétrica insuficiente: ${kw(s.cargaDisponivelKW)} disponíveis contra ${kw(cargaNecessaria)} necessários para o formato ${s.formatoDesejado}. Requer upgrade de padrão antes de reavaliar.`;
   } else if (horasUsoPrevistas >= REGRAS.limiarViabilidadeHoras + 0.6) {
     veredito = 'APROVAR';
-    parecer = `Uso previsto de ${horasUsoPrevistas.toFixed(1)} h/dia por carregador, acima do limiar de ${REGRAS.limiarViabilidadeHoras} h. Fluxo e perfil do segmento sustentam o investimento.`;
+    parecer = `Uso previsto de ${horas(horasUsoPrevistas)}/dia por carregador, acima do limiar de ${horas(REGRAS.limiarViabilidadeHoras)}. Fluxo e perfil do segmento sustentam o investimento.`;
   } else if (horasUsoPrevistas >= REGRAS.limiarViabilidadeHoras) {
     veredito = 'APROVAR_COM_RESSALVA';
-    parecer = `Uso previsto de ${horasUsoPrevistas.toFixed(1)} h/dia, apenas ligeiramente acima do limiar de ${REGRAS.limiarViabilidadeHoras} h. Sugerido começar no formato Light e expandir com dados reais.`;
+    parecer = `Uso previsto de ${horas(horasUsoPrevistas)}/dia, apenas ligeiramente acima do limiar de ${horas(REGRAS.limiarViabilidadeHoras)}. Sugerido começar no formato Light e expandir com dados reais.`;
   } else {
     veredito = 'REPROVAR';
-    parecer = `Uso previsto de ${horasUsoPrevistas.toFixed(1)} h/dia, abaixo do limiar de ${REGRAS.limiarViabilidadeHoras} h necessário para o retorno. Aprovar este ponto frustraria o franqueado.`;
+    parecer = `Uso previsto de ${horas(horasUsoPrevistas)}/dia, abaixo do limiar de ${horas(REGRAS.limiarViabilidadeHoras)} necessário para o retorno. Aprovar este ponto frustraria o franqueado.`;
   }
 
   return { score, horasUsoPrevistas, veredito, parecer, fatores };
@@ -182,7 +184,7 @@ export function gerarRecomendacoes(
       pontoId: ponto.id,
       severidade: 'atencao',
       titulo: `Pico previsto às ${pico.hora}h`,
-      detalhe: `A ocupação deve chegar a ${Math.round(pico.ocupacaoPrevista * 100)}% às ${pico.hora}h. Aplicar tarifa cheia nesse horário e pré-alocar potência evita fila e protege a entrada elétrica.`,
+      detalhe: `A ocupação deve chegar a ${pct(pico.ocupacaoPrevista)} às ${pico.hora}h. Aplicar tarifa cheia nesse horário e pré-alocar potência evita fila e protege a entrada elétrica.`,
       decisao: 'Tarifa da faixa + pré-alocação de potência',
     });
   }
@@ -204,7 +206,7 @@ export function gerarRecomendacoes(
       pontoId: ponto.id,
       severidade: 'critico',
       titulo: 'Abaixo do limiar de viabilidade',
-      detalhe: `O ponto opera a ${kpis.horasUsoDia.toFixed(1)} h/dia por carregador, abaixo das ${REGRAS.limiarViabilidadeHoras} h necessárias para o retorno. Ações: sinalização na fachada, divulgação em apps de mapa e parceria de consumo com a loja.`,
+      detalhe: `O ponto opera a ${horas(kpis.horasUsoDia)}/dia por carregador, abaixo das ${horas(REGRAS.limiarViabilidadeHoras)} necessárias para o retorno. Ações: sinalização na fachada, divulgação em apps de mapa e parceria de consumo com a loja.`,
       decisao: 'Plano de ativação comercial do ponto',
     });
   }
@@ -215,7 +217,7 @@ export function gerarRecomendacoes(
       pontoId: ponto.id,
       severidade: 'info',
       titulo: 'Sessões curtas demais',
-      detalhe: `O ticket médio de R$ ${kpis.ticketMedio.toFixed(2)} indica recargas rápidas. Sessões curtas geram pouca permanência — e a permanência é o que traz venda para a loja.`,
+      detalhe: `O ticket médio de ${brl(kpis.ticketMedio)} indica recargas rápidas. Sessões curtas geram pouca permanência — e a permanência é o que traz venda para a loja.`,
       decisao: 'Revisar preço mínimo por sessão',
     });
   }
@@ -224,7 +226,16 @@ export function gerarRecomendacoes(
 }
 
 /** Resumo em linguagem natural para o painel do lojista. */
-export function resumoGerencial(ponto: Ponto, kpis: KPIsPonto, previsao: PrevisaoHora[]): string {
+export function resumoGerencial(
+  ponto: Ponto,
+  kpis: KPIsPonto,
+  previsao: PrevisaoHora[],
+  /** sessões fechadas do ponto na base; com poucas, o pico vem da curva de referência do setor */
+  sessoesNaBase = Infinity,
+): string {
+  if (kpis.sessoesMes === 0) {
+    return `${ponto.nome} ainda não fechou recargas neste mês. A leitura aparece assim que as primeiras sessões forem concluídas.`;
+  }
   const pico = [...previsao].sort((a, b) => b.ocupacaoPrevista - a.ocupacaoPrevista)[0];
   const saude =
     kpis.horasUsoDia >= REGRAS.limiarViabilidadeHoras + 0.7
@@ -232,13 +243,76 @@ export function resumoGerencial(ponto: Ponto, kpis: KPIsPonto, previsao: Previsa
       : kpis.horasUsoDia >= REGRAS.limiarViabilidadeHoras
         ? 'no limite'
         : 'abaixo do esperado';
+  const sobrePico = !pico
+    ? ''
+    : sessoesNaBase >= 30
+      ? ` O pico costuma ser às ${pico.hora}h — é nessa janela que a recarga mais traz gente para dentro da loja.`
+      : ` Ainda há poucos dados reais; pela curva de referência do setor, o pico tende a ser às ${pico.hora}h.`;
 
   return (
-    `No mês, ${ponto.nome} entregou ${kpis.energiaMesKWh.toFixed(0)} kWh em ${kpis.sessoesMes} sessões, ` +
-    `faturando R$ ${kpis.faturamentoMes.toFixed(2)} e deixando R$ ${kpis.liquidoMes.toFixed(2)} líquidos. ` +
-    `A utilização está ${saude} (${kpis.horasUsoDia.toFixed(1)} h/dia por carregador, limiar ${REGRAS.limiarViabilidadeHoras} h). ` +
-    `O pico costuma ser às ${pico?.hora ?? 18}h — é nessa janela que a recarga mais traz gente para dentro da loja.`
+    `No mês, ${ponto.nome} entregou ${kwh(kpis.energiaMesKWh)} em ${num(kpis.sessoesMes)} ${kpis.sessoesMes === 1 ? 'sessão' : 'sessões'}, ` +
+    `faturando ${brl(kpis.faturamentoMes)} e deixando ${brl(kpis.liquidoMes)} líquidos. ` +
+    `A utilização está ${saude} (${horas(kpis.horasUsoDia)}/dia por carregador, meta de ${horas(REGRAS.limiarViabilidadeHoras)}).` +
+    sobrePico
   );
+}
+
+// ---------------------------------------------------------------- previsão financeira
+export interface PrevisaoFinanceira {
+  horasUsoDia: number;
+  vagas: number;
+  energiaMesKWh: number;
+  sessoesMes: number;
+  receitaMes: number;
+  custoEnergiaMes: number;
+  royaltiesMes: number;
+  gatewayMes: number;
+  plataformaMes: number;
+  margemVarejoMes: number;
+  /** o que fica com o comércio por mês, já com a plataforma e o ganho no varejo */
+  resultadoMes: number;
+  capex: number;
+  /** Infinity quando o resultado não é positivo */
+  paybackMeses: number;
+}
+
+/**
+ * Quanto o ponto deve render por mês a partir do uso previsto (h/dia por vaga).
+ * Usada na homologação e no painel do ponto ainda em instalação: não é histórico, é estimativa.
+ * `kwhPorHora` é a energia média entregue por hora de recarga na rede; `kwhPorSessao`, a média por sessão.
+ */
+export function preverFinanceiro(a: {
+  formato: FormatoFranquia;
+  horasUsoDia: number;
+  precoKWh: number;
+  custoEnergiaKWh: number;
+  kwhPorHora: number;
+  kwhPorSessao: number;
+}): PrevisaoFinanceira {
+  const cfg = FORMATOS[a.formato];
+  const energia = a.horasUsoDia * 30 * cfg.carregadores * a.kwhPorHora;
+  const sessoes = a.kwhPorSessao > 0 ? energia / a.kwhPorSessao : 0;
+  const receita = energia * a.precoKWh;
+  const custoEnergia = energia * a.custoEnergiaKWh;
+  const royalties = receita * (REGRAS.royaltyPct + REGRAS.fundoPct);
+  const gateway = receita * REGRAS.gatewayPct;
+  const varejo = sessoes * REGRAS.conversaoLoja * REGRAS.ticketVarejoIncremental * REGRAS.margemVarejo;
+  const resultado = receita - custoEnergia - royalties - gateway - REGRAS.plataformaMes + varejo;
+  return {
+    horasUsoDia: a.horasUsoDia,
+    vagas: cfg.carregadores,
+    energiaMesKWh: energia,
+    sessoesMes: sessoes,
+    receitaMes: receita,
+    custoEnergiaMes: custoEnergia,
+    royaltiesMes: royalties,
+    gatewayMes: gateway,
+    plataformaMes: REGRAS.plataformaMes,
+    margemVarejoMes: varejo,
+    resultadoMes: resultado,
+    capex: cfg.capex,
+    paybackMeses: resultado > 0 ? cfg.capex / resultado : Infinity,
+  };
 }
 
 // ---------------------------------------------------------------- anomalias
@@ -260,7 +334,7 @@ export function detectarAnomalias(
         carregadorId: c.id,
         tipo: 'Carregador sem comunicação',
         detectadaEm: agora.toISOString(),
-        detalhe: `${c.apelido} está há ${Math.round(minutosSemHeartbeat)} min sem enviar telemetria. Verificar rede ou o link Modbus/RS-485.`,
+        detalhe: `${c.apelido} está há ${minutosSemHeartbeat >= 120 ? `${num(minutosSemHeartbeat / 60)} h` : `${num(minutosSemHeartbeat)} min`} sem enviar telemetria. Verificar rede ou o link Modbus/RS-485.`,
       });
     }
   }

@@ -4,16 +4,18 @@
  *   npm run simulador
  *
  * Lê e grava no Supabase com a chave secreta (.env.local). A cada 2 s:
- *   - carro conectado sem sessão → abre sessão ABERTA com código de vínculo (o totem mostra o QR);
+ *   - carro conectado sem sessão → abre sessão ABERTA com código de vínculo (o totem mostra o QR) e
+ *     já com o preço cotado, travado por REGRAS.codigoValidadeMin minutos (evento SESSAO_COTADA);
  *   - sessão AUTENTICADO/CARREGANDO/PAUSADO → aplica o controle de demanda e a física da recarga;
  *   - ENCERRANDO, bateria cheia ou limite de valor → fecha a conta (cobrança PENDENTE);
  *   - sessão paga → o carro simulado sai da vaga; cabo removido → expira ou fecha a sessão.
  */
 import { createClient } from '@supabase/supabase-js';
 import { calcularDemanda, cargaComercioNaHora } from '../src/domain/engine/demanda';
-import { calcularTarifa, repartir, gerarTxid } from '../src/domain/engine/tarifa';
+import { calcularTarifa, cent, cotarPonto, repartir, gerarTxid } from '../src/domain/engine/tarifa';
 import { geracaoSolarKW } from '../src/domain/engine/solar';
-import { REGIOES, VEICULOS } from '../src/domain/catalogo';
+import { ALFABETO_CODIGO, REGIOES, REGRAS, VEICULOS } from '../src/domain/catalogo';
+import { fimDeSemana, horaLocal } from '../src/domain/tempo';
 import type { Carregador, Ponto, Sessao } from '../src/domain/types';
 
 const URL = process.env.SUPABASE_URL;
@@ -25,15 +27,14 @@ if (!URL || !CHAVE) {
 const sb = createClient(URL, CHAVE, { auth: { persistSession: false } });
 const ACEL = Number(process.env.SIM_ACELERACAO ?? 10);
 const TICK_MS = 2000;
-const EXPIRA_MIN = 10;
-const ALFABETO = 'ACDEFHJKMNPRTUVWXY3479';
+const EXPIRA_MIN = REGRAS.codigoValidadeMin;
 const EM_CARGA = ['AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO'];
 const ABERTAS = ['ABERTA', ...EM_CARGA, 'CONCLUIDO'];
 
 const log = (...a: unknown[]) => console.log(new Date().toLocaleTimeString('pt-BR'), ...a);
-const codigo = () => Array.from({ length: 4 }, () => ALFABETO[Math.floor(Math.random() * ALFABETO.length)]).join('');
+const codigo = () => Array.from({ length: 4 }, () => ALFABETO_CODIGO[Math.floor(Math.random() * ALFABETO_CODIGO.length)]).join('');
 const id = (p: string) => `${p}-${crypto.randomUUID().slice(0, 8)}`;
-const r2 = (v: number) => Math.round(v * 100) / 100;
+const r2 = cent;                                            // meio para cima, sem ruído de ponto flutuante
 const veiculo = (vid?: string | null) => VEICULOS.find((v) => v.id === vid) ?? VEICULOS[0];
 
 let pontos: Ponto[] = [];
@@ -48,9 +49,36 @@ async function q<T>(p: PromiseLike<{ data: unknown; error: { message: string } |
   return data as T;
 }
 
+async function registrarErro(tipo: string, s: { id?: string; pontoId: string }, detalhe: Record<string, unknown>) {
+  await q(sb.from('eventos').insert({ tipo, pontoId: s.pontoId, sessaoId: s.id || null, ator: 'simulador', detalhe }));
+  log(`ERRO ${tipo} em ${s.id || s.pontoId}:`, JSON.stringify(detalhe));
+}
+
+/**
+ * Cotação do preço para uma vaga: o mesmo motor e a mesma conta de ocupação do app (tarifaAtual),
+ * na hora e no dia de Brasília. A vaga da sessão cotada já conta como ocupada.
+ */
+function cotar(ponto: Ponto, doPonto: Carregador[], sessoes: Sessao[], vagaId: string) {
+  const regiao = REGIOES.find((r) => r.id === ponto.regiaoId) ?? REGIOES[0];
+  const ocupada = (id: string) => {
+    const daRecarga = doPonto.find((v) => v.id === id)?.carro?.sessaoId;
+    return sessoes.some((x) => x.carregadorId === id && (
+      ['ABERTA', ...EM_CARGA].includes(x.estado) || (['CONCLUIDO', 'FATURADO'].includes(x.estado) && x.id === daRecarga)));
+  };
+  return cotarPonto(ponto, regiao, doPonto, ocupada, new Date(), vagaId);
+}
+
 async function fecharConta(s: Sessao, ponto: Ponto, motivo: string) {
   const regiao = REGIOES.find((r) => r.id === ponto.regiaoId) ?? REGIOES[0];
-  const valor = r2(s.custoAcumulado);
+  let valor = r2(s.custoAcumulado);
+  if (valor <= 0 && s.energiaKWh > 0) {
+    // energia entregue com valor zero: preço nulo ou <= 0 não pode virar recarga de graça. Recota e registra o erro.
+    const agora = new Date();
+    const preco = s.tarifaAplicadaKWh > 0 ? s.tarifaAplicadaKWh
+      : calcularTarifa(ponto, regiao, horaLocal(agora), 0, { fimDeSemana: fimDeSemana(agora) }).precoFinalKWh;
+    valor = r2(s.energiaKWh * preco);
+    await registrarErro('ERRO_TARIFA_INVALIDA', s, { gravada: s.tarifaAplicadaKWh ?? null, usada: preco, energiaKWh: s.energiaKWh, valor, motivo });
+  }
   const rep = repartir(valor, s.energiaKWh, regiao.custoEnergiaKWh);
   if (valor > 0) {
     await q(sb.from('cobrancas').upsert({
@@ -100,19 +128,36 @@ async function ciclo() {
       const s = sessoes.filter((x) => x.carregadorId === vaga.id && daRecarga(x))
         .sort((a, b) => b.inicio.localeCompare(a.inicio))[0];
       if (vaga.carro && !s && vaga.estado !== 'MANUTENCAO') {
-        // mesma conta do app (tarifaAtual): ocupação real do ponto, para o totem e o celular mostrarem o mesmo preço
-        const emCarga = sessoes.filter((x) => x.pontoId === ponto.id && EM_CARGA.includes(x.estado)).length;
-        const tarifa = calcularTarifa(ponto, REGIOES.find((r) => r.id === ponto.regiaoId) ?? REGIOES[0], new Date().getHours(), doPonto.length ? emCarga / doPonto.length : 0);
+        // a cotação nasce aqui e fica travada por EXPIRA_MIN minutos: o totem mostra este preço e o app confirma o mesmo
+        const tarifa = cotar(ponto, doPonto, sessoes, vaga.id);
+        if (!(tarifa.precoFinalKWh > 0)) {                  // nunca abre recarga sem preço
+          await registrarErro('ERRO_COTACAO', { id: '', pontoId: ponto.id }, { vaga: vaga.id, preco: tarifa.precoFinalKWh });
+          continue;
+        }
+        const inicio = new Date();
         const nova = {
           id: id('s'), pontoId: ponto.id, carregadorId: vaga.id, veiculoId: vaga.carro.veiculoId,
-          inicio: new Date().toISOString(), socInicial: vaga.carro.socReal, socAtual: vaga.carro.socReal,
+          inicio: inicio.toISOString(), socInicial: vaga.carro.socReal, socAtual: vaga.carro.socReal,
           energiaKWh: 0, potenciaAtualKW: 0, estado: 'ABERTA', tarifaAplicadaKWh: tarifa.precoFinalKWh,
           custoAcumulado: 0, codigoVinculo: codigo(),
         };
         await q(sb.from('sessoes').insert(nova));
         // anota no carro qual é a recarga dele (só se o carro ainda está lá: a bancada pode ter desconectado)
         await q(sb.from('carregadores').update({ estado: 'OCUPADO', carro: { ...vaga.carro, sessaoId: nova.id } }).eq('id', vaga.id).not('carro', 'is', null));
-        log(`carro conectado em ${ponto.nome} / ${vaga.apelido}: código ${nova.codigoVinculo}`);
+        // o registro da cotação é só auditoria: se falhar, a recarga segue
+        try {
+          await q(sb.from('eventos').insert({
+            tipo: 'SESSAO_COTADA', pontoId: ponto.id, sessaoId: nova.id, ator: 'simulador',
+            detalhe: {
+              precoKWh: tarifa.precoFinalKWh, validaAte: new Date(inicio.getTime() + EXPIRA_MIN * 60000).toISOString(),
+              hora: horaLocal(inicio), faixa: tarifa.faixa, precoBaseKWh: tarifa.precoBaseKWh, fatorHorario: tarifa.fatorHorario,
+              adicionalEscassez: tarifa.adicionalEscassez, descontoSolar: tarifa.descontoSolar, pisoKWh: tarifa.pisoKWh,
+              tetoKWh: tarifa.tetoKWh, custoEnergiaKWh: tarifa.custoEnergiaKWh, margemKWh: tarifa.margemKWh,
+              proxima: tarifa.proxima ?? null, explicacao: tarifa.explicacao,
+            },
+          }));
+        } catch (e) { log('evento SESSAO_COTADA não gravado:', (e as Error).message); }
+        log(`carro conectado em ${ponto.nome} / ${vaga.apelido}: código ${nova.codigoVinculo} · R$ ${tarifa.precoFinalKWh.toFixed(2)}/kWh`);
         continue;
       }
       if (!s) {
@@ -149,7 +194,7 @@ async function ciclo() {
     for (const s of sessoes.filter((x) => x.pontoId === ponto.id && x.estado === 'ENCERRANDO' && !fechadas.has(x.id))) await fecharConta(s, ponto, 'pedido de encerramento');
     if (!ativas.length) continue;
 
-    const h = new Date().getHours();
+    const h = horaLocal();
     const cargaLiquida = Math.max(0, cargaComercioNaHora(ponto, h) - geracaoSolarKW(ponto, h));
     const maxPorSessao: Record<string, number> = {};
     for (const s of ativas) maxPorSessao[s.id] = veiculo(s.veiculoId).potenciaMaxACkW;
@@ -161,7 +206,14 @@ async function ciclo() {
       const v = veiculo(s.veiculoId);
       const energia = s.energiaKWh + pot * dtH;
       const soc = Math.min(100, s.socAtual + ((pot * dtH * 0.92) / v.capacidadeKWh) * 100);
-      const custo = r2(energia * (s.tarifaAplicadaKWh ?? 0));
+      let preco = s.tarifaAplicadaKWh;
+      if (!(preco > 0)) {                                    // preço nulo ou <= 0 nunca vira recarga de graça: recota e avisa
+        preco = cotar(ponto, doPonto, sessoes, s.carregadorId).precoFinalKWh;
+        await q(sb.from('sessoes').update({ tarifaAplicadaKWh: preco }).eq('id', s.id).in('estado', ['AUTENTICADO', 'CARREGANDO', 'PAUSADO']));
+        await registrarErro('ERRO_TARIFA_INVALIDA', s, { gravada: s.tarifaAplicadaKWh ?? null, recotada: preco });
+        s.tarifaAplicadaKWh = preco;
+      }
+      const custo = r2(energia * preco);
       const pausado = !!a?.pausado;
       const atualizado = {
         estado: pausado ? 'PAUSADO' : 'CARREGANDO', energiaKWh: Number(energia.toFixed(3)), socAtual: Number(soc.toFixed(1)),

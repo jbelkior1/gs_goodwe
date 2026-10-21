@@ -1,6 +1,8 @@
 import { exigirBanco } from './supabase';
-import { base, obterPonto, regiaoDoPonto, tarifaAtual } from '../domain/db';
+import { base, cotacaoDaSessao, obterPonto, obterSessao, regiaoDoPonto } from '../domain/db';
 import { analisarViabilidade } from '../domain/engine/ia';
+import { cent, sugerirPrecoBase, validarPrecoBase } from '../domain/engine/tarifa';
+import { tarifaKWh } from '../domain/formato';
 import { FORMATOS, REGIOES } from '../domain/catalogo';
 import type { Cobranca, FormatoFranquia, SegmentoComercio, Sessao } from '../domain/types';
 
@@ -22,29 +24,51 @@ export async function registrarEvento(tipo: string, pontoId?: string | null, ses
 }
 
 // ---------------------------------------------------------------- motorista
-/** O motorista leu o QR: assume a sessão, trava o preço e a recarga começa (o simulador libera a vaga). */
-export async function vincularSessao(sessao: Sessao, motoristaId: string, veiculoId: string, socInformado?: number, limiteValor?: number) {
-  const tarifa = tarifaAtual(sessao.pontoId).precoFinalKWh;
+/**
+ * Preço que vai valer para a sessão ABERTA. Dentro da validade usa o preço travado no totem (não recalcula);
+ * fora dela cota de novo. Se a tela mostrou outro preço (`precoEsperado`), não grava: avisa que mudou.
+ */
+function precoDaSessao(sessao: Sessao, precoEsperado?: number) {
+  const cot = cotacaoDaSessao(obterSessao(sessao.id) ?? sessao);
+  if (!(cot.precoKWh > 0)) throw new Error('Não foi possível cotar o preço desta recarga. Tente de novo em instantes.');
+  if (precoEsperado != null && Math.abs(precoEsperado - cot.precoKWh) > 0.004) {
+    throw new Error(`O preço mudou para ${tarifaKWh(cot.precoKWh)}. Confira o valor e confirme de novo.`);
+  }
+  return cot;
+}
+
+/**
+ * O motorista leu o QR: assume a sessão e a recarga começa (o simulador libera a vaga).
+ * O preço é o cotado no totem e fica travado; só é refeito se a cotação venceu.
+ */
+export async function vincularSessao(sessao: Sessao, motoristaId: string, veiculoId: string, socInformado?: number, limiteValor?: number, precoEsperado?: number) {
+  if (socInformado != null && (!Number.isFinite(socInformado) || socInformado < 0 || socInformado > 100)) {
+    throw new Error('Informe a bateria entre 0 e 100%.');
+  }
+  const cot = precoDaSessao(sessao, precoEsperado);
   const linhas = await ok<Sessao[]>(exigirBanco().from('sessoes').update({
     estado: 'AUTENTICADO', motoristaId, veiculoId, autorizacao: 'QR', codigoVinculo: null,
-    tarifaAplicadaKWh: tarifa,
+    ...(cot.travada ? {} : { tarifaAplicadaKWh: cot.precoKWh }),
     ...(socInformado != null ? { socInicial: socInformado, socAtual: socInformado } : {}),
     limiteValor: limiteValor && limiteValor > 0 ? limiteValor : null,
   }).eq('id', sessao.id).eq('estado', 'ABERTA').select());
   if (!linhas?.length) throw new Error('Este código já foi usado ou a sessão expirou.');
-  await registrarEvento('SESSAO_VINCULADA', sessao.pontoId, sessao.id, { tarifa, motoristaId }, motoristaId);
+  await registrarEvento('SESSAO_VINCULADA', sessao.pontoId, sessao.id,
+    { tarifa: cot.precoKWh, cotacao: cot.travada ? 'TRAVADA' : 'RECOTADA', anterior: cot.anterior ?? null, motoristaId }, motoristaId);
   return linhas[0];
 }
 
-/** Visitante no totem: começa sem conta e paga o Pix no próprio totem ao encerrar. */
-export async function iniciarVisitante(sessao: Sessao, limiteValor?: number) {
-  const tarifa = tarifaAtual(sessao.pontoId).precoFinalKWh;
+/** Visitante no totem: começa sem conta e paga o Pix no próprio totem ao encerrar. Mesma regra de preço travado. */
+export async function iniciarVisitante(sessao: Sessao, limiteValor?: number, precoEsperado?: number) {
+  const cot = precoDaSessao(sessao, precoEsperado);
   const linhas = await ok<Sessao[]>(exigirBanco().from('sessoes').update({
-    estado: 'AUTENTICADO', autorizacao: 'VISITANTE', codigoVinculo: null, tarifaAplicadaKWh: tarifa,
+    estado: 'AUTENTICADO', autorizacao: 'VISITANTE', codigoVinculo: null,
+    ...(cot.travada ? {} : { tarifaAplicadaKWh: cot.precoKWh }),
     limiteValor: limiteValor ?? null,
   }).eq('id', sessao.id).eq('estado', 'ABERTA').select());
   if (!linhas?.length) throw new Error('Esta vaga já foi assumida por outra pessoa.');
-  await registrarEvento('SESSAO_VISITANTE', sessao.pontoId, sessao.id, { tarifa }, 'totem');
+  await registrarEvento('SESSAO_VISITANTE', sessao.pontoId, sessao.id,
+    { tarifa: cot.precoKWh, cotacao: cot.travada ? 'TRAVADA' : 'RECOTADA', anterior: cot.anterior ?? null }, 'totem');
 }
 
 export async function encerrarSessao(sessao: Sessao, origem: string) {
@@ -127,7 +151,7 @@ async function criarPontoAprovado(h: (typeof base.homologacoes)[number]) {
     formato: h.formatoDesejado, segmento: h.segmento, status: 'INSTALACAO', ativo: false,
     limitePotenciaKW: h.cargaDisponivelKW, limiteCorrenteA: Math.round((h.cargaDisponivelKW * 1000) / 220),
     // perto do centro da região, mas sem cair em cima de outro ponto no mapa (~1 km)
-    cargaBaseKW: 8, precoBaseKWh: 1.9, lat: regiao.lat + (Math.random() - 0.5) * 0.02, lng: regiao.lng + (Math.random() - 0.5) * 0.02,
+    cargaBaseKW: 8, precoBaseKWh: sugerirPrecoBase(regiao), lat: regiao.lat + (Math.random() - 0.5) * 0.02, lng: regiao.lng + (Math.random() - 0.5) * 0.02,
   }));
   await ok(sb.from('carregadores').upsert(Array.from({ length: cfg.carregadores }, (_, i) => ({
     id: `${pontoId}-c${i + 1}`, pontoId, apelido: `Vaga ${i + 1}`, modelo: cfg.modelo, estado: 'OFFLINE', firmware: 'HCA-G2 v3.2.0',
@@ -143,12 +167,35 @@ export async function salvarPonto(pontoId: string, campos: Partial<{
   nome: string; endereco: string; precoBaseKWh: number; limitePotenciaKW: number; cargaBaseKW: number;
   temSolar: boolean; potenciaFVkWp: number;
 }>) {
-  const extra = campos.limitePotenciaKW ? { limiteCorrenteA: Math.round((campos.limitePotenciaKW * 1000) / 220) } : {};
-  await ok(exigirBanco().from('pontos').update({ ...campos, ...extra }).eq('id', pontoId));
+  const ponto = obterPonto(pontoId);
+  if (!ponto) throw new Error('Ponto não encontrado.');
+  if (campos.nome != null && !campos.nome.trim()) throw new Error('Informe o nome do ponto.');
+  if (campos.limitePotenciaKW != null && !(Number.isFinite(campos.limitePotenciaKW) && campos.limitePotenciaKW > 0)) {
+    throw new Error('O limite da entrada elétrica precisa ser maior que zero.');
+  }
+  if (campos.cargaBaseKW != null && !(Number.isFinite(campos.cargaBaseKW) && campos.cargaBaseKW >= 0)) {
+    throw new Error('A carga típica do comércio não pode ser negativa.');
+  }
+  if (campos.potenciaFVkWp != null && !(Number.isFinite(campos.potenciaFVkWp) && campos.potenciaFVkWp >= 0)) {
+    throw new Error('A potência solar não pode ser negativa.');
+  }
+  const limpos = { ...campos };
+  if (campos.precoBaseKWh != null) {
+    const v = validarPrecoBase(campos.precoBaseKWh, regiaoDoPonto(ponto));
+    if (!v.valido) throw new Error(v.erro);
+    limpos.precoBaseKWh = cent(campos.precoBaseKWh);
+  }
+  const extra = limpos.limitePotenciaKW ? { limiteCorrenteA: Math.round((limpos.limitePotenciaKW * 1000) / 220) } : {};
+  await ok(exigirBanco().from('pontos').update({ ...limpos, ...extra }).eq('id', pontoId));
 }
 
-/** Ponto instalado: entra no mapa do motorista e as vagas ficam disponíveis. */
+/** Ponto instalado: entra no mapa do motorista e as vagas ficam disponíveis. Só ativa com preço base válido. */
 export async function ativarPonto(pontoId: string) {
+  const ponto = obterPonto(pontoId);
+  if (ponto) {
+    const v = validarPrecoBase(Number(ponto.precoBaseKWh), regiaoDoPonto(ponto));
+    if (!v.valido) throw new Error(`Acerte o preço base antes de ativar. ${v.erro}`);
+  }
   const sb = exigirBanco();
   await ok(sb.from('pontos').update({ status: 'ATIVO', ativo: true, inauguradoEm: new Date().toISOString() }).eq('id', pontoId));
   await ok(sb.from('carregadores').update({ estado: 'DISPONIVEL', ultimoHeartbeat: new Date().toISOString() })

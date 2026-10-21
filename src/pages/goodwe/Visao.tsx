@@ -1,102 +1,214 @@
+import { useRef, useState } from 'react';
 import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-} from 'recharts';
-import {
-  kpisDaRede, desempenhoPorRegiao, serieDiaria, rankingPontos, base, noMesAtual, solarDaRede,
+  resumoDaRede, kpisDaRede, desempenhoPorRegiao, serieDoPeriodo, rankingPontos, base, solarDaRede,
+  atencaoDaRede, dadosAte, type ItemAtencao,
 } from '../../domain/db';
-import { REGRAS, MODELOS_CARREGADOR } from '../../domain/catalogo';
+import { REGRAS } from '../../domain/catalogo';
+import { brl, brlCurto, dataHora, horas, kwh, num, plural } from '../../domain/formato';
 import {
-  Card, KPI, Tabela, Badge, Bar, brl, num, Nota, ChartTip,
-  CHART, eixoProps, gradeProps,
+  Card, KPI, Badge, Bar, ChartFrame, GraficoDiario, ListaAtencao, StatusBadge, TabelaOrdenavel,
+  EmptyState, type ColunaOrdenavel,
 } from '../../ui/kit';
+import { Icone } from '../../ui/icones';
+
+type LinhaPonto = ReturnType<typeof rankingPontos>[number];
+
+const dm = (chave: string) => `${chave.slice(8, 10)}/${chave.slice(5, 7)}`;
+const semAcento = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 export default function Visao() {
+  const [busca, setBusca] = useState('');
+  const [todasZonas, setTodasZonas] = useState(false);
+  const tabelaRef = useRef<HTMLDivElement>(null);
+
+  const r = resumoDaRede('mes');
   const k = kpisDaRede();
   const regioes = desempenhoPorRegiao();
-  const serie = serieDiaria(null, 30);
+  const serie = serieDoPeriodo(null, 'mes');
   const ranking = rankingPontos();
-
-  const maxFat = Math.max(...regioes.map((r) => r.faturamento), 1);
-
-  // ---- receita da franqueadora e frota (abas de royalties e frota, embutidas aqui)
-  const cobrancasMes = base.cobrancas.filter((c) => noMesAtual(c.criadaEm) && c.status === 'PAGO');
-  const recorrente =
-    cobrancasMes.reduce((t, c) => t + c.royaltyGoodWe + c.fundoMarketing, 0) +
-    base.pontos.filter((p) => p.ativo).length * REGRAS.plataformaMes;
-  const potenciaInstalada = base.carregadores.reduce(
-    (t, c) => t + MODELOS_CARREGADOR[c.modelo].potenciaKW, 0,
-  );
+  const atencao = atencaoDaRede();
   const solar = solarDaRede();
+  const ate = dadosAte();
+  const base_ = r.periodo.anterior.base;
+  const meta = REGRAS.limiarViabilidadeHoras;
+
+  const maxFat = Math.max(...regioes.map((x) => x.faturamento), 1);
+  const zonas = todasZonas ? regioes : regioes.slice(0, 6);
+
+  // "Ver na tabela": filtra pelo nome do ponto e leva a tela até lá
+  const verNaTabela = (item: ItemAtencao) => {
+    const ponto = base.pontos.find((p) => p.id === item.pontoId);
+    if (!ponto) return;
+    setBusca(ponto.nome);
+    tabelaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const termo = semAcento(busca.trim());
+  const linhas = termo
+    ? ranking.filter((l) => semAcento([
+        l.ponto.nome, l.regiao.zona, l.regiao.cidade, l.regiao.uf, l.ponto.segmento, l.ponto.formato, l.status,
+      ].join(' ')).includes(termo))
+    : ranking;
+
+  const colunas: ColunaOrdenavel<LinhaPonto>[] = [
+    {
+      id: 'ponto', rotulo: 'Ponto', valor: (l) => l.ponto.nome,
+      celula: (l) => <span className="strong">{l.ponto.nome}</span>,
+    },
+    {
+      id: 'zona', rotulo: 'Zona', valor: (l) => l.regiao.zona,
+      celula: (l) => <span className="tiny muted">{l.regiao.zona} · {l.regiao.cidade}/{l.regiao.uf}</span>,
+    },
+    { id: 'formato', rotulo: 'Formato', valor: (l) => l.ponto.formato, celula: (l) => <Badge tom="neu">{l.ponto.formato}</Badge> },
+    { id: 'segmento', rotulo: 'Segmento', valor: (l) => l.ponto.segmento, celula: (l) => <span className="tiny muted">{l.ponto.segmento}</span> },
+    { id: 'status', rotulo: 'Status', valor: (l) => l.status, celula: (l) => <StatusBadge estado={l.status} /> },
+    { id: 'sessoes', rotulo: 'Sessões', direita: true, valor: (l) => l.kpis.sessoesMes, celula: (l) => <span className="num">{num(l.kpis.sessoesMes)}</span> },
+    { id: 'energia', rotulo: 'Energia', direita: true, valor: (l) => l.kpis.energiaMesKWh, celula: (l) => <span className="num">{kwh(l.kpis.energiaMesKWh)}</span> },
+    {
+      id: 'receita', rotulo: 'Receita', direita: true, valor: (l) => l.kpis.faturamentoMes,
+      celula: (l) => <span className="num strong">{brl(l.kpis.faturamentoMes)}</span>,
+    },
+    {
+      id: 'uso', rotulo: 'Uso por vaga', valor: (l) => (l.status === 'ATIVO' ? l.kpis.horasUsoDia : null),
+      celula: (l) => l.status !== 'ATIVO' ? <span className="muted">—</span> : (
+        <Badge tom={l.kpis.horasUsoDia >= meta ? 'pos' : 'warn'}>
+          <Icone nome={l.kpis.horasUsoDia >= meta ? 'check' : 'alerta'} tamanho={12} />
+          {horas(l.kpis.horasUsoDia)}/dia
+        </Badge>
+      ),
+    },
+    {
+      id: 'alertas', rotulo: 'Alertas', valor: (l) => l.alertas.length,
+      celula: (l) => l.alertas.length === 0 ? <span className="muted">—</span> : (
+        <span className="pill-row">
+          {l.alertas.map((a) => (
+            <Badge key={a} tom={a.includes('sinal') ? 'neg' : 'warn'}>
+              <Icone nome="alerta" tamanho={12} />{a}
+            </Badge>
+          ))}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className="stack">
-      <div className="grid g5">
-        <KPI label="Pontos ativos" value={`${k.pontosAtivos}/${k.pontosTotal}`} accent="red"
-             foot={`${k.carregadoresTotal} carregadores`} />
-        <KPI label="Faturamento da rede" value={brl(k.faturamentoRedeMes)}
-             foot="no mês, todos os pontos" />
-        <KPI label="Royalties + fundo" value={brl(k.royaltiesMes)} accent="green"
-             foot="receita da franqueadora" />
-        <KPI label="Energia entregue" value={`${num(k.energiaMesKWh)} kWh`} accent="teal"
-             foot={`${k.sessoesMes} sessões`} />
-        <KPI label="Abaixo do limiar" value={k.pontosAbaixoDoLimiar}
-             accent={k.pontosAbaixoDoLimiar > 0 ? 'red' : 'green'}
-             foot={`< ${REGRAS.limiarViabilidadeHoras} h/dia por carregador`} />
+      <div className="cabeca-pagina">
+        <span className="muted tiny">
+          Mês atual · {dm(r.periodo.inicio)} a {dm(r.periodo.fim)} · comparado com {base_.replace('vs ', '')}
+        </span>
+        {ate && <span className="dados-ate"><Icone nome="relogio" tamanho={12} />dados até {dataHora(ate)}</span>}
       </div>
 
-      {k.pontosAbaixoDoLimiar > 0 && (
-        <Nota titulo={`${k.pontosAbaixoDoLimiar} pontos precisam de atenção`}>
-          Esses pontos operam abaixo de {REGRAS.limiarViabilidadeHoras} h/dia por carregador e não
-          se pagam no prazo esperado. É exatamente o cenário que a homologação existe para evitar —
-          e onde a rede deve agir com plano de ativação comercial.
-        </Nota>
-      )}
+      <div className="grid g6">
+        <KPI label="Pontos operando" value={num(r.pontosOperando)}
+             foot={(
+               <>
+                 de {plural(r.pontosTotal, 'ponto', 'pontos')} · {num(r.pontosInstalacao)} em instalação · {plural(r.pontosSuspensos, 'suspenso', 'suspensos')}.<br />
+                 {plural(k.carregadoresTotal, 'vaga', 'vagas')} e {num(k.potenciaInstaladaKW)} kW instalados nos pontos em operação
+               </>
+             )} />
+        <KPI label="Receita da rede" value={brl(r.receita)}
+             delta={{ valor: r.variacao.receita, base: base_ }}
+             foot="no mês, todos os pontos" />
+        <KPI label="Receita GoodWe" value={brl(r.receitaGoodWe)}
+             delta={{ valor: r.variacao.receitaGoodWe, base: base_ }}
+             foot={(
+               <>
+                 royalties, fundo e plataforma até hoje.<br />
+                 Ritmo de {brlCurto(r.receitaGoodWeMensal)}/mês; projeção de {brlCurto(r.projecaoAnual)}/ano{' '}
+                 <span className="selo">estimado</span>
+               </>
+             )} />
+        <KPI label="Energia entregue" value={kwh(r.energia)}
+             delta={{ valor: r.variacao.energia, base: base_ }}
+             foot="no mês, todos os pontos" />
+        <KPI label="Sessões" value={num(r.sessoes)}
+             delta={{ valor: r.variacao.sessoes, base: base_ }}
+             foot={r.sessoes ? `ticket médio ${brl(r.receita / r.sessoes)}` : 'nenhuma recarga fechada no mês'} />
+        <KPI label="Uso médio por vaga" value={num(r.horasUsoDia, 1)} unit="h/dia"
+             meta={{ rotulo: `meta de ${horas(meta)}/dia`, atingida: r.horasUsoDia >= meta, progresso: Math.min(1, r.horasUsoDia / meta) }}
+             foot={`média ponderada pelas ${plural(r.vagasOperando, 'vaga', 'vagas')} em operação`} />
+      </div>
+
+      <Card
+        title={`Precisa de atenção${atencao.length ? ` (${num(atencao.length)})` : ''}`}
+        sub="Vagas sem sinal, pontos abaixo da meta de uso e pedidos de franquia parados"
+      >
+        <ListaAtencao
+          itens={atencao}
+          max={5}
+          aoVer={verNaTabela}
+          vazio="Todas as vagas estão respondendo, os pontos estão dentro da meta e não há pedido parado."
+        />
+      </Card>
 
       <div className="grid g-2-1">
-        <Card title="Faturamento consolidado" sub="Rede inteira, últimos 30 dias">
-          <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={serie}>
-              <defs>
-                <linearGradient id="gr" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={CHART.serie1} stopOpacity={0.4} />
-                  <stop offset="100%" stopColor={CHART.serie1} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...gradeProps} />
-              <XAxis dataKey="dia" {...eixoProps} minTickGap={24} />
-              <YAxis {...eixoProps} />
-              <Tooltip content={<ChartTip fmt={brl} />} />
-              <Area type="monotone" dataKey="faturamento" stroke={CHART.serie1Claro} fill="url(#gr)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Card>
+        <ChartFrame
+          titulo="Receita diária da rede"
+          sub="Do dia 1 até hoje · barras diárias e média móvel de 7 dias"
+          dadosAte={ate}
+          vazio={r.semDados
+            ? { titulo: 'Sem recargas fechadas no mês', texto: 'O gráfico aparece quando a rede fechar a primeira recarga do mês.' }
+            : null}
+        >
+          <GraficoDiario serie={serie} metrica="faturamento" altura={260} />
+        </ChartFrame>
 
-        <Card title="Desempenho por região" sub="Onde a rede fatura mais">
-          <div className="stack" style={{ gap: 9 }}>
-            {regioes.slice(0, 8).map((r) => (
-              <div key={r.regiao.id}>
-                <div className="row between tiny">
-                  <span className="strong">{r.regiao.cidade}/{r.regiao.uf}</span>
-                  <span className="num">{brl(r.faturamento)}</span>
+        <Card title="Desempenho por zona" sub="Onde a rede fatura mais no mês">
+          {regioes.length === 0 ? (
+            <EmptyState icone="mapa" titulo="Nenhuma zona com ponto ainda" />
+          ) : (
+            <div className="stack" style={{ gap: 10 }}>
+              {zonas.map((z) => (
+                <div key={z.regiao.id}>
+                  <div className="row between tiny">
+                    <span className="strong">{z.rotulo}</span>
+                    <span className="num">{brl(z.faturamento)}</span>
+                  </div>
+                  <Bar valor={z.faturamento / maxFat} />
+                  <div className="tiny muted">
+                    {plural(z.pontos, 'ponto', 'pontos')} · {kwh(z.energia)} · {plural(z.sessoes, 'sessão', 'sessões')}
+                    {z.operando < z.pontos ? ` · ${num(z.pontos - z.operando)} fora de operação` : ''}
+                  </div>
                 </div>
-                <Bar valor={r.faturamento / maxFat} />
-                <div className="tiny muted">{r.pontos} ponto(s) · {num(r.energia)} kWh · {r.sessoes} sessões</div>
-              </div>
-            ))}
-          </div>
+              ))}
+              {regioes.length > 6 && (
+                <button type="button" className="btn sm" style={{ alignSelf: 'flex-start' }} onClick={() => setTodasZonas((v) => !v)}>
+                  {todasZonas ? 'Mostrar menos' : `Ver todas (${num(regioes.length)})`}
+                </button>
+              )}
+            </div>
+          )}
         </Card>
       </div>
 
-      <div className="grid g4">
-        <KPI label="Recorrente GoodWe/mês" value={brl(recorrente)} sm accent="red"
-             foot="royalties 6% + fundo 2% + plataforma" />
-        <KPI label="Projeção anual" value={brl(recorrente * 12)} sm accent="green"
-             foot="mantendo a base atual" />
-        <KPI label="Potência instalada" value={`${num(potenciaInstalada)} kW`} sm accent="teal"
-             foot={`${k.carregadoresTotal} carregadores na rede`} />
-        <KPI label="Carregadores offline" value={k.carregadoresOffline} sm
-             accent={k.carregadoresOffline ? 'red' : 'green'}
-             foot="sem telemetria — não aceitam sessão" />
+      <div ref={tabelaRef} style={{ scrollMarginTop: 90 }}>
+        <Card
+          title="Pontos da rede"
+          sub={`Mês atual · ${num(linhas.length)} de ${plural(ranking.length, 'ponto', 'pontos')}. Clique no cabeçalho para ordenar.`}
+          action={
+            <input
+              className="busca" type="search" value={busca} placeholder="Buscar ponto, zona ou segmento"
+              aria-label="Buscar ponto" onChange={(e) => setBusca(e.target.value)}
+            />
+          }
+        >
+          <div className="scroll-y" style={{ maxHeight: 520 }}>
+            <TabelaOrdenavel
+              colunas={colunas}
+              linhas={linhas}
+              chave={(l) => l.ponto.id}
+              ordemInicial={{ id: 'receita', dir: 'desc' }}
+              vazio={(
+                <EmptyState icone="mapaLupa" titulo="Nenhum ponto encontrado"
+                            acao={<button type="button" className="btn sm" onClick={() => setBusca('')}>Limpar a busca</button>}>
+                  Tente outro nome, zona ou segmento.
+                </EmptyState>
+              )}
+            />
+          </div>
+        </Card>
       </div>
 
       <Card
@@ -106,24 +218,24 @@ export default function Visao() {
         <div className="grid g4">
           <div>
             <div className="kpi-label">Pontos com geração própria</div>
-            <div className="kpi-value sm kpi-accent-solar">
-              {solar.pontosComSolar}<span className="tiny muted">/{base.pontos.length}</span>
+            <div className="kpi-value sm">
+              {num(solar.pontosComSolar)}<span className="tiny muted"> de {num(base.pontos.length)}</span>
             </div>
             <div className="tiny muted">{num(solar.potenciaFVkWp, 1)} kWp instalados</div>
           </div>
           <div>
             <div className="kpi-label">Com bateria</div>
-            <div className="kpi-value sm kpi-accent-teal">{solar.pontosComBateria}</div>
+            <div className="kpi-value sm">{num(solar.pontosComBateria)}</div>
             <div className="tiny muted">modo FV + Bateria ativo</div>
           </div>
           <div>
             <div className="kpi-label">Solar na energia vendida</div>
-            <div className="kpi-value sm kpi-accent-green">{brl(solar.economiaRecargaMes)}</div>
+            <div className="kpi-value sm">{brl(solar.economiaRecargaMes)}</div>
             <div className="tiny muted">economia no custo da recarga, por mês</div>
           </div>
           <div>
             <div className="kpi-label">Oportunidade aberta</div>
-            <div className="kpi-value sm kpi-accent-red">{solar.pontosSemSolar}</div>
+            <div className="kpi-value sm">{num(solar.pontosSemSolar)}</div>
             <div className="tiny muted">pontos ainda sem solar — leads qualificados</div>
           </div>
         </div>
@@ -132,30 +244,6 @@ export default function Visao() {
           A franquia de recarga funciona como canal de aquisição: cada comércio que entra na rede
           instala carga elétrica nova e vira candidato natural a inversor, bateria e geração solar
           GoodWe. Também são <b>{num(solar.co2EvitadoMesKg, 1)} kg de CO₂</b> evitados por mês.
-        </div>
-      </Card>
-
-      <Card title="Ranking de pontos" sub="Desempenho de cada unidade no mês">
-        <div className="scroll-y">
-        <Tabela cabecalho={['#', 'Ponto', 'Formato', 'Região', '#Sessões', '#Energia', '#Faturamento', 'Uso/dia']}>
-          {ranking.map((r, i) => {
-            const ok = r.kpis.horasUsoDia >= REGRAS.limiarViabilidadeHoras;
-            return (
-              <tr key={r.ponto.id}>
-                <td className="muted">{i + 1}</td>
-                <td className="strong">{r.ponto.nome}</td>
-                <td><Badge tom="gray">{r.ponto.formato}</Badge></td>
-                <td className="tiny muted">{r.ponto.segmento}</td>
-                <td className="r num">{r.kpis.sessoesMes}</td>
-                <td className="r num">{num(r.kpis.energiaMesKWh)} kWh</td>
-                <td className="r num strong">{brl(r.kpis.faturamentoMes)}</td>
-                <td>
-                  <Badge tom={ok ? 'green' : 'red'}>{num(r.kpis.horasUsoDia, 1)} h</Badge>
-                </td>
-              </tr>
-            );
-          })}
-        </Tabela>
         </div>
       </Card>
     </div>

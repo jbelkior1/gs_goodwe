@@ -1,14 +1,36 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp, type Persona } from './estado';
-import { base, obterPonto } from '../domain/db';
+import { base, obterPonto, pontoAtivo, statusDoPonto, dadosAte } from '../domain/db';
+import { dataHora, plural } from '../domain/formato';
 import { bancoConfigurado } from '../data/supabase';
 import { comTela, telaDoNavegador } from './tela';
-import { Badge, Nota } from '../ui/kit';
+import { Badge, Nota, StatusBadge } from '../ui/kit';
 import { Icone, type NomeIcone } from '../ui/icones';
 import { Totem3D } from '../ui/Totem3D';
 
+/** a troca de painel é da vitrine: só aparece no modo demonstração */
 const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
+
+const PAPEL_LEGIVEL: Record<string, string> = {
+  motorista: 'Motorista',
+  franqueado: 'Franqueado · comércio',
+  goodwe: 'GoodWe · franqueadora',
+};
+
+/** "Comerciante (demo)" → "C"; "Maria Souza" → "MS" (só palavras que começam com letra) */
+const iniciais = (nome: string) =>
+  nome.split(/\s+/).filter((p) => /^\p{L}/u.test(p)).slice(0, 2).map((p) => p[0].toUpperCase()).join('')
+  || nome.charAt(0).toUpperCase() || '?';
+
+function IconeTelaCheia() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"
+         strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5" />
+    </svg>
+  );
+}
 
 const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcone; label: string }[] }[]> = {
   motorista: [
@@ -17,7 +39,7 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcon
       itens: [
         { to: '/motorista', ico: 'globo', label: 'Onde carregar' },
         { to: '/motorista/recarga', ico: 'raio', label: 'Minha recarga' },
-        { to: '/motorista/vincular', ico: 'check', label: 'Digitar código do totem' },
+        { to: '/motorista/vincular', ico: 'qr', label: 'Ler o QR da recarga' },
         { to: '/motorista/assistente', ico: 'chat', label: 'Falar com o Volt' },
       ],
     },
@@ -53,11 +75,11 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcon
 const TITULOS: Record<string, { t: string; s: string }> = {
   '/motorista': { t: 'Onde carregar', s: 'Pontos da rede disponíveis agora' },
   '/motorista/recarga': { t: 'Minha recarga', s: 'Acompanhe a sessão e feche a conta por Pix' },
-  '/motorista/vincular': { t: 'Confirmar recarga', s: 'Código do QR do totem' },
+  '/motorista/vincular': { t: 'Confirmar recarga', s: 'Leia o QR que o totem mostra ou digite o código da recarga' },
   '/franqueado/ponto': { t: 'Meu ponto', s: 'Instalação, configuração, vagas e totem' },
   '/motorista/assistente': { t: 'Volt', s: 'O assistente da rede no seu bolso' },
   '/totem': { t: 'Totem do eletroposto', s: 'Autoatendimento com o assistente Volt' },
-  '/franqueado': { t: 'Painel da unidade', s: 'Como o ponto está performando neste mês' },
+  '/franqueado': { t: 'Painel da unidade', s: 'Resultado, uso das vagas e o que precisa de atenção' },
   '/franqueado/demanda': { t: 'Controle de demanda', s: 'Distribuição de potência e proteção da entrada elétrica' },
   '/franqueado/financeiro': { t: 'Tarifas e financeiro', s: 'Preço dinâmico, cobranças e resultado da unidade' },
   '/goodwe': { t: 'Visão da rede', s: 'Todos os pontos Ponto W no Brasil' },
@@ -134,10 +156,25 @@ function Porta({ persona, atual }: { persona: Persona; atual?: string }) {
 /** cheia: só o ambiente do papel da rota, sem a troca de painel da vitrine */
 export default function Layout({ cheia = false }: { cheia?: boolean }) {
   const { persona, setPersona, pontoId, setPontoId, perfil, sair } = useApp();
-  const pontosVisiveis = perfil?.papel === 'franqueado' ? base.pontos.filter((p) => p.franqueadoId === perfil.franqueadoId) : base.pontos;
   const location = useLocation();
   const navigate = useNavigate();
   const ponto = obterPonto(pontoId);
+  // franqueado vê só as unidades dele; a vitrine (demonstração) e a GoodWe veem todas
+  const pontosVisiveis = perfil?.papel === 'franqueado'
+    ? base.pontos.filter((p) => p.franqueadoId === perfil.franqueadoId)
+    : DEMO || perfil?.papel === 'goodwe' || !bancoConfigurado ? base.pontos : ponto ? [ponto] : [];
+
+  const [menuConta, setMenuConta] = useState(false);
+  const contaRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuConta) return;
+    const fora = (e: PointerEvent) => { if (!contaRef.current?.contains(e.target as Node)) setMenuConta(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuConta(false); };
+    document.addEventListener('pointerdown', fora);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', fora); document.removeEventListener('keydown', esc); };
+  }, [menuConta]);
+  const ate = dadosAte();
 
   // deep link (ou F5 numa rota interna) precisa acertar o perfil e a moldura
   const personaAtual = personaDaRota(location.pathname) ?? persona;
@@ -171,8 +208,8 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
           <span className="brand-voltar"><Icone nome="casa" tamanho={14} /></span>
         </Link>
 
-        {!cheia && <div className="persona-switch">
-          <div className="persona-label">Painel</div>
+        {!cheia && DEMO && <div className="persona-switch">
+          <div className="persona-label">Demonstração</div>
           {(Object.keys(ROTULO) as Persona[]).map((p) => (
             <button
               key={p}
@@ -204,10 +241,40 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
           ))}
         </nav>
 
-        <div className="sidebar-foot">
-          {perfil ? <>{perfil.nome} · {perfil.papel} · <button className="btn" onClick={() => sair()}>sair</button></> : <Link to="/entrar">ENTRAR</Link>}
-          <br />{base.sessoes.length.toLocaleString('pt-BR')} SESSÕES · {bancoConfigurado ? 'BANCO AO VIVO' : 'BASE SIMULADA'}
-          {cheia && DEMO && <><br /><button className="btn" onClick={() => mudarTela('vitrine')}>Sair da tela cheia</button></>}
+        <div className="sidebar-foot" ref={contaRef}>
+          {perfil ? (
+            <>
+              {menuConta && (
+                <div className="conta-menu" role="menu">
+                  <div className="conta-linha">
+                    <strong style={{ color: 'var(--k-text)' }}>{perfil.nome}</strong><br />
+                    {PAPEL_LEGIVEL[perfil.papel] ?? perfil.papel}
+                  </div>
+                  <button className="btn" role="menuitem" onClick={() => { setMenuConta(false); sair(); }}>Sair da conta</button>
+                </div>
+              )}
+              <button
+                className="conta-btn" aria-haspopup="menu" aria-expanded={menuConta}
+                onClick={() => setMenuConta((v) => !v)}
+              >
+                <span className="conta-avatar" aria-hidden="true">{iniciais(perfil.nome)}</span>
+                <span className="conta-txt">
+                  <span className="conta-nome">{perfil.nome}</span>
+                  <span className="conta-papel">{PAPEL_LEGIVEL[perfil.papel] ?? perfil.papel}</span>
+                </span>
+              </button>
+            </>
+          ) : (
+            <Link className="btn" to="/entrar">Entrar</Link>
+          )}
+          <div
+            className={`vivo ${bancoConfigurado ? '' : 'simulado'}`}
+            title={ate ? `Dados até ${dataHora(ate)}` : undefined}
+          >
+            <span className={`dot ${bancoConfigurado ? 'pulse' : ''}`} />
+            {bancoConfigurado ? 'ao vivo' : ate ? `dados simulados até ${dataHora(ate)}` : 'dados simulados'}
+          </div>
+          {cheia && DEMO && <button className="btn sm" onClick={() => mudarTela('vitrine')}>Sair da tela cheia</button>}
         </div>
       </aside>
 
@@ -218,9 +285,10 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
             <div className="sub">{titulo.s}</div>
           </div>
           <div className="topbar-actions">
-            {personaAtual === 'franqueado' && (
+            {personaAtual === 'franqueado' && (pontosVisiveis.length > 1 ? (
               <select
                 className="btn"
+                aria-label="Unidade"
                 value={pontoId}
                 onChange={(e) => setPontoId(e.target.value)}
                 style={{ maxWidth: 250 }}
@@ -231,21 +299,19 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
                   </option>
                 ))}
               </select>
-            )}
-            {personaAtual === 'franqueado' && ponto && (
-              <Badge tom={ponto.ativo ? 'green' : 'amber'} dot>
-                {ponto.ativo ? 'Operando' : 'Inativo'}
-              </Badge>
-            )}
+            ) : ponto && (
+              <span className="strong">{ponto.nome} <span className="muted">· {ponto.formato}</span></span>
+            ))}
+            {personaAtual === 'franqueado' && ponto && <StatusBadge estado={statusDoPonto(ponto)} />}
             {!cheia && (
-              <button className="btn primary" onClick={() => mudarTela('cheia')} title="Abre só este ambiente, como no aparelho real">
-                Abrir em tela cheia
+              <button className="btn" onClick={() => mudarTela('cheia')} title="Abre só este ambiente, como no aparelho real">
+                <IconeTelaCheia />Abrir em tela cheia
               </button>
             )}
-            {personaAtual === 'totem' && <Badge tom="red" dot pulse>totem em operação</Badge>}
+            {personaAtual === 'totem' && <Badge tom="pos" dot pulse>totem em operação</Badge>}
             {personaAtual === 'goodwe' && (
-              <Badge tom="teal" dot pulse>
-                {base.pontos.filter((p) => p.ativo).length} pontos ativos
+              <Badge tom="pos" dot>
+                {plural(base.pontos.filter(pontoAtivo).length, 'ponto operando', 'pontos operando')}
               </Badge>
             )}
           </div>

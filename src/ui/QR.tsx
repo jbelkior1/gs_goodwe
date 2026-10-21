@@ -14,6 +14,27 @@ export function QR({ texto, tamanho = 180 }: { texto: string; tamanho?: number }
   );
 }
 
+/**
+ * Origem usada nos links e QRs. VITE_URL_PUBLICA (opcional, ex.: http://192.168.0.15:5191) existe porque
+ * o celular não abre "localhost": o QR precisa apontar para o endereço do notebook na rede ou para o
+ * domínio publicado. Aceita só a origem; qualquer caminho digitado a mais é descartado.
+ */
+function origemPublica(): string {
+  const configurada = (import.meta.env.VITE_URL_PUBLICA as string | undefined)?.trim();
+  if (configurada) {
+    try { return new URL(configurada).origin; } catch { /* valor inválido: usa a origem do navegador */ }
+  }
+  return window.location.origin;
+}
+
 /** Endereço completo dentro do app (funciona no GitHub Pages e no Railway). */
 export const linkDoApp = (caminho: string) =>
-  `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}${caminho}`;
+  `${origemPublica()}${import.meta.env.BASE_URL.replace(/\/$/, '')}${caminho}`;
+
+/** true quando os QRs apontam para localhost: outro aparelho (o celular) não consegue abrir. */
+export function linkSoNesteAparelho(): boolean {
+  try {
+    const host = new URL(origemPublica()).hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host.endsWith('.localhost');
+  } catch { return false; }
+}

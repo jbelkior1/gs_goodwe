@@ -8,7 +8,9 @@ import {
   obterSessao, telemetriaDaSessao, obterPonto, obterVeiculo, obterMotorista, regiaoDoPonto,
   sessaoDoMotorista, cobrancaDaSessao, carregadoresDoPonto,
 } from '../../domain/db';
-import { repartir, gerarTxid, gerarPixCopiaECola } from '../../domain/engine/tarifa';
+import { cent, repartir, gerarTxid, gerarPixCopiaECola } from '../../domain/engine/tarifa';
+import { REGRAS } from '../../domain/catalogo';
+import { pct, tarifaKWh } from '../../domain/formato';
 import { encerrarSessao, pagarCobranca } from '../../data/acoes';
 import {
   Card, KPI, AnelSoC, Tabela, brl, num, hora, Nota, Vazio, EstadoBadge, Badge,
@@ -17,6 +19,22 @@ import {
 import { Icone } from '../../ui/icones';
 import { CenaCarro3D } from '../../ui/CenaCarro3D';
 import { QR } from '../../ui/QR';
+import { ComoCarregar } from './ComoCarregar';
+
+/** Sem recarga para mostrar: explica de onde ela nasce (o cabo no totem) e leva ao código. */
+function SemRecarga({ aviso, codigo }: { aviso?: string; codigo?: string | null }) {
+  return (
+    <div className="stack">
+      <Nota titulo={aviso ? 'Esta recarga não está ativa' : 'Nenhuma recarga em andamento'} tom={aviso ? 'amber' : 'teal'}>
+        {aviso ?? 'Ela começa no totem: quando você conecta o cabo, o totem mostra o QR e o código da recarga.'}
+      </Nota>
+      <Card><ComoCarregar titulo="Como começar uma recarga" /></Card>
+      <Link to={codigo ? `/motorista/vincular?c=${codigo}` : '/motorista/vincular'} className="btn primary" style={{ justifyContent: 'center' }}>
+        Digitar código
+      </Link>
+    </div>
+  );
+}
 
 export default function Recarga() {
   const { sessaoId } = useParams();
@@ -26,14 +44,9 @@ export default function Recarga() {
   const [ocupado, setOcupado] = useState(false);
   const sessao = sessaoId ? obterSessao(sessaoId) : sessaoDoMotorista(perfil?.motoristaId ?? motoristaId);
 
-  if (!sessao) {
-    return (
-      <Vazio>
-        Nenhuma recarga em andamento. Conecte o cabo e leia o QR do totem.{' '}
-        <Link to="/motorista/vincular" className="btn">Digitar código</Link>
-      </Vazio>
-    );
-  }
+  if (!sessao) return <SemRecarga />;
+  if (sessao.estado === 'EXPIRADA') return <SemRecarga aviso={`O código venceu: ele vale ${REGRAS.codigoValidadeMin} minutos depois que o cabo é conectado. Desconecte e conecte o cabo de novo para o totem gerar outro.`} />;
+  if (sessao.estado === 'ABERTA') return <SemRecarga aviso="Esta recarga ainda não foi confirmada. Leia o QR do totem com a câmera ou digite o código para iniciar." codigo={sessao.codigoVinculo} />;
 
   const ponto = obterPonto(sessao.pontoId)!;
   const regiao = regiaoDoPonto(ponto);
@@ -47,8 +60,9 @@ export default function Recarga() {
 
   const faltaKWh = veiculo ? veiculo.capacidadeKWh * ((100 - sessao.socAtual) / 100) : 0;
   const minutosRestantes = sessao.potenciaAtualKW > 0 ? Math.round((faltaKWh / sessao.potenciaAtualKW) * 60) : 0;
-  const valor = cobranca?.valor ?? Number((sessao.energiaKWh * (sessao.tarifaAplicadaKWh ?? 0)).toFixed(2));
+  const valor = cobranca?.valor ?? cent(sessao.energiaKWh * (sessao.tarifaAplicadaKWh ?? 0));
   const rep = repartir(valor, sessao.energiaKWh, regiao.custoEnergiaKWh);
+  const precoTravado = Number(sessao.tarifaAplicadaKWh) || 0;
 
   const agir = (f: () => Promise<void>) => async () => {
     setErro(''); setOcupado(true);
@@ -86,7 +100,7 @@ export default function Recarga() {
 
         <div className="stack">
           <KPI label="Local" value={ponto.nome} sm foot={ponto.endereco} />
-          <KPI label="Preço travado" value={`${brl(sessao.tarifaAplicadaKWh ?? 0)}/kWh`} sm accent="red"
+          <KPI label="Preço travado" value={precoTravado > 0 ? tarifaKWh(precoTravado) : '—'} sm accent="red"
                foot={sessao.limiteValor ? `Para sozinho em ${brl(sessao.limiteValor)}` : 'Confirmado no início — não muda até o fim'} />
           <KPI label="Identificado por" value={sessao.autorizacao ?? 'QR'} sm foot={motorista?.nome ?? ''} />
           {emCarga && sessao.estado !== 'ENCERRANDO' && (
@@ -139,9 +153,9 @@ export default function Recarga() {
       ) : (
         <Card title="Para onde vai esse dinheiro" sub="Transparência do modelo de franquia">
           <Tabela cabecalho={['Destino', '#Valor']}>
-            <tr><td>Energia entregue ({num(sessao.energiaKWh, 2)} kWh × {brl(sessao.tarifaAplicadaKWh ?? 0)})</td><td className="r num strong">{brl(valor)}</td></tr>
+            <tr><td>Energia entregue ({num(sessao.energiaKWh, 2)} kWh × {brl(precoTravado)})</td><td className="r num strong">{brl(valor)}</td></tr>
             <tr><td className="muted">Custo da energia (distribuidora)</td><td className="r num muted">{brl(rep.custoEnergia)}</td></tr>
-            <tr><td className="muted">Royalties GoodWe (6%) + fundo (2%)</td><td className="r num muted">{brl(rep.royaltyGoodWe + rep.fundoMarketing)}</td></tr>
+            <tr><td className="muted">Royalties GoodWe ({pct(REGRAS.royaltyPct)}) + fundo ({pct(REGRAS.fundoPct)})</td><td className="r num muted">{brl(cent(rep.royaltyGoodWe + rep.fundoMarketing))}</td></tr>
             <tr><td className="muted">Gateway de pagamento</td><td className="r num muted">{brl(rep.gateway)}</td></tr>
             <tr><td className="strong">Fica com o comércio</td><td className="r strong num kpi-accent-green">{brl(rep.liquidoLojista)}</td></tr>
           </Tabela>

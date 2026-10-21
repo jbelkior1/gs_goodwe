@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Ponto, Regiao } from '../domain/types';
+import { plural, tarifaKWh } from '../domain/formato';
 
 /**
  * Mapa da rede.
@@ -109,9 +110,9 @@ export function MapaRede({
           </div>
           <div className="mapa-tip-num">
             <span className={ativo.vagasLivres > 0 ? 'ok' : 'cheio'}>
-              {ativo.vagasLivres > 0 ? `${ativo.vagasLivres} livre(s)` : 'sem vaga'}
+              {ativo.vagasLivres > 0 ? plural(ativo.vagasLivres, 'vaga livre', 'vagas livres') : 'sem vaga'}
             </span>
-            <span>R$ {ativo.precoAgora.toFixed(2).replace('.', ',')}/kWh</span>
+            <span>{tarifaKWh(ativo.precoAgora)}</span>
           </div>
         </div>
       )}

@@ -114,6 +114,51 @@ export const REGRAS = {
 } as const;
 
 /**
+ * Alfabeto do código de 4 caracteres do QR. Fora dele ficam os que se confundem ao digitar
+ * (0/O, 1/I, 5/S, 8/B, 2/Z, 6/G, Q, L). O simulador sorteia daqui e o app só aceita estes.
+ */
+export const ALFABETO_CODIGO = 'ACDEFHJKMNPRTUVWXY3479';
+
+/**
+ * Tarifa dinâmica v2 (ADR-0013). Valores padrão; o motor está em engine/tarifa.ts.
+ * O preço é: base × faixa de horário × escassez − sol, sempre entre o piso e o teto do ponto.
+ */
+export const TARIFA = {
+  /** multiplicador de cada faixa publicada */
+  multVale: 0.9,
+  multNormal: 1,
+  multPico: 1.12,
+  /** dia útil, hora local de Brasília. Pico: 17h a 19h. Vale: 22h a 8h. Fim de semana: sem pico */
+  picoIni: 17,
+  picoFim: 19,
+  valeIni: 22,
+  valeFim: 8,
+  /** variação máxima de preço entre duas horas seguidas (as horas de borda 8, 16, 20 e 22 são rampas) */
+  passoMaxHora: 0.1,
+  /** escassez: só em ponto com 2 vagas operantes ou mais; sobe até 8% quando passa de metade ocupado */
+  escassezMinVagas: 2,
+  escassezMax: 0.08,
+  escassezAPartirDe: 0.5,
+  /** solar: com excedente de geração, o motorista leva metade da economia de custo, até 8% do preço */
+  solarDescontoMax: 0.08,
+  solarRepasse: 0.5,
+  /** premissa: o kWh do sol vale R$ 0,70 (crédito de energia injetada, já líquido de encargos) */
+  solarCreditoKWh: 0.7,
+  /** janela, em horas, da média do excedente solar (suaviza o desconto: ele nunca liga ou desliga de uma hora para a outra) */
+  solarJanelaHoras: 5,
+  /** excedente que cobre um carro inteiro a 7 kW (a vaga padrão GW7K) */
+  solarPotenciaRefKW: 7,
+  /** margem líquida mínima por kWh, depois de energia e taxas */
+  margemMinKWh: 0.2,
+  /** limites do ponto em relação ao preço base */
+  pisoPctBase: 0.85,
+  tetoPctBase: 1.3,
+  /** preço base sugerido: margem alvo por kWh e arredondamento */
+  baseMargemAlvoKWh: 0.85,
+  baseDegrauKWh: 0.05,
+} as const;
+
+/**
  * Curva de demanda típica de recarga em comércio (0–23h), normalizada.
  * Picos no almoço e no fim da tarde — é o padrão que a IA aprende.
  */

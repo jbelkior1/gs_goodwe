@@ -50,6 +50,22 @@ npm install
 npm run dev
 ```
 
+## Rodar a demonstração
+
+Para apresentar o produto (pedido de franquia, aprovação, totem, motorista no celular, painéis do franqueado e da
+GoodWe), prepare o ambiente e siga o roteiro em **[`docs/apresentacao.md`](docs/apresentacao.md)**:
+
+```bash
+npm run demo:comerciante   # zera a conta do comerciante (o fluxo recomeça do pedido de franquia)
+npm run demo:atualizar     # traz o histórico de demonstração para hoje
+npm run simulador          # terminal 1: faz o papel dos carregadores
+npm run dev:rede           # terminal 2: o app em http://localhost:5191 e na rede local (para o celular)
+```
+
+Antes, no `.env.local`, ligue `VITE_MODO_DEMO=true` e informe `VITE_URL_PUBLICA` com o IP do notebook (o QR do totem
+usa esse endereço; o celular não abre `localhost`). No painel do Supabase, desligue **Confirm email** em
+*Authentication → Sign In / Providers → Email*. O `.env.example` explica cada variável.
+
 ## Como o mapeamento nasceu
 
 Cada aba do sistema responde a um pedido explícito da GoodWe ou a um dos 4 pilares

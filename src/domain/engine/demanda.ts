@@ -50,11 +50,15 @@ const POTENCIA_MINIMA_UTIL_KW = 1.4;
  * Prioridade de atendimento quando falta potência.
  * Quem está quase cheio cede espaço para quem chegou agora — o carro cheio
  * ganha pouco com mais 10 minutos, o vazio ganha muito.
+ * Quem travou um preço acima da base do ponto (pico, últimas vagas) tem um bônus pequeno:
+ * o limiar é relativo à base de cada ponto, não um valor fixo em R$.
  */
-function prioridade(s: Sessao): number {
+function prioridade(s: Sessao, ponto: Ponto): number {
   const urgencia = 1 - s.socAtual / 100;
-  const bonusTarifa = s.tarifaAplicadaKWh > 2 ? 0.15 : 0;
-  return urgencia + bonusTarifa;
+  const base = Number(ponto.precoBaseKWh);
+  const preco = Number(s.tarifaAplicadaKWh);
+  const acimaDaBase = base > 0 && preco >= base * 1.05;
+  return urgencia + (acimaDaBase ? 0.15 : 0);
 }
 
 /**
@@ -96,7 +100,7 @@ export function calcularDemanda(
       const solicitada = carregador
         ? potenciaDesejadaKW(s, carregador, potenciaMaxVeiculoPorSessao[s.id] ?? 7)
         : 0;
-      return { sessao: s, carregador, solicitada, prio: prioridade(s) };
+      return { sessao: s, carregador, solicitada, prio: prioridade(s, ponto) };
     })
     .sort((a, b) => b.prio - a.prio);
 

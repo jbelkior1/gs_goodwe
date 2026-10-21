@@ -1,124 +1,279 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   AreaChart, Area, BarChart, Bar as RBar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import { useApp } from '../../app/estado';
 import {
-  kpisDoPonto, serieDiaria, perfilHorario, obterPonto, economiaDoPonto,
-  sessoesAtivas, inteligenciaDoPonto, carregadoresDoPonto, solarDoPonto,
+  obterPonto, statusDoPonto, PERIODOS, resumoDoPonto, projecaoDoPonto, serieDoPeriodo, perfilHorario,
+  economiaDoPonto, inteligenciaDoPonto, carregadoresDoPonto, solarDoPonto, situacaoDaVaga,
+  atencaoDoPonto, checklistAtivacao, previsaoDoPonto, dadosAte, type PeriodoId,
 } from '../../domain/db';
 import { REGRAS } from '../../domain/catalogo';
-import { Card, KPI, Nota, brl, num, pct, Badge, Bar, ChartTip, CHART, eixoProps, gradeProps } from '../../ui/kit';
+import { brl, horas, kwh, num, pct } from '../../domain/formato';
+import {
+  Card, KPI, Nota, Badge, Bar, ChartTip, CHART, eixoProps, gradeProps, StatusBadge, Segmentado,
+  ChartFrame, GraficoDiario, ListaAtencao, EmptyState, TextoSituacao, METRICAS_DIA, eixoKW,
+  type MetricaDia,
+} from '../../ui/kit';
 import { Icone } from '../../ui/icones';
+
+const dm = (chave: string) => `${chave.slice(8, 10)}/${chave.slice(5, 7)}`;
+const OCUPADAS = ['OCUPADO', 'ABERTA', 'AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO', 'CONCLUIDO', 'PAGO'];
+
+/** Barra da hora; a hora de maior movimento ganha destaque. */
+function BarraHora(p: { x?: number; y?: number; width?: number; height?: number; payload?: { pico?: boolean } }) {
+  const { x = 0, y = 0, width = 0, height = 0, payload } = p;
+  if (!(height > 0)) return <g />;
+  return <rect x={x} y={y} width={width} height={height} rx={2} fill={CHART.dado} fillOpacity={payload?.pico ? 0.95 : 0.45} />;
+}
+
+function Checklist({ pontoId }: { pontoId: string }) {
+  const passos = checklistAtivacao(pontoId);
+  return (
+    <div className="checklist">
+      {passos.map((p, i) => (
+        <div className="passo" key={p.id}>
+          <span className={`marca ${p.feito === true ? 'tom-pos' : p.feito === false ? 'tom-warn' : 'tom-neu'}`}>
+            {p.feito === true ? <Icone nome="check" tamanho={13} /> : i + 1}
+          </span>
+          <div>
+            <div className="titulo">{p.titulo}</div>
+            <div className="detalhe">{p.detalhe}</div>
+          </div>
+          {p.feito === true ? <Badge tom="pos">Feito</Badge>
+            : p.feito === false ? <Badge tom="warn">A fazer</Badge>
+              : <Badge tom="neu">Confirme no ponto</Badge>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** As vagas do ponto agora, cada uma com o estado em palavras. */
+function AgoraNoPonto({ pontoId }: { pontoId: string }) {
+  const vagas = carregadoresDoPonto(pontoId).map((c) => ({ c, s: situacaoDaVaga(c) }));
+  const ocupadas = vagas.filter((v) => OCUPADAS.includes(v.s.estado)).length;
+  return (
+    <Card
+      title="Agora no ponto"
+      sub={`${num(ocupadas)} de ${num(vagas.length)} ${vagas.length === 1 ? 'vaga ocupada' : 'vagas ocupadas'}`}
+      action={vagas.some((v) => v.s.estado === 'CARREGANDO') ? <Badge tom="info" dot pulse>ao vivo</Badge> : undefined}
+    >
+      <div style={{ marginBottom: 12 }}>
+        <Bar valor={vagas.length ? ocupadas / vagas.length : 0} thick />
+      </div>
+      {vagas.length === 0 ? (
+        <EmptyState icone="tomada" titulo="Nenhuma vaga cadastrada">As vagas do formato aparecem aqui quando o ponto é concedido.</EmptyState>
+      ) : vagas.map(({ c, s }) => (
+        <div className="vaga-item" key={c.id}>
+          <div className="topo">
+            <span className="strong">{c.apelido}</span>
+            <StatusBadge estado={s.estado} />
+          </div>
+          <div className="texto"><TextoSituacao texto={s.texto} codigo={s.codigo} /></div>
+        </div>
+      ))}
+    </Card>
+  );
+}
 
 export default function Painel() {
   const { pontoId } = useApp();
-  const ponto = obterPonto(pontoId)!;
-  const kpis = kpisDoPonto(pontoId);
+  const [periodo, setPeriodo] = useState<PeriodoId>('mes');
+  const [metrica, setMetrica] = useState<MetricaDia>('faturamento');
+  const ponto = obterPonto(pontoId);
+  if (!ponto) return <Nota titulo="Ponto não encontrado" tom="amber">Este ponto saiu da rede. Escolha outro ponto.</Nota>;
+
+  const status = statusDoPonto(ponto);
+
+  // ------------------------------------------------------------ ponto ainda em instalação
+  if (status === 'INSTALACAO') {
+    const prev = previsaoDoPonto(pontoId);
+    return (
+      <div className="stack">
+        <Nota titulo="Este ponto ainda está em instalação" tom="amber">
+          As vendas começam quando o ponto for ativado. Siga os passos abaixo; os números reais aparecem
+          aqui assim que o primeiro motorista carregar.
+        </Nota>
+
+        <div className="grid g-2-1">
+          <Card
+            title="Para ativar o ponto"
+            sub="Dos dados do local até o ponto aparecer no mapa do motorista"
+            action={<Link className="btn primary" to="/franqueado/ponto">Abrir Meu ponto e totem</Link>}
+          >
+            <Checklist pontoId={pontoId} />
+          </Card>
+          <AgoraNoPonto pontoId={pontoId} />
+        </div>
+
+        <Card
+          title="O que esperar deste ponto"
+          sub="Previsão da homologação — ainda não é resultado"
+        >
+          {prev ? (
+            <div className="grid g4">
+              <KPI label="Uso previsto por vaga" value={num(prev.horasUsoDia, 1)} unit="h/dia" estimado
+                   meta={{ rotulo: `meta de ${horas(REGRAS.limiarViabilidadeHoras)}/dia`, atingida: prev.horasUsoDia >= REGRAS.limiarViabilidadeHoras }} />
+              <KPI label="Receita bruta" value={brl(prev.receitaMes)} unit="/mês" estimado
+                   foot={`${kwh(prev.energiaMesKWh)} em ${num(prev.sessoesMes)} sessões por mês`} />
+              <KPI label="Resultado do comércio" value={brl(prev.resultadoMes)} unit="/mês" estimado
+                   foot="depois de energia, royalties, plataforma e ganho no varejo" />
+              <KPI label="Payback" value={Number.isFinite(prev.paybackMeses) ? `${num(prev.paybackMeses)} meses` : '—'} estimado
+                   foot={`sobre ${brl(prev.capex)} de investimento`} />
+            </div>
+          ) : (
+            <EmptyState icone="painel" titulo="Sem previsão para este ponto">
+              A previsão vem da análise de viabilidade do pedido de franquia, e este ponto não tem um pedido ligado.
+            </EmptyState>
+          )}
+        </Card>
+      </div>
+    );
+  }
+
+  // ------------------------------------------------------------ ponto operando (ou suspenso, com o histórico)
+  const r = resumoDoPonto(pontoId, periodo);
+  const proj = projecaoDoPonto(pontoId, periodo);
+  const serie = serieDoPeriodo(pontoId, periodo);
+  const horario = perfilHorario(pontoId, periodo);
   const eco = economiaDoPonto(pontoId);
-  const serie = serieDiaria(pontoId, 30);
-  const horario = perfilHorario(pontoId);
-  const ativas = sessoesAtivas(pontoId);
-  const carregadores = carregadoresDoPonto(pontoId);
   const { resumo } = inteligenciaDoPonto(pontoId);
   const solar = solarDoPonto(pontoId);
+  const atencao = atencaoDoPonto(pontoId);
+  const ate = dadosAte(pontoId);
+  const base = r.periodo.anterior.base;
+  const meta = REGRAS.limiarViabilidadeHoras;
+  const nomePeriodo = periodo === 'mes' ? 'no mês' : periodo === '7d' ? 'nos últimos 7 dias' : 'nos últimos 30 dias';
 
-  // variação vs. mês anterior (mesma janela de dias), para as setas de tendência
-  const metade = Math.floor(serie.length / 2);
-  const somaFat = (arr: typeof serie) => arr.reduce((t, d) => t + d.faturamento, 0);
-  const anterior = somaFat(serie.slice(0, metade));
-  const atual = somaFat(serie.slice(metade));
-  const tendencia = anterior > 0 ? (atual - anterior) / anterior : 0;
+  const semDados = r.semDados
+    ? {
+        titulo: `Sem recargas fechadas ${nomePeriodo}`,
+        texto: 'Os gráficos aparecem assim que o ponto fechar a primeira recarga do período.',
+        acao: periodo !== '30d'
+          ? <button type="button" className="btn sm" onClick={() => setPeriodo('30d')}>Ver os últimos 30 dias</button>
+          : <Link className="btn sm" to="/franqueado/ponto">Ver as vagas do ponto</Link>,
+      }
+    : null;
+
+  const pico = horario.reduce((m, h) => (h.sessoes > m.sessoes ? h : m), horario[0]);
+  const dadosHora = horario.map((h) => ({ rotulo: `${h.hora}h`, sessoes: h.sessoes, pico: h.hora === pico.hora && h.total > 0 }));
 
   return (
     <div className="stack">
-      <div className="grid g4">
-        <KPI label="Faturamento do mês" value={brl(kpis.faturamentoMes)} accent="red"
-             trend={tendencia}
-             foot={`${kpis.sessoesMes} sessões · ticket ${brl(kpis.ticketMedio)}`} />
-        <KPI label="Energia entregue" value={`${num(kpis.energiaMesKWh)} kWh`} accent="teal"
-             foot={`custo ${brl(kpis.custoEnergiaMes)}`} />
-        <KPI label="Resultado líquido" value={brl(kpis.liquidoMes)} accent="green"
-             foot={`royalties ${brl(kpis.royaltiesMes)} já descontados`} />
-        <KPI label="Uso por carregador" value={`${num(kpis.horasUsoDia, 1)} h/dia`}
-             accent={eco.acimaDoLimiar ? 'green' : 'red'}
-             foot={`limiar de viabilidade: ${REGRAS.limiarViabilidadeHoras} h/dia`} />
+      <div className="cabeca-pagina">
+        <span className="muted tiny">
+          {periodo === 'mes' ? 'Mês atual' : `Últimos ${r.periodo.rotulo}`} · {dm(r.periodo.inicio)} a {dm(r.periodo.fim)}
+          {' '}· comparado com {base.replace('vs ', '')}
+        </span>
+        <Segmentado rotulo="Período" valor={periodo} opcoes={PERIODOS} aoMudar={setPeriodo} />
       </div>
 
-      {!eco.acimaDoLimiar && (
-        <Nota titulo="Este ponto está abaixo do limiar de viabilidade">
-          Com {num(kpis.horasUsoDia, 1)} h/dia por carregador, a unidade não se paga no prazo esperado
-          (mínimo {REGRAS.limiarViabilidadeHoras} h/dia). Veja as ações sugeridas na aba Inteligência.
+      {status === 'SUSPENSO' && (
+        <Nota titulo="Ponto suspenso" tom="neg">
+          O ponto não aceita novas recargas. O histórico abaixo continua disponível; fale com a GoodWe para reativar.
         </Nota>
       )}
 
-      <div className="grid g-2-1">
-        <Card title="Faturamento e energia" sub="Últimos 30 dias">
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={serie}>
-              <defs>
-                <linearGradient id="gf" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={CHART.serie1} stopOpacity={0.4} />
-                  <stop offset="100%" stopColor={CHART.serie1} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...gradeProps} />
-              <XAxis dataKey="dia" {...eixoProps} minTickGap={24} />
-              <YAxis {...eixoProps} />
-              <Tooltip content={<ChartTip fmt={brl} />} />
-              <Area type="monotone" dataKey="faturamento" stroke={CHART.serie1Claro} fill="url(#gf)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <div className="stack">
-          <Card title="Agora no ponto">
-            <div className="row between">
-              <div>
-                <div className="kpi-value sm">{ativas.length}/{carregadores.length}</div>
-                <div className="tiny muted">vagas ocupadas</div>
-              </div>
-              {ativas.length > 0 && <Badge tom="teal" dot pulse>ao vivo</Badge>}
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <Bar valor={carregadores.length ? ativas.length / carregadores.length : 0} thick />
-            </div>
-            <div className="sep" />
-            <div className="tiny muted">
-              {ponto.formato} · {ponto.segmento}<br />{ponto.endereco}
-            </div>
-          </Card>
-
-          <Card title="Retorno da unidade">
-            <div className="row between tiny"><span className="muted">Investimento</span><span className="num">{brl(eco.capex)}</span></div>
-            <div className="row between tiny"><span className="muted">Líquido recarga/mês</span><span className="num">{brl(eco.liquidoRecarga)}</span></div>
-            <div className="row between tiny"><span className="muted">Ganho no varejo/mês</span><span className="num kpi-accent-green">{brl(eco.margemVarejo)}</span></div>
-            <div className="sep" />
-            <div className="row between">
-              <span className="strong tiny">Payback estimado</span>
-              <span className="strong num">{eco.paybackMeses === Infinity ? '—' : `${num(eco.paybackMeses, 0)} meses`}</span>
-            </div>
-            <div className="tiny muted" style={{ marginTop: 6 }}>
-              Quase metade do resultado vem do movimento que a recarga traz para a loja.
-            </div>
-          </Card>
-        </div>
+      <div className="grid g6">
+        <KPI label="Receita bruta" value={brl(r.receita)}
+             delta={{ valor: r.variacao.receita, base }}
+             foot={`ticket médio ${brl(r.ticketMedio)}`} />
+        <KPI label="Resultado do comércio" value={brl(r.resultado)}
+             delta={{ valor: r.variacao.resultado, base }}
+             foot={`depois de energia, royalties e ${brl(r.plataforma)} de plataforma (proporcional aos dias)`} />
+        <KPI label="Energia entregue" value={kwh(r.energia)}
+             delta={{ valor: r.variacao.energia, base }}
+             foot={`custo de energia ${brl(r.custoEnergia)}`} />
+        <KPI label="Sessões" value={num(r.sessoes)}
+             delta={{ valor: r.variacao.sessoes, base }}
+             foot={`${num(r.sessoes / r.periodo.diasDecorridos, 1)} por dia`} />
+        <KPI label="Uso por vaga" value={num(r.horasUsoDia, 1)} unit="h/dia"
+             delta={{ valor: r.variacao.horasUsoDia, base }}
+             meta={{ rotulo: `meta de ${horas(meta)}/dia`, atingida: r.horasUsoDia >= meta, progresso: Math.min(1, r.horasUsoDia / meta) }} />
+        <KPI label="Payback projetado"
+             value={Number.isFinite(proj.paybackMeses) ? `${num(proj.paybackMeses)} meses` : '—'} estimado
+             foot={Number.isFinite(proj.paybackMeses)
+               ? `no ritmo de ${brl(proj.resultadoMensal)} por mês sobre ${brl(proj.capex)} investidos${proj.confiavel ? '' : ' · poucos dados, pode mudar bastante'}`
+               : 'no ritmo atual a unidade ainda não dá retorno'} />
       </div>
 
       <div className="grid g-2-1">
-        <Card title="Movimento por hora" sub="Quando os clientes param aqui para carregar">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={horario}>
+        <Card title="Precisa da sua atenção" sub="Recomendações da IA, alertas e vagas fora do ar">
+          <ListaAtencao
+            itens={atencao}
+            vazio="Nenhuma recomendação, alerta ou vaga fora do ar neste momento."
+          />
+        </Card>
+        <AgoraNoPonto pontoId={pontoId} />
+      </div>
+
+      <div className="grid g-2-1">
+        <ChartFrame
+          titulo="Receita, energia e sessões por dia"
+          sub={`${r.periodo.rotulo === 'Mês atual' ? 'Do dia 1 até hoje' : `Últimos ${r.periodo.rotulo}`} · barras diárias e média móvel de 7 dias`}
+          dadosAte={ate}
+          vazio={semDados}
+          acao={
+            <Segmentado
+              rotulo="Métrica" valor={metrica} aoMudar={setMetrica}
+              opcoes={(Object.keys(METRICAS_DIA) as MetricaDia[]).map((id) => ({ id, rotulo: METRICAS_DIA[id].rotulo }))}
+            />
+          }
+        >
+          <GraficoDiario serie={serie} metrica={metrica} />
+        </ChartFrame>
+
+        <Card title="Retorno da unidade" sub={`Mês atual · dia ${num(Math.ceil(eco.diasDecorridos))} de ${num(eco.diasNoMes)}`}>
+          <div className="row between tiny"><span className="muted">Investimento</span><span className="num">{brl(eco.capex)}</span></div>
+          <div className="row between tiny"><span className="muted">Líquido da recarga no mês</span><span className="num">{brl(eco.liquidoRecarga)}</span></div>
+          <div className="row between tiny"><span className="muted">Ganho no varejo no mês</span><span className="num">{brl(eco.margemVarejo)}</span></div>
+          <div className="row between tiny"><span className="muted">Resultado no mês, até hoje</span><span className="num strong">{brl(eco.resultadoMes)}</span></div>
+          <div className="sep" />
+          <div className="row between tiny">
+            <span className="muted">Resultado por mês, no ritmo atual <span className="selo">projeção</span></span>
+            <span className="num">{brl(eco.resultadoMesProjetado)}</span>
+          </div>
+          <div className="row between" style={{ marginTop: 8 }}>
+            <span className="strong tiny">Payback estimado</span>
+            <span className="strong num">{Number.isFinite(eco.paybackMeses) ? `${num(eco.paybackMeses)} meses` : '—'}</span>
+          </div>
+          <div className="tiny muted" style={{ marginTop: 8 }}>
+            {eco.resultadoMes > 0
+              ? `${pct(eco.participacaoVarejo)} do resultado vem do movimento que a recarga traz para a loja.`
+              : 'O ganho no varejo entra assim que as recargas trouxerem clientes para a loja.'}
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid g-2-1">
+        <ChartFrame
+          titulo="Movimento por hora"
+          sub={`Média de sessões por dia, ${periodo === 'mes' ? 'no mês' : periodo === '7d' ? 'nos últimos 7 dias' : 'nos últimos 30 dias'}`}
+          vazio={r.sessoes < 5
+            ? { titulo: 'Poucos dados para mostrar o movimento', texto: 'O gráfico aparece quando o período tiver pelo menos 5 recargas fechadas.' }
+            : null}
+          acao={r.sessoes >= 5 && pico.total > 0
+            ? <span className="dados-ate">pico às {pico.hora}h · {num(pico.sessoes, 1)} sessões por dia</span>
+            : undefined}
+        >
+          <ResponsiveContainer width="100%" height={210}>
+            <BarChart data={dadosHora} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
               <CartesianGrid {...gradeProps} />
-              <XAxis dataKey="hora" {...eixoProps} tickFormatter={(h) => `${h}h`} />
-              <YAxis {...eixoProps} />
-              <Tooltip content={<ChartTip fmt={(v) => `${v} sessões`} />} />
-              <RBar dataKey="sessoes" fill={CHART.serie1} radius={[2, 2, 0, 0]} />
+              <XAxis dataKey="rotulo" {...eixoProps} interval={1} />
+              <YAxis {...eixoProps} width={36} tickFormatter={(v: number) => num(v, v % 1 ? 1 : 0)} />
+              <Tooltip
+                cursor={{ fill: 'rgba(244,242,238,.05)' }}
+                content={<ChartTip fmt={(v) => `${num(v, 1)} sessões por dia`} nomes={{ sessoes: 'Média' }} />}
+              />
+              <RBar dataKey="sessoes" shape={BarraHora} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
-        </Card>
+        </ChartFrame>
 
-        <Card title="Leitura da IA" sub="Resumo gerencial automático">
-          <p className="tiny">{resumo}</p>
+        <Card title="Leitura da IA" sub="Resumo gerencial automático do mês">
+          <p className="tiny" style={{ lineHeight: 1.65 }}>{resumo}</p>
         </Card>
       </div>
 
@@ -130,7 +285,7 @@ export default function Painel() {
             <div className="pill-row">
               <Badge tom="solar"><Icone nome="sol" tamanho={12} /> {num(solar.resumo.potenciaFVkWp, 1)} kWp</Badge>
               {solar.resumo.capacidadeBateriaKWh > 0 && (
-                <Badge tom="teal"><Icone nome="bateria" tamanho={12} /> {num(solar.resumo.capacidadeBateriaKWh)} kWh</Badge>
+                <Badge tom="pos"><Icone nome="bateria" tamanho={12} /> {kwh(solar.resumo.capacidadeBateriaKWh)}</Badge>
               )}
             </div>
           ) : <Badge tom="gray">sem geração própria</Badge>
@@ -139,11 +294,11 @@ export default function Painel() {
         {solar.resumo.temEcossistema ? (
           <div className="grid g-2-1">
             <ResponsiveContainer width="100%" height={210}>
-              <AreaChart data={solar.mix.map((m) => ({ ...m, rotulo: `${m.hora}h` }))}>
+              <AreaChart data={solar.mix.map((m) => ({ ...m, rotulo: `${m.hora}h` }))} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
                 <CartesianGrid {...gradeProps} />
                 <XAxis dataKey="rotulo" {...eixoProps} minTickGap={16} />
-                <YAxis {...eixoProps} unit=" kW" />
-                <Tooltip content={<ChartTip fmt={(v) => `${num(v, 1)} kW`} />} />
+                <YAxis {...eixoProps} width={56} tickFormatter={eixoKW} />
+                <Tooltip content={<ChartTip fmt={(v) => `${num(v, 1)} kW`} nomes={{ solarKW: 'Solar', baterialKW: 'Bateria', redeKW: 'Rede' }} />} />
                 <Area type="monotone" dataKey="solarKW" stackId="1" name="Solar"
                       stroke={CHART.serie3} fill="rgba(255,176,32,.28)" strokeWidth={2} />
                 <Area type="monotone" dataKey="baterialKW" stackId="1" name="Bateria"
@@ -156,12 +311,12 @@ export default function Painel() {
             <div className="stack" style={{ gap: 11 }}>
               <div>
                 <div className="kpi-label">Autossuficiência</div>
-                <div className="kpi-value sm kpi-accent-solar">{pct(solar.resumo.autossuficiencia)}</div>
+                <div className="kpi-value sm">{pct(solar.resumo.autossuficiencia)}</div>
                 <div className="tiny muted">da energia do ponto vem de sol e bateria</div>
               </div>
               <div>
                 <div className="kpi-label">Economia na energia vendida</div>
-                <div className="kpi-value sm kpi-accent-green">{brl(solar.resumo.economiaRecargaMes)}</div>
+                <div className="kpi-value sm">{brl(solar.resumo.economiaRecargaMes)}</div>
                 <div className="tiny muted">
                   parte da recarga que veio do sol · a conta de luz inteira do comércio economiza{' '}
                   {brl(solar.resumo.economiaMes)}/mês

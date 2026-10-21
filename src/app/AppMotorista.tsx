@@ -7,9 +7,9 @@ import { Icone, type NomeIcone } from '../ui/icones';
 const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
 
 const ABAS: { to: string; ico: NomeIcone; label: string; fim?: boolean }[] = [
-  { to: '/motorista', ico: 'globo', label: 'Carregar', fim: true },
+  { to: '/motorista', ico: 'globo', label: 'Mapa', fim: true },
   { to: '/motorista/recarga', ico: 'raio', label: 'Recarga' },
-  { to: '/motorista/vincular', ico: 'check', label: 'Código' },
+  { to: '/motorista/vincular', ico: 'check', label: 'Digitar código' },
   { to: '/motorista/assistente', ico: 'chat', label: 'Volt' },
 ];
 

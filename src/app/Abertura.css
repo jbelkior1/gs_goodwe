@@ -1,0 +1,30 @@
+/* Tela de carregando e de falha ao abrir o app (src/main.tsx) */
+
+.cg {
+  min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 18px;
+  padding: 24px; text-align: center; background: var(--k-bg); color: var(--k-text);
+}
+.cg-marca { display: flex; align-items: center; gap: 12px; }
+.cg-logo {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px;
+  border: 1px solid var(--k-red); background: var(--k-redsoft); color: var(--k-red2);
+}
+.cg-nome { font-size: 13px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; }
+
+.cg-trilho { width: 160px; height: 3px; overflow: hidden; border-radius: 3px; background: var(--k-line); }
+.cg-trilho span {
+  display: block; width: 40%; height: 100%; border-radius: 3px; background: var(--k-red);
+  animation: cg-corre 1.2s ease-in-out infinite;
+}
+@keyframes cg-corre { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+
+.cg-texto { margin: 0; font-size: 14px; color: var(--k-dim); }
+.cg-falha { display: grid; gap: 10px; max-width: 400px; justify-items: center; }
+.cg-falha h1 { font-size: 20px; letter-spacing: -.02em; }
+.cg-falha p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--k-dim); }
+.cg-detalhe { max-width: 100%; font-family: var(--mono); font-size: 10.5px; color: var(--k-dim2); word-break: break-word; }
+.cg-falha .btn { margin-top: 6px; min-height: 42px; padding: 0 22px; font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cg-trilho span { animation-duration: 3s; }
+}
