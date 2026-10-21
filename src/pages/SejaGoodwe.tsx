@@ -14,7 +14,8 @@ import type { FormatoFranquia, SegmentoComercio, SolicitacaoHomologacao } from '
 import { Icone } from '../ui/icones';
 import { Badge, EstadoBadge } from '../ui/kit';
 import { AvaliacaoLocalVista, IconeCamera } from './AvaliacaoLocal';
-import { ETAPAS_FRANQUIA, cnpjValido, linhaDoTempo, lerNumero, mascaraCNPJ, numeroParaCampo } from './pedidoFranquia';
+import { NavLanding, Hero, FaixaRede, ComoFunciona, Ganhos, Formatos, Duvidas, Rodape } from './seja/Landing';
+import { cnpjValido, linhaDoTempo, lerNumero, mascaraCNPJ, numeroParaCampo } from './pedidoFranquia';
 import './SejaGoodwe.css';
 
 const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
@@ -215,43 +216,23 @@ export default function SejaGoodwe() {
   })();
 
   return (
-    <div className="sg">
-      <header className="sg-topo">
-        <Link className="sg-voltar" to="/"><Icone nome="setaDireita" tamanho={14} style={{ transform: 'rotate(180deg)' }} />Voltar</Link>
-        <span className="sg-marca"><span className="brand-logo"><Icone nome="raio" tamanho={15} /></span>Ponto W · GoodWe</span>
-        {perfil
-          ? <span className="sg-usuario">{perfil.nome.split(' ')[0]}</span>
-          : <Link className="sg-usuario" to="/entrar?volta=/seja-goodwe">Entrar</Link>}
-      </header>
+    <div className="sg lp">
+      <NavLanding usuario={perfil?.nome.split(' ')[0]} aoPedir={() => irPara('franquia')} />
+      <Hero linkVR={linkVR} aoPedir={() => irPara('franquia')} />
+      <FaixaRede />
+      <ComoFunciona linkVR={linkVR} />
+      <Ganhos />
+      <Formatos aoEscolher={(f) => { set('formato', f); irPara('simulador'); }} />
 
+      <section id="franquia" className="lp-faixa-pedido" aria-labelledby="lp-pedido-t">
+        <div className="lp-cabeca">
+          <h2 id="lp-pedido-t">Peça a sua franquia</h2>
+          <p>
+            Comece pela avaliação 3D do estacionamento, confira o potencial do seu ponto e envie o pedido.
+            A GoodWe responde por aqui, e você acompanha cada etapa nesta página.
+          </p>
+        </div>
       <main className="sg-pagina">
-        <section className="sg-hero">
-          <span className="kpi-label">Franquia Ponto W</span>
-          <h1>Seja GoodWe</h1>
-          <p>Leve a recarga de carro elétrico para o seu comércio. O cliente fica de 1 a 2 horas e compra na sua loja.</p>
-          <div className="row wrap">
-            <button className="btn primary" onClick={() => irPara('pedido')}>Pedir a minha franquia</button>
-            <button className="btn" onClick={() => irPara('simulador')}>Simular o meu ponto</button>
-          </div>
-        </section>
-
-        <section className="sg-valor" aria-label="Por que ser GoodWe">
-          <div className="card">
-            <Icone nome="relogio" tamanho={20} />
-            <h3>O cliente fica 1 a 2 horas</h3>
-            <p>Quem recarrega o carro passa tempo no seu comércio e compra. A recarga traz o cliente; a venda continua sua.</p>
-          </div>
-          <div className="card">
-            <Icone nome="dinheiro" tamanho={20} />
-            <h3>Royalty só sobre a recarga</h3>
-            <p>{pct(REGRAS.royaltyPct)} da recarga para a GoodWe e {pct(REGRAS.fundoPct)} para o fundo de marketing. Nada sobre as vendas da sua loja.</p>
-          </div>
-          <div className="card">
-            <Icone nome="sol" tamanho={20} />
-            <h3>Ecossistema solar GoodWe</h3>
-            <p>Inversor, painéis e bateria no mesmo ponto. A recarga usa o sol quando há geração e protege a entrada elétrica do comércio.</p>
-          </div>
-        </section>
 
         <form id="pedido" className="sg-form" onSubmit={enviar} noValidate>
           <div id="avaliar" className="sg-bloco sg-avaliacao card">
@@ -432,20 +413,6 @@ export default function SejaGoodwe() {
           </div>
         </form>
 
-        <section className="sg-etapas" aria-labelledby="sg-etapas-t">
-          <h2 id="sg-etapas-t">Do pedido ao ponto no ar</h2>
-          <ol>
-            {ETAPAS_FRANQUIA.map((e, i) => (
-              <li key={e.chave} className="card">
-                <span className="sg-num" aria-hidden="true">{i + 1}</span>
-                <b>{e.titulo}</b>
-                <span className="sg-quem">{e.quem === 'Você' ? 'Com você' : 'Com a GoodWe'}</span>
-                <p>{e.texto}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
         {perfil && minhas.length > 0 && (
           <section id="acompanhar" className="sg-acompanhar" aria-labelledby="sg-acomp-t">
             <h2 id="sg-acomp-t">Acompanhe o seu pedido</h2>
@@ -453,6 +420,10 @@ export default function SejaGoodwe() {
           </section>
         )}
       </main>
+      </section>
+
+      <Duvidas />
+      <Rodape />
     </div>
   );
 }
