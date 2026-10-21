@@ -294,8 +294,14 @@
   font-family: var(--tk-mono); font-size: 176px; font-weight: 600; letter-spacing: .06em; line-height: 1;
   padding: 32px 40px; border-radius: 48px; background: var(--tk-painel); border: 3px solid var(--tk-linha); white-space: nowrap;
 }
-.tk-h .tk-parear { gap: 24px; }
-.tk-h .tk-codigo-parear { font-size: 150px; }
+/* na horizontal sobra pouca altura: com o aviso de que o código não é o da recarga e o atalho da demonstração,
+   o bloco passava da tela e o atalho ficava cortado embaixo */
+.tk-h .tk-parear { gap: 14px; }
+.tk-h .tk-codigo-parear { font-size: 120px; }
+.tk-h .tk-parear .tk-instrucao-g { font-size: 38px; }
+.tk-h .tk-parear .tk-instrucao { font-size: 30px; }
+.tk-h .tk-parear .tk-demo { padding: 8px 14px 10px; gap: 8px; }
+.tk-h .tk-parear .tk-demo-btn { min-height: 64px; }
 
 /* ------------------------------------------------------------ faixa de vagas */
 .tk-vagas { display: flex; gap: 16px; padding: 16px 64px; border-top: 1px solid var(--tk-linha); min-width: 0; }
