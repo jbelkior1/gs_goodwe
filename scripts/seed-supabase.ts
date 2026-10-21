@@ -61,7 +61,8 @@ async function usuario(email: string, nome: string) {
 // ---------------------------------------------------------------- limpeza
 /** a tabela existe neste banco? (a de totens vem de uma migration mais nova) */
 async function tabelaExiste(tabela: string): Promise<boolean> {
-  const { error } = await sb.from(tabela).select('*', { count: 'exact', head: true });
+  // GET (não HEAD): o HEAD de tabela inexistente volta 404 vazio e o postgrest-js trata como sucesso
+  const { error } = await sb.from(tabela).select('*').limit(1);
   if (!error) return true;
   if (error.code === '42P01' || error.code === 'PGRST205' || /does not exist|schema cache/i.test(error.message)) return false;
   throw new Error(`${tabela}: ${error.message}`);
@@ -105,6 +106,11 @@ async function limparRede(preservar: Set<string>) {
     ['telemetria', true], ['cobrancas', false], ['sessoes', false], ['eventos', true], ['totens', false],
     ['homologacoes', false], ['carregadores', false], ['pontos', false], ['franqueados', false],
   ];
+  // as avaliações do GSVR (fotos do local) ficam, mas deixam de apontar para pedidos e pessoas apagados
+  if (await tabelaExiste('avaliacoes_local')) {
+    await ler(sb.from('avaliacoes_local').update({ homologacaoId: null, solicitanteId: null }).not('id', 'is', null), 'avaliacoes_local');
+    console.log('  avaliacoes_local: desligadas dos pedidos antigos');
+  }
   for (const [tabela, numerica] of passos) {
     if (tabela === 'totens' && !(await tabelaExiste('totens'))) {
       console.log('  totens: a tabela não existe neste banco, pulando');
@@ -200,17 +206,51 @@ const fr = await usuario('franqueado@pontow.app', 'Franqueado (demo)');
 const mo = await usuario('motorista@pontow.app', 'Ana Prado (demo)');
 const co = await usuario('comerciante@pontow.app', 'Comerciante (demo)');
 
-if (limpar) await limparRede(new Set([gw, fr, mo, co]));
-else console.log('Sem --limpar: só grava (upsert), nada é apagado.');
+// confere a rede nova ANTES de apagar a atual: um seed quebrado não pode deixar o banco vazio
+const idsUnicos = (xs: { id: string }[]) => new Set(xs.map((x) => x.id)).size === xs.length;
+const problemas = [
+  b.pontos.some((p) => !(p.precoBaseKWh > 0)) && 'ponto com preço base <= 0',
+  sessoes.some((s) => s.tarifaAplicadaKWh != null && !(s.tarifaAplicadaKWh > 0)) && 'sessão com tarifa <= 0',
+  !idsUnicos(b.pontos) && 'id de ponto repetido',
+  !idsUnicos(sessoes) && 'id de sessão repetido',
+  !idsUnicos(b.cobrancas) && 'id de cobrança repetido',
+].filter(Boolean);
+if (problemas.length) { console.error('A rede gerada tem problemas, nada foi apagado:', problemas.join('; ')); process.exit(1); }
 
-console.log('\nGravando a rede nova…');
-await lote('franqueados', b.franqueados);
-await lote('pontos', b.pontos.map((p) => ({ ...p, status: p.ativo ? 'ATIVO' : 'SUSPENSO', demo: true })));
-await lote('carregadores', b.carregadores.map((c) => ({ ...c, estado: c.estado === 'OCUPADO' ? 'DISPONIVEL' : c.estado, carro: null })));
-await lote('motoristas', b.motoristas);
-await lote('sessoes', sessoes);
-await lote('cobrancas', b.cobrancas.filter((c) => idsSessao.has(c.sessaoId)).map((c) => ({ ...c, demo: true })));
-await lote('homologacoes', b.homologacoes);
+if (limpar) {
+  console.log('Antes de limpar: pare o simulador e feche as abas do app (senão eles regravam dados no meio).');
+  // dado que não é de demonstração (ex.: ponto aprovado pelo fluxo de franquia) só sai com flag explícita
+  const naoDemo = async (tabela: string) => {
+    const { count, error } = await sb.from(tabela).select('id', { count: 'exact', head: true }).eq('demo', false);
+    if (error) throw new Error(`${tabela}: ${error.message}`);
+    return count ?? 0;
+  };
+  const fora = { pontos: await naoDemo('pontos'), sessoes: await naoDemo('sessoes'), cobrancas: await naoDemo('cobrancas') };
+  if ((fora.pontos || fora.sessoes || fora.cobrancas) && !process.argv.includes('--incluir-nao-demo')) {
+    console.error(`Há dados fora da demonstração: ${fora.pontos} ponto(s), ${fora.sessoes} sessão(ões), ${fora.cobrancas} cobrança(s).`);
+    console.error('Nada foi apagado. Para apagar também esses, rode: npm run seed -- --limpar --incluir-nao-demo');
+    process.exit(1);
+  }
+  if (fora.pontos || fora.sessoes || fora.cobrancas) {
+    console.log(`Apagando também ${fora.pontos} ponto(s), ${fora.sessoes} sessão(ões) e ${fora.cobrancas} cobrança(s) fora da demonstração (--incluir-nao-demo).`);
+  }
+} else console.log('Sem --limpar: só grava (upsert), nada é apagado.');
+
+try {
+  if (limpar) await limparRede(new Set([gw, fr, mo, co]));
+  console.log('\nGravando a rede nova…');
+  await lote('franqueados', b.franqueados);
+  await lote('pontos', b.pontos.map((p) => ({ ...p, status: p.ativo ? 'ATIVO' : 'SUSPENSO', demo: true })));
+  await lote('carregadores', b.carregadores.map((c) => ({ ...c, estado: c.estado === 'OCUPADO' ? 'DISPONIVEL' : c.estado, carro: null })));
+  await lote('motoristas', b.motoristas);
+  await lote('sessoes', sessoes);
+  await lote('cobrancas', b.cobrancas.filter((c) => idsSessao.has(c.sessaoId)).map((c) => ({ ...c, demo: true })));
+  await lote('homologacoes', b.homologacoes);
+} catch (e) {
+  console.error(`\nFALHOU NO MEIO: ${(e as Error).message}`);
+  if (limpar) console.error('O BANCO PODE ESTAR VAZIO OU PARCIAL. O script pode rodar de novo: npm run seed -- --limpar');
+  process.exit(1);
+}
 
 const pontoDemo = b.pontos.find((p) => p.id === PONTO_FRANQUEADO_DEMO) ?? b.pontos[0];
 await lote('perfis', [

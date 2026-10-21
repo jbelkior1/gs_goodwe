@@ -42,7 +42,7 @@ alter table homologacoes add column if not exists "avaliacaoId" text;
 -- no app e na Homologação. Só JPEG, até 5 MB por arquivo (o gs_vr envia ~200 KB).
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('avaliacoes', 'avaliacoes', true, 5242880, array['image/jpeg'])
-on conflict (id) do nothing;
+on conflict (id) do update set public = true, file_size_limit = 5242880, allowed_mime_types = array['image/jpeg'];
 
 -- ler e enviar sem login (a página do gs_vr usa a chave publicável). O gs_vr envia com "x-upsert: true"
 -- e a documentação do Storage pede SELECT e UPDATE além do INSERT para o upsert funcionar; por isso a
