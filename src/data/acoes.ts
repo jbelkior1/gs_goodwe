@@ -95,24 +95,44 @@ export async function decidirSolicitacao(id: string, decisao: 'APROVADO' | 'REPR
   if (!h) throw new Error('Solicitação não encontrada.');
   const sb = exigirBanco();
   if (decisao !== 'APROVADO') {
-    await ok(sb.from('homologacoes').update({ status: decisao }).eq('id', id));
+    // pedido já aprovado (com ponto criado) não volta atrás por uma tela desatualizada
+    await ok(sb.from('homologacoes').update({ status: decisao }).eq('id', id).neq('status', 'APROVADO'));
     return;
   }
+  // reserva primeiro: dois cliques (ou duas pessoas) não criam dois pontos
+  const { data: reservada, error } = await sb.from('homologacoes').update({ status: 'APROVADO' })
+    .eq('id', id).neq('status', 'APROVADO').select('id');
+  if (error) throw new Error(error.message);
+  if (!reservada?.length) throw new Error('Esta solicitação já foi aprovada.');
+  try {
+    await criarPontoAprovado(h);
+  } catch (e) {
+    await sb.from('homologacoes').update({ status: h.status }).eq('id', id);
+    throw e;
+  }
+}
+
+async function criarPontoAprovado(h: (typeof base.homologacoes)[number]) {
+  const sb = exigirBanco();
+  const id = h.id;
   const regiao = REGIOES.find((r) => r.id === h.regiaoId) ?? REGIOES[0];
   const cfg = FORMATOS[h.formatoDesejado];
-  const franqueadoId = novoId('f');
-  const pontoId = novoId('p');
-  await ok(sb.from('franqueados').insert({ id: franqueadoId, nome: h.comercio, razaoSocial: `${h.comercio} LTDA`, cnpj: h.cnpj }));
-  await ok(sb.from('pontos').insert({
+  // ids derivados do pedido + upsert: se algo falhar no meio, aprovar de novo não cria ponto órfão
+  const base36 = h.id.replace(/^h-/, '');
+  const franqueadoId = `f-${base36}`;
+  const pontoId = `p-${base36}`;
+  await ok(sb.from('franqueados').upsert({ id: franqueadoId, nome: h.comercio, razaoSocial: `${h.comercio} LTDA`, cnpj: h.cnpj }));
+  await ok(sb.from('pontos').upsert({
     id: pontoId, nome: h.comercio, franqueadoId, regiaoId: h.regiaoId, endereco: `${regiao.zona}, ${regiao.cidade}/${regiao.uf}`,
     formato: h.formatoDesejado, segmento: h.segmento, status: 'INSTALACAO', ativo: false,
     limitePotenciaKW: h.cargaDisponivelKW, limiteCorrenteA: Math.round((h.cargaDisponivelKW * 1000) / 220),
-    cargaBaseKW: 8, precoBaseKWh: 1.9, lat: regiao.lat, lng: regiao.lng,
+    // perto do centro da região, mas sem cair em cima de outro ponto no mapa (~1 km)
+    cargaBaseKW: 8, precoBaseKWh: 1.9, lat: regiao.lat + (Math.random() - 0.5) * 0.02, lng: regiao.lng + (Math.random() - 0.5) * 0.02,
   }));
-  await ok(sb.from('carregadores').insert(Array.from({ length: cfg.carregadores }, (_, i) => ({
+  await ok(sb.from('carregadores').upsert(Array.from({ length: cfg.carregadores }, (_, i) => ({
     id: `${pontoId}-c${i + 1}`, pontoId, apelido: `Vaga ${i + 1}`, modelo: cfg.modelo, estado: 'OFFLINE', firmware: 'HCA-G2 v3.2.0',
   }))));
-  await ok(sb.from('homologacoes').update({ status: 'APROVADO', pontoId }).eq('id', id));
+  await ok(sb.from('homologacoes').update({ pontoId }).eq('id', id));
   if (h.solicitanteId) {
     await ok(sb.from('perfis').update({ papel: 'franqueado', franqueadoId }).eq('id', h.solicitanteId));
   }

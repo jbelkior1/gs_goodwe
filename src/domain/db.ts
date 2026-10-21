@@ -52,6 +52,39 @@ export async function carregarBase(): Promise<'banco' | 'local'> {
     Object.assign(base, gerarBase());
     return 'local';
   }
+  // assina antes de ler: o que mudar durante a leitura fica na fila e é aplicado depois
+  assinarTempoReal();
+  await reler();
+  return 'banco';
+}
+
+type Chave = (typeof TABELAS)[keyof typeof TABELAS];
+let relendo = false;
+const fila: [Chave, any][] = [];
+
+async function reler() {
+  relendo = true;
+  try {
+    Object.assign(base, await buscarBase());
+  } finally {
+    relendo = false;
+    fila.splice(0).forEach(([chave, p]) => aplicar(chave, p));
+    avisarMudanca();
+  }
+}
+
+function aplicar(chave: Chave, p: any) {
+  const lista = base[chave] as { id?: unknown }[];
+  if (p.eventType === 'DELETE') {
+    const i = lista.findIndex((x) => x.id === p.old?.id);
+    if (i >= 0) lista.splice(i, 1);
+  } else {
+    const i = lista.findIndex((x) => x.id === p.new.id);
+    if (i >= 0) lista[i] = p.new; else lista.push(p.new);
+  }
+}
+
+async function buscarBase() {
   const desde = new Date(Date.now() - 6 * 3600_000).toISOString();
   const [franqueados, pontos, carregadores, motoristas, sessoes, telemetria, cobrancas, homologacoes] = await Promise.all([
     buscarTudo<BaseDados['franqueados'][number]>('franqueados'),
@@ -63,29 +96,30 @@ export async function carregarBase(): Promise<'banco' | 'local'> {
     buscarTudo<Cobranca>('cobrancas'),
     buscarTudo<BaseDados['homologacoes'][number]>('homologacoes'),
   ]);
-  Object.assign(base, { franqueados, pontos, carregadores, motoristas, sessoes, telemetria, cobrancas, homologacoes,
-    geradoEm: new Date().toISOString() });
-  assinarTempoReal();
-  return 'banco';
+  return { franqueados, pontos, carregadores, motoristas, sessoes, telemetria, cobrancas, homologacoes,
+    geradoEm: new Date().toISOString() };
 }
 
 function assinarTempoReal() {
   const canal = supabase!.channel('pontow-mvp');
   for (const [tabela, chave] of Object.entries(TABELAS)) {
     canal.on('postgres_changes', { event: '*', schema: 'public', table: tabela }, (p: any) => {
-      const lista = base[chave] as { id?: unknown }[];
-      if (p.eventType === 'DELETE') {
-        const i = lista.findIndex((x) => x.id === p.old?.id);
-        if (i >= 0) lista.splice(i, 1);
-      } else {
-        const i = lista.findIndex((x) => x.id === p.new.id);
-        if (i >= 0) lista[i] = p.new; else lista.push(p.new);
-      }
+      if (relendo) { fila.push([chave, p]); return; }
+      aplicar(chave, p);
       avisarMudanca();
     });
   }
+  // depois de uma queda, o que mudou no meio tempo não chega por evento: relê tudo ao reconectar
+  // (e tenta de novo a cada 15 s se a releitura falhar)
+  let caiu = false;
+  const recuperar = () => reler().then(() => { caiu = false; }).catch(() => { setTimeout(recuperar, 15000); });
   canal.subscribe((status, erro) => {
-    if (status !== 'SUBSCRIBED') console.warn('tempo real:', status, erro?.message ?? '');
+    if (status === 'SUBSCRIBED') {
+      if (caiu && !relendo) recuperar();
+      return;
+    }
+    caiu = true;
+    console.warn('tempo real:', status, erro?.message ?? '');
   });
   if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__pontow = { base, canal };
 }
@@ -98,11 +132,27 @@ export const obterPonto = (id: string): Ponto | undefined =>
 
 export const pontoAtivo = (p: Ponto) => p.ativo && (p.status ?? 'ATIVO') === 'ATIVO';
 
-/** sessão "da vaga agora": a mais recente que ainda não terminou de vez */
-export const sessaoDaVaga = (carregadorId: string): Sessao | undefined =>
-  base.sessoes
-    .filter((s) => s.carregadorId === carregadorId && ['ABERTA', 'AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO', 'CONCLUIDO'].includes(s.estado))
-    .sort((a, b) => b.inicio.localeCompare(a.inicio))[0];
+const EM_ANDAMENTO = ['ABERTA', 'AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO'];
+
+/**
+ * Sessão "da vaga agora": a que está em andamento ou, enquanto o mesmo carro continua no cabo,
+ * a que acabou de terminar (a pagar ou paga). Conta pendente de carro que já saiu não trava a vaga.
+ */
+export const sessaoDaVaga = (carregadorId: string): Sessao | undefined => {
+  const daVaga = base.sessoes.filter((s) => s.carregadorId === carregadorId).sort((a, b) => b.inicio.localeCompare(a.inicio));
+  const andamento = daVaga.find((s) => EM_ANDAMENTO.includes(s.estado));
+  if (andamento) return andamento;
+  const carro = base.carregadores.find((c) => c.id === carregadorId)?.carro;
+  const ultima = daVaga[0];
+  if (!carro || !ultima?.fim || !['CONCLUIDO', 'FATURADO'].includes(ultima.estado)) return undefined;
+  const mesmoCarro = carro.sessaoId
+    ? carro.sessaoId === ultima.id
+    : new Date(carro.conectadoEm).getTime() <= new Date(ultima.fim).getTime();
+  return mesmoCarro ? ultima : undefined;
+};
+
+/** o agente da vaga manda sinal a cada 20 s; sem sinal há mais de 90 s, a vaga está fora do ar */
+export const semSinal = (c: Carregador) => Date.now() - new Date(c.ultimoHeartbeat).getTime() > 90_000;
 
 export const sessaoPorCodigo = (codigo: string): Sessao | undefined =>
   base.sessoes.find((s) => s.estado === 'ABERTA' && s.codigoVinculo?.toUpperCase() === codigo.trim().toUpperCase());
@@ -208,7 +258,8 @@ export function kpisDoPonto(pontoId: string): KPIsPonto {
     faturamentoMes: Number(faturamentoMes.toFixed(2)),
     custoEnergiaMes: Number(custoEnergiaMes.toFixed(2)),
     royaltiesMes: Number(royaltiesMes.toFixed(2)),
-    liquidoMes: Number((liquidoMes - REGRAS.plataformaMes).toFixed(2)),
+    // a mensalidade da plataforma começa quando o ponto entra em operação
+    liquidoMes: Number((liquidoMes - (base.pontos.some((p) => p.id === pontoId && pontoAtivo(p)) ? REGRAS.plataformaMes : 0)).toFixed(2)),
     horasUsoDia: Number(horasUsoDia.toFixed(2)),
     ocupacaoPct: Number(Math.min(1, horasUsoDia / 12).toFixed(3)),
     ticketMedio: sessoesMes.length
@@ -341,14 +392,15 @@ export function kpisDaRede(): KPIsRede {
     pontosAtivos: base.pontos.filter((p) => p.ativo).length,
     pontosTotal: base.pontos.length,
     carregadoresTotal: base.carregadores.length,
-    carregadoresOffline: base.carregadores.filter((c) => c.estado === 'OFFLINE').length,
+    // vaga de ponto ainda em instalação não é falha da rede
+    carregadoresOffline: base.carregadores.filter((c) => c.estado === 'OFFLINE' && base.pontos.some((p) => p.id === c.pontoId && pontoAtivo(p))).length,
     sessoesMes,
     energiaMesKWh: Number(todosKpis.reduce((t, k) => t + k.energiaMesKWh, 0).toFixed(1)),
     faturamentoRedeMes: Number(faturamentoRedeMes.toFixed(2)),
     royaltiesMes: Number(royaltiesMes.toFixed(2)),
     ticketMedio: sessoesMes ? Number((faturamentoRedeMes / sessoesMes).toFixed(2)) : 0,
     pontosAbaixoDoLimiar: todosKpis.filter(
-      (k) => k.horasUsoDia < REGRAS.limiarViabilidadeHoras,
+      (k) => k.horasUsoDia < REGRAS.limiarViabilidadeHoras && base.pontos.some((p) => p.id === k.pontoId && pontoAtivo(p)),
     ).length,
   };
 }

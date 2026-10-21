@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
   BarChart, Bar as RBar, XAxis, YAxis, CartesianGrid,
@@ -20,10 +19,7 @@ export default function Financeiro() {
   const kpis = kpisDoPonto(pontoId);
   const eco = economiaDoPonto(pontoId);
 
-  const cobrancas = useMemo(
-    () => cobrancasDoPonto(pontoId).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm)),
-    [pontoId],
-  );
+  const cobrancas = cobrancasDoPonto(pontoId).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm));
   const doMes = cobrancas.filter((c) => noMesAtual(c.criadaEm) && c.status === 'PAGO');
 
   const totais = doMes.reduce(

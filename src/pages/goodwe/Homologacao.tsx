@@ -8,15 +8,19 @@ import { Card, KPI, Badge, EstadoBadge, Bar, Nota, brl, num, dataCurta, Tabela }
 
 export default function Homologacao() {
   useApp();
-  const [selecionada, setSelecionada] = useState(base.homologacoes[0]?.id ?? '');
+  const [selecionada, setSelecionada] = useState('');
   const [msg, setMsg] = useState('');
+  const [ocupado, setOcupado] = useState(false);
   const decidir = (d: 'APROVADO' | 'REPROVADO' | 'VISTORIA') => () => {
-    if (!atual) return;
-    setMsg('');
+    if (!atual || ocupado) return;
+    if (d === 'APROVADO' && analise?.veredito === 'REPROVAR'
+      && !window.confirm('A análise recomenda reprovar este ponto. Aprovar mesmo assim?')) return;
+    setMsg(''); setOcupado(true);
     decidirSolicitacao(atual.id, d).then(() => setMsg(d === 'APROVADO' ? 'Aprovado: ponto criado em instalação para o franqueado.' : 'Decisão registrada.'))
-      .catch((e: Error) => setMsg(e.message));
+      .catch((e: Error) => setMsg(e.message))
+      .finally(() => setOcupado(false));
   };
-  const solicitacoes = base.homologacoes;
+  const solicitacoes = [...base.homologacoes].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
   const atual = solicitacoes.find((h) => h.id === selecionada) ?? solicitacoes[0];
 
   const regiao = atual ? obterRegiao(atual.regiaoId) : undefined;
@@ -152,9 +156,9 @@ export default function Homologacao() {
                 <tr><td>Taxa de franquia</td><td className="r num">{brl(FORMATOS[atual.formatoDesejado].taxaFranquia)}</td></tr>
               </Tabela>
               <div className="row" style={{ marginTop: 10 }}>
-                <button className="btn primary" disabled={atual.status === 'APROVADO'} onClick={decidir('APROVADO')}>Aprovar e emitir COF</button>
-                <button className="btn" disabled={atual.status === 'APROVADO'} onClick={decidir('VISTORIA')}>Solicitar vistoria</button>
-                <button className="btn" disabled={atual.status === 'APROVADO'} onClick={decidir('REPROVADO')}>Reprovar</button>
+                <button className="btn primary" disabled={ocupado || atual.status === 'APROVADO'} onClick={decidir('APROVADO')}>Aprovar e emitir COF</button>
+                <button className="btn" disabled={ocupado || atual.status === 'APROVADO'} onClick={decidir('VISTORIA')}>Solicitar vistoria</button>
+                <button className="btn" disabled={ocupado || atual.status === 'APROVADO'} onClick={decidir('REPROVADO')}>Reprovar</button>
               </div>
               {msg && <div className="tiny muted" style={{ marginTop: 6 }}>{msg}</div>}
               <div className="tiny muted" style={{ marginTop: 6 }}>

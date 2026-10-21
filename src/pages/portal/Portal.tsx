@@ -155,6 +155,11 @@ export default function Portal() {
         ))}
       </section>
 
+      <section className="portal-franquia">
+        <span>Tem um comércio e quer um ponto de recarga?</span>
+        <button className="btn primary" onClick={() => navigate('/seja-goodwe')}>Seja GoodWe</button>
+      </section>
+
       <footer className="portal-rodape meta">
         <span>GOODWE ENERGIA · EV CHALLENGE · DADOS SIMULADOS</span>
         <span>{base.sessoes.length.toLocaleString('pt-BR')} SESSÕES NA BASE</span>

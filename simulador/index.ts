@@ -39,6 +39,7 @@ const veiculo = (vid?: string | null) => VEICULOS.find((v) => v.id === vid) ?? V
 let pontos: Ponto[] = [];
 let ultimaCargaPontos = 0;
 let ultimaTelemetria = 0;
+let ultimoSinal = 0;
 const pagasVistas = new Map<string, number>();
 
 async function q<T>(p: PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T> {
@@ -70,32 +71,38 @@ async function ciclo() {
   }
   const ids = pontos.map((p) => p.id);
   if (!ids.length) return;
-  const recente = new Date(Date.now() - 15 * 60000).toISOString();
-  const [vagas, abertas, pagas] = await Promise.all([
+  const [vagas, abertas] = await Promise.all([
     q<Carregador[]>(sb.from('carregadores').select('*').in('pontoId', ids)),
     q<Sessao[]>(sb.from('sessoes').select('*').in('pontoId', ids).in('estado', ABERTAS)),
-    // só pagamentos recentes de sessões reais (o histórico de demonstração também está FATURADO)
-    q<Sessao[]>(sb.from('sessoes').select('*').in('pontoId', ids).eq('estado', 'FATURADO').eq('demo', false).gte('fim', recente)),
   ]);
+  // pagas que ainda importam: a recarga de cada carro que continua no cabo (o id fica anotado no carro)
+  const daVez = vagas.map((v) => v.carro?.sessaoId).filter((x): x is string => !!x);
+  const pagas = daVez.length ? await q<Sessao[]>(sb.from('sessoes').select('*').in('id', daVez).eq('estado', 'FATURADO')) : [];
+  const fechadas = new Set<string>();
   const sessoes = [...abertas, ...pagas];
   const agora = Date.now();
   const dtH = (TICK_MS / 3600000) * ACEL;
   const gravarTelemetria = agora - ultimaTelemetria > 10000;
   if (gravarTelemetria) ultimaTelemetria = agora;
   const amostras: Record<string, unknown>[] = [];
+  if (agora - ultimoSinal > 20000) {                      // sinal de vida: sem ele o totem mostra "sem sinal"
+    ultimoSinal = agora;
+    await q(sb.from('carregadores').update({ ultimoHeartbeat: new Date().toISOString() }).in('pontoId', ids).neq('estado', 'OFFLINE'));
+  }
 
   for (const ponto of pontos) {
     const doPonto = vagas.filter((v) => v.pontoId === ponto.id);
 
     // ------------------------------------------------ conexões, expiração e saída do carro
     for (const vaga of doPonto) {
-      // uma sessão paga só "segura" a vaga se o carro conectado é o daquela recarga (chegou antes do fim)
-      const daRecarga = (x: Sessao) => x.estado !== 'FATURADO'
-        || (!!vaga.carro && !!x.fim && new Date(vaga.carro.conectadoEm).getTime() <= new Date(x.fim).getTime());
+      // uma sessão terminada (a pagar ou paga) só "segura" a vaga se é a recarga do carro que está no cabo
+      const daRecarga = (x: Sessao) => !['CONCLUIDO', 'FATURADO'].includes(x.estado) || x.id === vaga.carro?.sessaoId;
       const s = sessoes.filter((x) => x.carregadorId === vaga.id && daRecarga(x))
         .sort((a, b) => b.inicio.localeCompare(a.inicio))[0];
       if (vaga.carro && !s && vaga.estado !== 'MANUTENCAO') {
-        const tarifa = calcularTarifa(ponto, REGIOES.find((r) => r.id === ponto.regiaoId) ?? REGIOES[0], new Date().getHours(), 0.5);
+        // mesma conta do app (tarifaAtual): ocupação real do ponto, para o totem e o celular mostrarem o mesmo preço
+        const emCarga = sessoes.filter((x) => x.pontoId === ponto.id && EM_CARGA.includes(x.estado)).length;
+        const tarifa = calcularTarifa(ponto, REGIOES.find((r) => r.id === ponto.regiaoId) ?? REGIOES[0], new Date().getHours(), doPonto.length ? emCarga / doPonto.length : 0);
         const nova = {
           id: id('s'), pontoId: ponto.id, carregadorId: vaga.id, veiculoId: vaga.carro.veiculoId,
           inicio: new Date().toISOString(), socInicial: vaga.carro.socReal, socAtual: vaga.carro.socReal,
@@ -103,7 +110,8 @@ async function ciclo() {
           custoAcumulado: 0, codigoVinculo: codigo(),
         };
         await q(sb.from('sessoes').insert(nova));
-        if (vaga.estado !== 'OCUPADO') await q(sb.from('carregadores').update({ estado: 'OCUPADO' }).eq('id', vaga.id));
+        // anota no carro qual é a recarga dele (só se o carro ainda está lá: a bancada pode ter desconectado)
+        await q(sb.from('carregadores').update({ estado: 'OCUPADO', carro: { ...vaga.carro, sessaoId: nova.id } }).eq('id', vaga.id).not('carro', 'is', null));
         log(`carro conectado em ${ponto.nome} / ${vaga.apelido}: código ${nova.codigoVinculo}`);
         continue;
       }
@@ -112,13 +120,15 @@ async function ciclo() {
         continue;
       }
       if (!vaga.carro) {                                     // cabo removido
-        if (s.estado === 'ABERTA') await q(sb.from('sessoes').update({ estado: 'EXPIRADA', codigoVinculo: null }).eq('id', s.id));
-        else if (EM_CARGA.includes(s.estado)) await fecharConta(s, ponto, 'cabo removido');
+        if (s.estado === 'ABERTA') await q(sb.from('sessoes').update({ estado: 'EXPIRADA', codigoVinculo: null }).eq('id', s.id).eq('estado', 'ABERTA'));
+        else if (EM_CARGA.includes(s.estado)) { await fecharConta(s, ponto, 'cabo removido'); fechadas.add(s.id); }
         await q(sb.from('carregadores').update({ estado: 'DISPONIVEL', potenciaPermitidaKW: 0 }).eq('id', vaga.id));
         continue;
       }
       if (s.estado === 'ABERTA' && agora - new Date(s.inicio).getTime() > EXPIRA_MIN * 60000) {
-        await q(sb.from('sessoes').update({ estado: 'EXPIRADA', codigoVinculo: null }).eq('id', s.id));
+        // o motorista pode ter confirmado bem na hora: só expira o que ainda está ABERTA
+        const expirou = await q<{ id: string }[]>(sb.from('sessoes').update({ estado: 'EXPIRADA', codigoVinculo: null }).eq('id', s.id).eq('estado', 'ABERTA').select('id'));
+        if (!expirou.length) continue;
         await q(sb.from('carregadores').update({ carro: null, estado: 'DISPONIVEL' }).eq('id', vaga.id));
         log(`código ${s.codigoVinculo} expirou`);
         continue;
@@ -136,7 +146,7 @@ async function ciclo() {
 
     // ------------------------------------------------ controle de demanda e física
     const ativas = sessoes.filter((s) => s.pontoId === ponto.id && ['AUTENTICADO', 'CARREGANDO', 'PAUSADO'].includes(s.estado));
-    for (const s of sessoes.filter((x) => x.pontoId === ponto.id && x.estado === 'ENCERRANDO')) await fecharConta(s, ponto, 'pedido de encerramento');
+    for (const s of sessoes.filter((x) => x.pontoId === ponto.id && x.estado === 'ENCERRANDO' && !fechadas.has(x.id))) await fecharConta(s, ponto, 'pedido de encerramento');
     if (!ativas.length) continue;
 
     const h = new Date().getHours();
@@ -157,7 +167,9 @@ async function ciclo() {
         estado: pausado ? 'PAUSADO' : 'CARREGANDO', energiaKWh: Number(energia.toFixed(3)), socAtual: Number(soc.toFixed(1)),
         potenciaAtualKW: Number(pot.toFixed(2)), custoAcumulado: custo, motivoPausa: a?.motivo ?? null,
       };
-      await q(sb.from('sessoes').update(atualizado).eq('id', s.id));
+      // só grava se ninguém mudou o estado no meio do ciclo (ex.: o motorista pediu para encerrar)
+      const gravou = await q<{ id: string }[]>(sb.from('sessoes').update(atualizado).eq('id', s.id).in('estado', ['AUTENTICADO', 'CARREGANDO', 'PAUSADO']).select('id'));
+      if (!gravou.length) continue;
       if (a) await q(sb.from('carregadores').update({ potenciaPermitidaKW: atualizado.potenciaAtualKW }).eq('id', s.carregadorId));
       if (gravarTelemetria) {
         const tensao = 220 + (Math.random() - 0.5) * 4;

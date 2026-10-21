@@ -55,7 +55,7 @@ function CascaTotem() {
 function TotemNaTela() {
   const { search } = useLocation();
   return telaCheia('totem', search)
-    ? <Quiosque>{(o) => <Totem orientacao={o} />}</Quiosque>
+    ? <Quiosque>{(o) => <Totem orientacao={o} aparelho />}</Quiosque>
     : <Totem />;
 }
 

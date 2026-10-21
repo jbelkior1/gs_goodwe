@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 import { useApp } from '../../app/estado';
 import {
-  carregadoresDoPonto, cobrancaDaSessao, obterMotorista, obterPonto, obterVeiculo, sessaoDaVaga,
+  carregadoresDoPonto, cobrancaDaSessao, obterMotorista, obterPonto, obterVeiculo, sessaoDaVaga, semSinal,
   solarDoPonto, tarifaAtual, telemetriaDaSessao,
 } from '../../domain/db';
 import { responderVolt, saudacaoVolt, type ContextoVolt } from '../../domain/engine/assistente';
@@ -22,12 +22,13 @@ const CHAVE_PONTO = 'pontow.totem.ponto';
  * Tela do totem (MVP): mostra as vagas do ponto ao vivo. Carro conectado → QR com o código da
  * sessão; o motorista lê no celular e a recarga aparece aqui e no app ao mesmo tempo.
  */
-export default function Totem({ orientacao = 'vertical' }: { orientacao?: 'vertical' | 'horizontal' }) {
+export default function Totem({ orientacao = 'vertical', aparelho = false }: { orientacao?: 'vertical' | 'horizontal'; aparelho?: boolean }) {
   const { pontoId: pontoDoPainel } = useApp();
   const [params] = useSearchParams();
-  // o totem lembra o ponto em que foi instalado (aberto uma vez com ?ponto=)
+  // o totem real lembra o ponto em que foi instalado (aberto uma vez com ?ponto=); a vitrine segue o painel
   const pontoId = (() => {
     const daUrl = params.get('ponto');
+    if (!aparelho) return daUrl ?? pontoDoPainel;
     try {
       if (daUrl) { localStorage.setItem(CHAVE_PONTO, daUrl); return daUrl; }
       return localStorage.getItem(CHAVE_PONTO) ?? pontoDoPainel;
@@ -164,7 +165,10 @@ export default function Totem({ orientacao = 'vertical' }: { orientacao?: 'verti
         )}
         {!sessao && vagaSel && (
           <div className="tt-eta" style={{ justifyContent: 'center' }}>
-            {vagaSel.estado === 'MANUTENCAO' ? 'Vaga em manutenção' : 'Conecte o cabo na vaga para começar'}
+            {vagaSel.estado === 'MANUTENCAO' ? 'Vaga em manutenção'
+              : vagaSel.estado === 'OFFLINE' ? (ponto?.status === 'INSTALACAO' ? 'Ponto em instalação' : 'Vaga fora do ar')
+              : semSinal(vagaSel) ? 'Carregador sem sinal. Chame o atendimento.'
+              : 'Conecte o cabo na vaga para começar'}
           </div>
         )}
         {erro && <div className="tiny" style={{ color: 'var(--k-red2)' }}>{erro}</div>}

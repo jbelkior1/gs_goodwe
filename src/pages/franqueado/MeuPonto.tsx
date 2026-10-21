@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../app/estado';
-import { carregadoresDoPonto, obterPonto, sessaoDaVaga, tarifaAtual } from '../../domain/db';
+import { carregadoresDoPonto, obterPonto, semSinal, sessaoDaVaga, tarifaAtual } from '../../domain/db';
 import { ativarPonto, definirManutencao, salvarPonto } from '../../data/acoes';
 import { Card, KPI, Nota, Tabela, EstadoBadge, brl } from '../../ui/kit';
 import { QR, linkDoApp } from '../../ui/QR';
@@ -77,7 +77,7 @@ export default function MeuPonto() {
               <tr key={v.id}>
                 <td className="strong">{v.apelido}</td>
                 <td>{v.modelo}</td>
-                <td><EstadoBadge estado={v.estado} /></td>
+                <td><EstadoBadge estado={v.estado} />{v.estado !== 'OFFLINE' && semSinal(v) && <span className="tiny" style={{ color: 'var(--k-red2)', marginLeft: 6 }}>sem sinal</span>}</td>
                 <td className="tiny">{s ? `${s.estado.toLowerCase()} · ${s.id}` : '—'}</td>
                 <td>
                   <button className="btn" disabled={!!s} onClick={rodar(() => definirManutencao(v.id, v.estado !== 'MANUTENCAO'), 'Vaga atualizada.')}>

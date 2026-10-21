@@ -24,12 +24,15 @@ interface EstadoApp {
 
 const Ctx = createContext<EstadoApp | null>(null);
 
+/** ponto que o painel abre quando ninguém escolheu (o mesmo do franqueado de demonstração) */
+function pontoPadrao(): string {
+  const ativos = base.pontos.filter((p) => p.ativo);
+  return (ativos[13] ?? ativos[0] ?? base.pontos[0])?.id ?? '';
+}
+
 export function ProvedorEstado({ children }: { children: ReactNode }) {
   const [persona, setPersona] = useState<Persona>('franqueado');
-  const [pontoId, setPontoId] = useState<string>(() => {
-    const ativos = base.pontos.filter((p) => p.ativo);
-    return (ativos[13] ?? ativos[0] ?? base.pontos[0])?.id ?? '';
-  });
+  const [pontoId, setPontoId] = useState<string>(pontoPadrao);
   const [motoristaId, setMotoristaId] = useState<string>(base.motoristas[0]?.id ?? '');
   const [tick, setTick] = useState(0);
   const [perfil, setPerfil] = useState<Perfil | null>(null);
@@ -38,23 +41,37 @@ export function ProvedorEstado({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!supabase) return;
+    // a aprovação da GoodWe troca o papel de quem está logado: o app acompanha sem recarregar
+    let canal: ReturnType<typeof supabase.channel> | null = null;
+    let canalUid = '';
+    const ouvir = (uid?: string) => {
+      if ((uid ?? '') === canalUid) return;
+      if (canal) supabase!.removeChannel(canal);
+      canal = null; canalUid = uid ?? '';
+      if (!uid) return;
+      canal = supabase!.channel(`perfil-${uid}-${crypto.randomUUID().slice(0, 8)}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'perfis', filter: `id=eq.${uid}` },
+          (p) => setPerfil(p.new as Perfil))
+        .subscribe();
+    };
     const carregar = async (uid?: string) => {
+      ouvir(uid);
       if (!uid) { setPerfil(null); return; }
       const { data } = await supabase!.from('perfis').select('*').eq('id', uid).maybeSingle();
       setPerfil((data as Perfil) ?? null);
     };
     supabase.auth.getSession().then(({ data }) => carregar(data.session?.user.id));
     const { data } = supabase.auth.onAuthStateChange((_e, s) => { carregar(s?.user.id); });
-    return () => data.subscription.unsubscribe();
+    return () => { data.subscription.unsubscribe(); if (canal) supabase!.removeChannel(canal); };
   }, []);
 
-  // perfil logado define o motorista e o ponto do franqueado
+  // perfil logado define o motorista e o ponto do franqueado; ponto removido volta para o padrão
   useEffect(() => {
     if (perfil?.motoristaId) setMotoristaId(perfil.motoristaId);
-    if (perfil?.papel === 'franqueado' && perfil.franqueadoId) {
-      const meu = base.pontos.find((p) => p.franqueadoId === perfil.franqueadoId);
-      if (meu) setPontoId(meu.id);
-    }
+    const meu = perfil?.papel === 'franqueado' && perfil.franqueadoId
+      ? base.pontos.find((p) => p.franqueadoId === perfil.franqueadoId) : undefined;
+    if (meu) setPontoId(meu.id);
+    else setPontoId((atual) => (base.pontos.some((p) => p.id === atual) ? atual : pontoPadrao()));
   }, [perfil, tick]);
 
   const valor = useMemo(

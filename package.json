@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "start": "node server.js",
     "simulador": "tsx --env-file=.env.local simulador/index.ts",
-    "seed": "tsx --env-file=.env.local scripts/seed-supabase.ts"
+    "seed": "tsx --env-file=.env.local scripts/seed-supabase.ts",
+    "demo:comerciante": "tsx --env-file=.env.local scripts/demo-comerciante.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

@@ -15,10 +15,13 @@ export default function SejaGoodwe() {
   const [msg, setMsg] = useState('');
   const minhas = base.homologacoes.filter((h) => perfil && h.solicitanteId === perfil.id);
 
+  const [enviando, setEnviando] = useState(false);
   const enviar = () => {
-    if (!perfil) return;
-    setMsg('');
-    enviarSolicitacao(f, perfil.id).then(() => setMsg('Solicitação enviada. A GoodWe vai analisar.')).catch((e: Error) => setMsg(e.message));
+    if (!perfil || enviando) return;
+    if (!(f.cargaDisponivelKW > 0) || !(f.fluxoDiarioPessoas > 0)) { setMsg('Informe a carga elétrica disponível e o fluxo de pessoas.'); return; }
+    setMsg(''); setEnviando(true);
+    enviarSolicitacao(f, perfil.id).then(() => setMsg('Solicitação enviada. A GoodWe vai analisar.')).catch((e: Error) => setMsg(e.message))
+      .finally(() => setEnviando(false));
   };
   const linha = (rotulo: string, el: React.ReactNode) => (
     <label className="stack" style={{ gap: 4 }}><span className="kpi-label">{rotulo}</span>{el}</label>
@@ -55,7 +58,7 @@ export default function SejaGoodwe() {
               </select>))}
             {linha('Carga elétrica disponível (kW)', <input id="carga" className="btn" type="number" value={f.cargaDisponivelKW} onChange={(e) => setF({ ...f, cargaDisponivelKW: Number(e.target.value) })} />)}
             {linha('Fluxo de pessoas por dia', <input id="fluxo" className="btn" type="number" value={f.fluxoDiarioPessoas} onChange={(e) => setF({ ...f, fluxoDiarioPessoas: Number(e.target.value) })} />)}
-            <button className="btn primary" style={{ justifyContent: 'center' }} disabled={!f.comercio} onClick={enviar}>Enviar solicitação</button>
+            <button className="btn primary" style={{ justifyContent: 'center' }} disabled={!f.comercio || enviando} onClick={enviar}>Enviar solicitação</button>
             {msg && <div className="tiny muted">{msg}</div>}
           </div>
         )}

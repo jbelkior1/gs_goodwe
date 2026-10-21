@@ -48,6 +48,8 @@ export interface CarroConectado {
   /** bateria real do carro simulado (o sistema mostra só a estimativa) */
   socReal: number;
   conectadoEm: string;
+  /** recarga que o agente abriu para este carro: liga a conta (paga ou não) ao carro que está no cabo */
+  sessaoId?: string;
 }
 
 export interface Carregador {

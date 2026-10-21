@@ -254,7 +254,9 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
         <main className={`content content-${personaAtual}`}>
           {cheia && bancoConfigurado && (personaAtual === 'franqueado' || personaAtual === 'goodwe') && perfil?.papel !== personaAtual
             ? <Porta persona={personaAtual} atual={perfil ? `${perfil.nome} (${perfil.papel})` : undefined} />
-            : <Moldura persona={personaAtual}><Outlet /></Moldura>}
+            : personaAtual === 'franqueado' && !ponto
+              ? <Nota titulo="Ponto não encontrado" tom="amber">Este ponto saiu da rede. Escolha outro ponto.</Nota>
+              : <Moldura persona={personaAtual}><Outlet /></Moldura>}
         </main>
       </div>
     </div>

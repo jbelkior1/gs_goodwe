@@ -10,6 +10,7 @@ const CONTAS_DEMO = [
   { papel: 'GoodWe', email: 'goodwe@pontow.app', vai: '/goodwe' },
   { papel: 'Franqueado', email: 'franqueado@pontow.app', vai: '/franqueado' },
   { papel: 'Motorista', email: 'motorista@pontow.app', vai: '/motorista' },
+  { papel: 'Comerciante (pedir franquia)', email: 'comerciante@pontow.app', vai: '/seja-goodwe' },
 ];
 
 export default function Entrar() {
