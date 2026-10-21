@@ -99,8 +99,10 @@ async function renovarCodigo(id: string): Promise<RegistroTotem> {
 /**
  * Fica de olho na própria linha: assim que o franqueado digita o código, chama aoParear(pontoId).
  * Canal de tempo real com nome único (um por aba) e, de reserva, consulta a cada 5 s.
+ * Se a linha sumir do banco (limpeza da demonstração), chama aoSumir: o totem gera um código novo
+ * em vez de ficar mostrando um código que não existe mais.
  */
-export function ouvirTotem(id: string, aoParear: (pontoId: string) => void): () => void {
+export function ouvirTotem(id: string, aoParear: (pontoId: string) => void, aoSumir?: () => void): () => void {
   const sb = supabase;
   if (!sb) return () => {};
   let ativo = true;
@@ -111,7 +113,8 @@ export function ouvirTotem(id: string, aoParear: (pontoId: string) => void): () 
       (p) => checar(p.new as { pontoId?: string | null }))
     .subscribe();
   const consultar = async () => {
-    const { data } = await sb.from('totens').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await sb.from('totens').select('*').eq('id', id).maybeSingle();
+    if (!error && !data && ativo) { ativo = false; aoSumir?.(); return; }
     checar(data as { pontoId?: string | null } | null);
   };
   const timer = window.setInterval(() => { consultar().catch(() => {}); }, 5000);

@@ -64,7 +64,8 @@ export function usePontoDoTotem(aparelho: boolean, pontoDoPainel: string): Estad
           if (!vivo) return;
           if (r.pontoId) { guardarPonto(r.pontoId); setGuardado(r.pontoId); return; }
           setRegistro({ codigo: r.codigo });
-          parar = ouvirTotem(r.id, (pontoId) => { guardarPonto(pontoId); setGuardado(pontoId); });
+          parar = ouvirTotem(r.id, (pontoId) => { guardarPonto(pontoId); setGuardado(pontoId); },
+            () => { parar(); iniciar(); });
         })
         .catch((e: Error) => {
           if (!vivo) return;
