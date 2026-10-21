@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { base } from '../../domain/db';
+import { PONTO_FRANQUEADO_DEMO } from '../../domain/seed';
 
 /**
  * Bases da demonstração, sem tela: contas de demonstração, os quatro aparelhos com os links diretos,
@@ -30,8 +31,9 @@ export const SEGUIR_RECARGA: boolean = EMBUTIDO && (() => {
 
 /** ponto que o painel abre quando ninguém escolheu (o mesmo do franqueado de demonstração) */
 export function pontoPadrao(): string {
-  const ativos = base.pontos.filter((p) => p.ativo);
-  return (ativos[13] ?? ativos[0] ?? base.pontos[0])?.id ?? '';
+  // o ponto que a conta franqueado@ opera no seed (Pão de Açúcar Moema); sem ele, o primeiro ativo
+  if (base.pontos.some((p) => p.id === PONTO_FRANQUEADO_DEMO)) return PONTO_FRANQUEADO_DEMO;
+  return (base.pontos.find((p) => p.ativo) ?? base.pontos[0])?.id ?? '';
 }
 
 // ---------------------------------------------------------------- contas de demonstração

@@ -5,7 +5,7 @@ import { carregadoresDoPonto, obterPonto, regiaoDoPonto, semSinal, sessaoDaVaga,
 import type { Ponto } from '../../domain/types';
 import { ativarPonto, definirManutencao, salvarPonto } from '../../data/acoes';
 import { curvaDoDia, validarPrecoBase } from '../../domain/engine/tarifa';
-import { num, tarifaKWh } from '../../domain/formato';
+import { kw, num, tarifaKWh } from '../../domain/formato';
 import { Card, KPI, Nota, Tabela, EstadoBadge } from '../../ui/kit';
 import { QR, linkDoApp, linkSoNesteAparelho } from '../../ui/QR';
 import { ParearTotem } from '../../ui/ParearTotem';
@@ -66,7 +66,7 @@ function PainelDoPonto({ ponto }: { ponto: Ponto }) {
         {operando
           ? <KPI label="Preço agora" value={tarifaKWh(tarifa.precoFinalKWh)} foot={`base ${tarifaKWh(tarifa.precoBaseKWh)}`} />
           : <KPI label="Prévia do preço" value={tarifaKWh(tarifa.precoFinalKWh)} foot={status === 'SUSPENSO' ? 'ponto suspenso: sem cobrança' : 'prévia: passa a valer quando o ponto for ativado'} />}
-        <KPI label="Entrada elétrica" value={`${ponto.limitePotenciaKW} kW`} foot={`${ponto.limiteCorrenteA} A`} />
+        <KPI label="Entrada elétrica" value={kw(ponto.limitePotenciaKW)} foot={`${num(ponto.limiteCorrenteA)} A`} />
       </div>
 
       {status === 'INSTALACAO' && (

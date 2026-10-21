@@ -52,7 +52,7 @@ estiver apertada e reinicie o simulador).
 
 Cada aparelho abre direto no ambiente certo por um link. Troque `<IP>` pelo IP do notebook na rede e `<id>` pelo id do
 ponto da demonstração (a central `/demo` mostra o link já pronto, com QR; no seed atual o ponto do franqueado de
-demonstração é o `p-015`, Academia Movimento).
+demonstração é o `p-002`, Pão de Açúcar Moema).
 
 | Aparelho | Link direto | Conta |
 |---|---|---|

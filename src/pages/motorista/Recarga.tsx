@@ -18,6 +18,7 @@ import {
 } from '../../ui/kit';
 import { Icone } from '../../ui/icones';
 import { CenaCarro3D } from '../../ui/CenaCarro3D';
+import { duracaoTexto, minutosAte100 } from '../../domain/engine/totem';
 import { QR } from '../../ui/QR';
 import { ComoCarregar } from './ComoCarregar';
 
@@ -58,8 +59,8 @@ export default function Recarga() {
   const emCarga = ['AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO'].includes(sessao.estado);
   const serie = telemetria.map((t) => ({ hora: hora(t.ts), potencia: t.potenciaKW, soc: t.soc }));
 
-  const faltaKWh = veiculo ? veiculo.capacidadeKWh * ((100 - sessao.socAtual) / 100) : 0;
-  const minutosRestantes = sessao.potenciaAtualKW > 0 ? Math.round((faltaKWh / sessao.potenciaAtualKW) * 60) : 0;
+  // mesma estimativa do totem (até 100%, com o rendimento da recarga), para os dois aparelhos baterem
+  const minutosRestantes = minutosAte100(sessao.socAtual, veiculo?.capacidadeKWh, sessao.potenciaAtualKW) ?? 0;
   const valor = cobranca?.valor ?? cent(sessao.energiaKWh * (sessao.tarifaAplicadaKWh ?? 0));
   const rep = repartir(valor, sessao.energiaKWh, regiao.custoEnergiaKWh);
   const precoTravado = Number(sessao.tarifaAplicadaKWh) || 0;
@@ -85,7 +86,7 @@ export default function Recarga() {
               <div className="sep" />
               <div className="row between">
                 <div><div className="kpi-label">Vaga</div><div className="strong">{vaga?.apelido ?? '—'}</div></div>
-                <div><div className="kpi-label">Falta (est.)</div><div className="strong">{emCarga && minutosRestantes ? `${minutosRestantes} min` : '—'}</div></div>
+                <div><div className="kpi-label">Falta (est.)</div><div className="strong">{emCarga && minutosRestantes ? duracaoTexto(minutosRestantes) : '—'}</div></div>
                 <div className="right"><div className="kpi-label">Custo</div><div className="strong kpi-accent-red">{brl(valor)}</div></div>
               </div>
             </div>

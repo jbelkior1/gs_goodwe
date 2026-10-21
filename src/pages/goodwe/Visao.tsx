@@ -10,6 +10,7 @@ import {
   EmptyState, type ColunaOrdenavel,
 } from '../../ui/kit';
 import { Icone } from '../../ui/icones';
+import { AgoraNaRede } from './AgoraNaRede';
 
 type LinhaPonto = ReturnType<typeof rankingPontos>[number];
 
@@ -130,6 +131,8 @@ export default function Visao() {
              meta={{ rotulo: `meta de ${horas(meta)}/dia`, atingida: r.horasUsoDia >= meta, progresso: Math.min(1, r.horasUsoDia / meta) }}
              foot={`média ponderada pelas ${plural(r.vagasOperando, 'vaga', 'vagas')} em operação`} />
       </div>
+
+      <AgoraNaRede />
 
       <Card
         title={`Precisa de atenção${atencao.length ? ` (${num(atencao.length)})` : ''}`}

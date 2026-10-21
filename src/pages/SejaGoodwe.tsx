@@ -185,7 +185,8 @@ export default function SejaGoodwe() {
     ev.preventDefault();
     if (!perfil || enviando) return;
     if (r.comercio.trim().length < 2) return falhar('Informe o nome do comércio.', 'comercio');
-    if (!cnpjValido(r.cnpj)) return falhar('CNPJ inválido. Confira os 14 números.', 'cnpj');
+    // o CNPJ é conferido na vistoria e nos documentos: aqui é opcional, mas se vier tem de ser válido
+    if (r.cnpj.replace(/\D/g, '') && !cnpjValido(r.cnpj)) return falhar('CNPJ inválido. Confira os 14 números ou deixe em branco.', 'cnpj');
     if (!(carga > 0)) return falhar('Informe a carga elétrica disponível, em kW. Veja na conta de luz ou pergunte ao eletricista.', 'carga');
     if (!(fluxo > 0)) return falhar('Informe quantas pessoas passam pelo comércio por dia.', 'fluxo');
     if (avaliacao.tipo === 'carregando') return falhar('A avaliação do local ainda está carregando. Espere um instante e envie de novo.');
@@ -409,7 +410,7 @@ export default function SejaGoodwe() {
                            aria-invalid={campoErro === 'comercio'} onChange={(e) => set('comercio', e.target.value)} />
                   </div>
                   <div className="sg-campo">
-                    <label htmlFor="sg-cnpj">CNPJ</label>
+                    <label htmlFor="sg-cnpj">CNPJ <span className="muted">(opcional)</span></label>
                     <input id="sg-cnpj" className="sg-input" inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" maxLength={18}
                            value={r.cnpj} aria-invalid={campoErro === 'cnpj'} onChange={(e) => set('cnpj', mascaraCNPJ(e.target.value))} />
                   </div>
