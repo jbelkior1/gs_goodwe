@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AreaChart, Area, BarChart, Bar as RBar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -17,6 +17,7 @@ import {
   type MetricaDia,
 } from '../../ui/kit';
 import { Icone } from '../../ui/icones';
+import { totensDoPonto } from '../../data/totens';
 
 const dm = (chave: string) => `${chave.slice(8, 10)}/${chave.slice(5, 7)}`;
 const OCUPADAS = ['OCUPADO', 'ABERTA', 'AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO', 'CONCLUIDO', 'PAGO'];
@@ -28,8 +29,23 @@ function BarraHora(p: { x?: number; y?: number; width?: number; height?: number;
   return <rect x={x} y={y} width={width} height={height} rx={2} fill={CHART.dado} fillOpacity={payload?.pico ? 0.95 : 0.45} />;
 }
 
+/** o totem pareado mora na tabela totens: consulta ao abrir e a cada 10 s (o franqueado pareia em outra tela) */
+function useTotemPareado(pontoId: string): boolean | undefined {
+  const [pareado, setPareado] = useState<boolean | undefined>(undefined);
+  useEffect(() => {
+    let vivo = true;
+    const ler = () => totensDoPonto(pontoId)
+      .then((t) => { if (vivo) setPareado(t.some((x) => !!x.pareadoEm)); })
+      .catch(() => { if (vivo) setPareado(undefined); });
+    ler();
+    const id = setInterval(ler, 10_000);
+    return () => { vivo = false; clearInterval(id); };
+  }, [pontoId]);
+  return pareado;
+}
+
 function Checklist({ pontoId }: { pontoId: string }) {
-  const passos = checklistAtivacao(pontoId);
+  const passos = checklistAtivacao(pontoId, useTotemPareado(pontoId));
   return (
     <div className="checklist">
       {passos.map((p, i) => (

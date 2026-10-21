@@ -1,4 +1,4 @@
-import carroPng from '../assets/carro-totem.png';
+import carroPng from '../assets/carro-totem.webp';
 
 export function CenaCarro3D() {
   return (

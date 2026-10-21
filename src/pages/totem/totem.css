@@ -62,6 +62,9 @@
   grid-template-rows: 112px auto minmax(0, 1fr) auto 160px;
   grid-template-areas: "topo topo" "avisos avisos" "estado numeros" "estado acao" "vagas volt";
 }
+/* telas sem números (reconhecendo, encerrando, manutenção...): o estado ocupa a largura toda */
+.tk-h.tk-sem-numeros { grid-template-areas: "topo topo" "avisos avisos" "estado estado" "acao acao" "vagas volt"; }
+.tk-acao:empty { display: none; }
 .tk-topo { grid-area: topo; }
 .tk-avisos { grid-area: avisos; }
 .tk-estado { grid-area: estado; }
@@ -309,6 +312,12 @@
 .tk-vaga.t-erro > svg { color: var(--tk-vermelho-claro); }
 .tk-vaga.t-neutro > svg { color: var(--tk-dim); }
 .tk-h .tk-vagas { padding: 16px 24px 16px 64px; }
+/* Hub (4 vagas): cartões mais estreitos, texto quebra sem passar da borda */
+.tk-vagas:has(> .tk-vaga:nth-child(4)) { gap: 10px; }
+.tk-vagas:has(> .tk-vaga:nth-child(4)) .tk-vaga { gap: 10px; padding: 10px 14px; }
+.tk-vagas:has(> .tk-vaga:nth-child(4)) .tk-vaga > svg { width: 30px; height: 30px; }
+.tk-vagas:has(> .tk-vaga:nth-child(4)) .tk-vaga-texto b { font-size: 28px; }
+.tk-vagas:has(> .tk-vaga:nth-child(4)) .tk-vaga-texto span { font-size: 22px; overflow-wrap: anywhere; }
 
 /* ------------------------------------------------------------ botão do Volt */
 .tk-volt-area { display: flex; align-items: center; justify-content: center; padding: 16px 32px 16px 0; }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../../app/estado';
 import { carregadoresDoPonto, cotacaoDaSessao, obterMotorista, obterPonto, sessaoPorCodigo } from '../../domain/db';
@@ -33,6 +33,11 @@ export default function Vincular() {
   const quemId = perfil?.motoristaId ?? perfil?.id ?? (DEMO && motoristaId ? motoristaId : undefined);
   const motorista = obterMotorista(quemId);
   const [veiculoId, setVeiculoId] = useState(motorista?.veiculoId ?? 'v-dolphin');
+  const [mexeuNoCarro, setMexeuNoCarro] = useState(false);
+  // o perfil chega depois do login: traz o carro do cadastro, a menos que a pessoa já tenha escolhido outro
+  useEffect(() => {
+    if (!mexeuNoCarro && motorista?.veiculoId) setVeiculoId(motorista.veiculoId);
+  }, [motorista?.veiculoId, mexeuNoCarro]);
 
   // segura a sessão durante a confirmação: o tempo real pode tirá-la de "aberta" um instante antes da resposta
   const sessao = (codigo.length === 4 ? sessaoPorCodigo(codigo) : undefined) ?? confirmando ?? undefined;
@@ -71,7 +76,7 @@ export default function Vincular() {
     <div className="stack">
       <Card title="Código da recarga" sub="4 letras que o totem mostra depois que o cabo é conectado">
         <div className="stack" style={{ gap: 8 }}>
-          <input id="codigo" className="btn cod-campo" value={codigo} maxLength={8} placeholder="7K4Q"
+          <input id="codigo" className="btn cod-campo" value={codigo} maxLength={8} placeholder="7K4W"
                  inputMode="text" autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck={false}
                  enterKeyHint="go" aria-label="Código de 4 letras do totem"
                  onChange={(e) => digitar(e.target.value)} />
@@ -121,7 +126,7 @@ export default function Vincular() {
             {quemId ? (
               <>
                 <div className="sep" style={{ margin: '4px 0' }} />
-                <select id="veiculo" className="btn" value={veiculoId} onChange={(e) => setVeiculoId(e.target.value)} aria-label="Seu carro">
+                <select id="veiculo" className="btn" value={veiculoId} onChange={(e) => { setVeiculoId(e.target.value); setMexeuNoCarro(true); }} aria-label="Seu carro">
                   {VEICULOS.map((v) => <option key={v.id} value={v.id}>{v.montadora} {v.modelo}</option>)}
                 </select>
                 <input id="soc" className="btn" type="number" inputMode="numeric" min={0} max={100} placeholder="Bateria agora, em % (opcional)" value={soc} onChange={(e) => setSoc(e.target.value)} />

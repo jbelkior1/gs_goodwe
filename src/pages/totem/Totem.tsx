@@ -191,7 +191,7 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
               titulo="Carregar sem o app?"
               texto={`O preço fica travado em ${tarifaKWh(precoKWh)}. Você encerra e paga com Pix aqui no totem.`}
               rotuloOk="Começar a carregar" ocupado={ocupado} erro={erro}
-              aoConfirmar={() => { if (sessao) agir(() => iniciarVisitante(sessao), fechar); }}
+              aoConfirmar={() => { if (sessao) agir(() => iniciarVisitante(sessao, undefined, sessao.tarifaAplicadaKWh ?? undefined), fechar); }}
               aoVoltar={fechar}
             />
           )}
@@ -252,7 +252,7 @@ function Casca({
   // acesso escondido ao menu de manutenção: 5 toques no logo em 3 s
   const toqueNoLogo = useToquesSecretos(() => quiosque?.abrirMenu());
   return (
-    <div className={`tk ${orientacao === 'horizontal' ? 'tk-h' : 'tk-v'}`} data-tela={tela}>
+    <div className={`tk ${orientacao === 'horizontal' ? 'tk-h' : 'tk-v'}${partes.numeros ? '' : ' tk-sem-numeros'}`} data-tela={tela}>
       <header className="tk-topo">
         <button className="tk-marca" onClick={toqueNoLogo} tabIndex={-1} aria-label="GoodWe Ponto W">
           <span className="tk-marca-raio"><Ic nome="raio" tamanho={40} /></span>

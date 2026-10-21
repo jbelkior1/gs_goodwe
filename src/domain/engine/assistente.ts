@@ -196,8 +196,16 @@ const INTENCOES: Intencao[] = [
       'Sem susto: a conta continua aberta na tela. Leia o QR do Pix de novo, ou chame um atendente da loja para ajudar.',
   },
   {
+    // antes de 'pagamento': quem pergunta de cartão precisa ouvir que é só Pix, mesmo na tela do QR
+    id: 'cartao',
+    termos: ['cartao', 'aceita cartao', 'credito', 'debito', 'apple pay', 'google pay', 'paypal', 'dinheiro'],
+    responder: () =>
+      'Por enquanto o pagamento é só por Pix: o totem mostra o QR com o valor exato e você paga pelo app do seu banco. ' +
+      'Cartão e carteiras digitais ainda não estão disponíveis.',
+  },
+  {
     id: 'pagamento',
-    termos: ['pagar', 'pagamento', 'pago', 'como eu pago', 'pix', 'cartao', 'aceita cartao', 'apple pay', 'google pay', 'paypal', 'dinheiro', 'cupom'],
+    termos: ['pagar', 'pagamento', 'pago', 'como eu pago', 'pix', 'cupom'],
     responder: (c) => {
       if (c.fase === 'pagar') {
         return 'O QR do Pix está na tela, com o valor exato. Abra o app do seu banco, leia o QR e confirme. ' +
@@ -227,9 +235,12 @@ const INTENCOES: Intencao[] = [
     responder: (c) => {
       if (c.fase === 'pagar' || c.fase === 'pago' || c.fase === 'encerrando') return 'A recarga já foi encerrada.';
       if (!temRecarga(c)) return SEM_RECARGA;
-      return c.sessao.visitante
-        ? 'Toque em "Encerrar recarga" aqui no totem. Eu fecho a conta e mostro o QR do Pix.'
-        : 'Encerre pelo app Ponto W, na tela da recarga. Quando a conta fechar, o Pix aparece no app e aqui no totem.';
+      if (!c.sessao.visitante) {
+        return 'Encerre pelo app Ponto W, na tela da recarga. Quando a conta fechar, o Pix aparece no app e aqui no totem.';
+      }
+      return c.fase === 'iniciando'
+        ? 'A recarga está começando. O botão "Encerrar recarga" aparece aqui no totem assim que a energia for liberada.'
+        : 'Toque em "Encerrar recarga" aqui no totem. Eu fecho a conta e mostro o QR do Pix.';
     },
   },
   {
@@ -246,8 +257,8 @@ const INTENCOES: Intencao[] = [
     id: 'seguranca',
     termos: ['seguro', 'seguranca', 'risco', 'chuva', 'choque', 'estraga', 'danifica'],
     responder: () =>
-      'O carregador só libera a energia depois de se comunicar com o carro e tem proteções elétricas ' +
-      '(fuga de corrente, sobrecorrente e temperatura). Se algo sair do esperado, a recarga é interrompida.',
+      'O carregador só libera a energia depois de se comunicar com o carro. ' +
+      'Se notar algo estranho no cabo ou na vaga, não use e chame um atendente da loja.',
   },
   {
     id: 'sair',

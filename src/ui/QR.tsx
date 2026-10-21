@@ -22,7 +22,13 @@ export function QR({ texto, tamanho = 180 }: { texto: string; tamanho?: number }
 function origemPublica(): string {
   const configurada = (import.meta.env.VITE_URL_PUBLICA as string | undefined)?.trim();
   if (configurada) {
-    try { return new URL(configurada).origin; } catch { /* valor inválido: usa a origem do navegador */ }
+    // sem http:// o navegador devolve origem 'null' e o QR sairia quebrado: avisa e usa a do navegador
+    const comProtocolo = /^https?:\/\//i.test(configurada) ? configurada : `http://${configurada}`;
+    try {
+      const origem = new URL(comProtocolo).origin;
+      if (origem && origem !== 'null') return origem;
+    } catch { /* inválido: cai na origem do navegador */ }
+    console.warn('VITE_URL_PUBLICA inválida (use http://IP:5191):', configurada);
   }
   return window.location.origin;
 }

@@ -221,6 +221,14 @@ export function validarPrecoBase(valor: number, regiao: Regiao): ValidacaoPreco 
       minimo, sugerido,
     };
   }
+  // vírgula no lugar errado ou zero a mais: o teto acompanharia a base errada
+  if (valor > sugerido * 2) {
+    return {
+      valido: false,
+      erro: `${tarifaKWh(valor)} é mais que o dobro do sugerido para ${regiao.cidade} (${tarifaKWh(sugerido)}). Confira a vírgula.`,
+      minimo, sugerido,
+    };
+  }
   return { valido: true, minimo, sugerido };
 }
 
@@ -306,7 +314,8 @@ function compor(
   if (comProxima) {
     for (let hh = h + 1; hh <= 23; hh++) {
       const c = compor(ponto, regiao, hh, ocupacao, ctx, false);
-      if (Math.abs(c.precoFinalKWh - preco) >= 0.01) {
+      // mudança de verdade: troca de faixa ou pelo menos 2% (o centavo do sol não conta como aviso)
+      if (c.faixa !== faixa || Math.abs(c.precoFinalKWh - preco) >= Math.max(0.02 * preco, 0.05)) {
         proxima = { hora: hh, precoKWh: c.precoFinalKWh, faixa: c.faixa ?? 'NORMAL' };
         break;
       }

@@ -34,7 +34,7 @@ export type SituacaoNoTotem =
 
 /** palavra que aparece no cartão da vaga (o estado nunca é só cor) */
 export const ROTULO_VAGA: Record<SituacaoNoTotem, string> = {
-  aberta: 'Aguardando leitura do QR',
+  aberta: 'Aguardando QR',
   reconhecendo: 'Carro detectado',
   reconhecendoFalhou: 'Não iniciou',
   iniciando: 'Iniciando',
@@ -100,7 +100,7 @@ export interface EntradaTotem {
   semInternet?: boolean;
 }
 
-export interface Aviso { id: 'semInternet' | 'semSinal'; texto: string }
+export interface Aviso { id: 'semInternet' | 'semSinal' | 'outraVaga'; texto: string }
 
 export interface ResultadoTotem {
   tela: NomeTela;
@@ -216,7 +216,12 @@ export function telaDoTotem(e: EntradaTotem): ResultadoTotem {
   // foco: escolha manual (se ainda vale) ou a vaga de maior prioridade a cada render
   const escolhaAtiva = escolhaValida(e.escolha, vagas, agora);
   const escolhida = escolhaAtiva ? vagas.find((v) => v.id === e.escolha!.vagaId) : undefined;
-  const foco = escolhida ?? vagas.reduce<VagaVista | undefined>((m, v) => (!m || v.nivel < m.nivel ? v : m), undefined);
+  // empate de prioridade (ex.: duas vagas aguardando QR): vence a sessão mais recente
+  const maisRecente = (a: VagaVista, b: VagaVista) => (b.sessao?.inicio ?? '').localeCompare(a.sessao?.inicio ?? '') < 0;
+  const foco = escolhida ?? vagas.reduce<VagaVista | undefined>(
+    (m, v) => (!m || v.nivel < m.nivel || (v.nivel === m.nivel && maisRecente(v, m)) ? v : m), undefined);
+  const outraAberta = vagas.find((v) => v.situacao === 'aberta' && v.id !== foco?.id);
+  if (outraAberta) avisos.push({ id: 'outraVaga', texto: `A ${outraAberta.apelido} também aguarda a leitura do QR — toque no cartão da vaga` });
 
   const vagasLivres = vagas.filter((v) => v.situacao === 'livre').length;
   const status = ponto ? statusOperacional(ponto) : 'ATIVO';

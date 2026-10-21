@@ -5,7 +5,7 @@ import {
 import { useApp } from '../../app/estado';
 import {
   cobrancasDoPonto, noMesAtual, kpisDoPonto, obterSessao, obterMotorista, economiaDoPonto,
-  tarifaAtual, obterPonto, regiaoDoPonto, carregadoresDoPonto, pontoAtivo,
+  tarifaAtual, obterPonto, regiaoDoPonto, carregadoresDoPonto, pontoAtivo, resumoDoPonto,
 } from '../../domain/db';
 import { cent, curvaDoDia, decomporPreco, type FaixaTarifa } from '../../domain/engine/tarifa';
 import { REGRAS, TARIFA } from '../../domain/catalogo';
@@ -67,7 +67,8 @@ export default function Financeiro() {
   );
 
   // a mensalidade da plataforma sai do líquido da recarga (mesma conta do KPI): a pizza soma o faturamento
-  const plataforma = operando ? REGRAS.plataformaMes : 0;
+  // proporcional aos dias do mês em que o ponto operou: o mesmo valor que o KPI Líquido desconta
+  const plataforma = operando ? cent(resumoDoPonto(pontoId, 'mes').plataforma) : 0;
   const faltaPlataforma = Math.max(0, cent(plataforma - totais.liquido));
   const pizza = [
     { nome: 'Fica com o comércio', valor: Math.max(0, cent(totais.liquido - plataforma)), cor: CHART.serie2 },
@@ -229,7 +230,7 @@ export default function Financeiro() {
               </ul>
               {faltaPlataforma > 0 && (
                 <Nota titulo="Mensalidade ainda não coberta" tom="amber">
-                  A recarga do mês ainda não cobre a mensalidade da plataforma ({brl(plataforma)}): faltam {brl(faltaPlataforma)}.
+                  A recarga do mês ainda não cobre a parte da mensalidade da plataforma até hoje ({brl(plataforma)} de {brl(REGRAS.plataformaMes)}): faltam {brl(faltaPlataforma)}.
                 </Nota>
               )}
             </div>

@@ -55,8 +55,8 @@ export function parteEspera(d: DadosTela): Partes {
           <span className="tk-rotulo">Vagas livres</span>
           <div className="tk-vagas-valor">{d.vagasLivres} de {d.vagas.length}</div>
           <div className="tk-nota">até {num(potencia)} kW · {conector}</div>
-          {d.solar != null && (
-            <div className="tk-solar"><Ic nome="sol" tamanho={32} /><span>{pct(d.solar)} da energia do ponto vem do sol</span></div>
+          {d.solar != null && d.solar > 0 && (
+            <div className="tk-solar"><Ic nome="sol" tamanho={32} /><span>Em um dia típico, {pct(d.solar)} da energia do ponto vem do sol e da bateria GoodWe</span></div>
           )}
         </div>
         {motivos.length > 0 && <ul className="tk-motivos">{motivos.map((m) => <li key={m}>{m}</li>)}</ul>}

@@ -22,7 +22,8 @@ const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
 
 /** Faixas de uso da entrada: normal até 85%, atenção de 85 a 92%, crítico acima de 92% (a margem de segurança). */
 function faixaDaEntrada(u: number) {
-  if (u > 0.92) return { tom: 'neg' as const, rotulo: 'Crítico', ico: 'alerta' as const };
+  // o motor segura a entrada em 92%: só passa disso por arredondamento das potências, então há folga
+  if (u > 0.925) return { tom: 'neg' as const, rotulo: 'Crítico', ico: 'alerta' as const };
   if (u >= 0.85) return { tom: 'warn' as const, rotulo: 'Atenção', ico: 'relogio' as const };
   return { tom: 'pos' as const, rotulo: 'Normal', ico: 'check' as const };
 }

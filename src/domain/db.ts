@@ -166,7 +166,8 @@ export const sessaoDaVaga = (carregadorId: string): Sessao | undefined => {
 };
 
 /** o agente da vaga manda sinal a cada 20 s; sem sinal há mais de 90 s, a vaga está fora do ar */
-export const semSinal = (c: Carregador) => Date.now() - new Date(c.ultimoHeartbeat).getTime() > 90_000;
+// sem banco (base local) ninguém renova o sinal: aí só OFFLINE conta como fora do ar
+export const semSinal = (c: Carregador) => !!supabase && Date.now() - new Date(c.ultimoHeartbeat).getTime() > 90_000;
 
 export const sessaoPorCodigo = (codigo: string): Sessao | undefined =>
   base.sessoes.find((s) => s.estado === 'ABERTA' && s.codigoVinculo?.toUpperCase() === codigo.trim().toUpperCase());
@@ -228,10 +229,8 @@ export const cobrancaDaSessao = (sessaoId: string): Cobranca | undefined =>
   base.cobrancas.find((c) => c.sessaoId === sessaoId);
 
 // ---------------------------------------------------------------- períodos
-const inicioDoMes = (): number => {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).getTime();
-};
+// mês de Brasília, não o do aparelho
+const inicioDoMes = (): number => Date.parse(`${diaLocal().slice(0, 8)}01T00:00:00-03:00`);
 
 export const noMesAtual = (isoDate: string): boolean =>
   new Date(isoDate).getTime() >= inicioDoMes();
@@ -421,9 +420,26 @@ const somar = (ags: (Agregado | undefined)[]): Agregado => {
   return t;
 };
 
-/** mensalidade da plataforma proporcional aos dias da janela (só de ponto em operação) */
-const plataformaProporcional = (operando: number, p: Periodo) =>
-  (operando * REGRAS.plataformaMes * p.diasDecorridos) / p.diasRef;
+const DIA_MS = 86_400_000;
+/** início do dia 'AAAA-MM-DD' em Brasília (UTC−3, sem horário de verão desde 2019) */
+const inicioDoDia = (chave: string) => Date.parse(`${chave}T00:00:00-03:00`);
+
+/** dias corridos da janela [início, início + dias) em que o ponto já operava (conta da inauguração) */
+function diasOperando(ponto: Ponto | undefined, inicio: string, dias: number): number {
+  if (!ponto || !pontoAtivo(ponto)) return 0;
+  const ini = inicioDoDia(inicio);
+  const desde = ponto.inauguradoEm ? Math.max(ini, new Date(ponto.inauguradoEm).getTime()) : ini;
+  return Math.max(0, Math.min(dias, (ini + dias * DIA_MS - desde) / DIA_MS));
+}
+
+/** duração da janela anterior: o mês anterior pode ser mais curto e aí entra inteiro */
+function diasDaAnterior(p: Periodo): number {
+  const n = Math.round((inicioDoDia(p.anterior.fim) - inicioDoDia(p.anterior.inicio)) / DIA_MS) + 1;
+  return p.anterior.cortarUltimoDia ? n - 1 + p.minutosHoje / 1440 : n;
+}
+
+/** mensalidade da plataforma pelos dias em que o ponto operou na janela */
+const plataformaDosDias = (dias: number, p: Periodo) => (REGRAS.plataformaMes * dias) / p.diasRef;
 
 export interface ResumoPeriodo {
   periodo: Periodo;
@@ -445,28 +461,28 @@ export interface ResumoPeriodo {
   semDados: boolean;
 }
 
-function montarResumo(p: Periodo, a: Agregado, antes: Agregado, vagas: number, operando: number): ResumoPeriodo {
-  const plat = plataformaProporcional(operando, p);
-  const usoDia = (g: Agregado) => (vagas > 0 ? g.horas / p.diasDecorridos / vagas : 0);
+function montarResumo(p: Periodo, a: Agregado, antes: Agregado, vagas: number, diasOp: number, diasOpAnt: number): ResumoPeriodo {
+  const plat = plataformaDosDias(diasOp, p);
+  const usoDia = (g: Agregado, dias: number) => (vagas > 0 && dias > 0 ? g.horas / dias / vagas : 0);
   const resultado = a.liquido - plat;
-  const resultadoAntes = antes.liquido - plat;
+  const resultadoAntes = antes.liquido - plataformaDosDias(diasOpAnt, p);
   return {
     periodo: p,
     sessoes: a.sessoes, energia: a.energia, receita: a.receita, custoEnergia: a.custoEnergia,
     royalties: a.royalties, gateway: a.gateway,
     liquidoBruto: a.liquido, plataforma: plat, resultado,
     ticketMedio: a.sessoes ? a.receita / a.sessoes : 0,
-    horas: a.horas, vagas, horasUsoDia: usoDia(a),
+    horas: a.horas, vagas, horasUsoDia: usoDia(a, diasOp),
     anterior: {
       sessoes: antes.sessoes, energia: antes.energia, receita: antes.receita,
-      resultado: resultadoAntes, horasUsoDia: usoDia(antes),
+      resultado: resultadoAntes, horasUsoDia: usoDia(antes, diasOpAnt),
     },
     variacao: {
       sessoes: variacao(a.sessoes, antes.sessoes),
       energia: variacao(a.energia, antes.energia),
       receita: variacao(a.receita, antes.receita),
       resultado: resultadoAntes > 0 ? variacao(resultado, resultadoAntes) : null,
-      horasUsoDia: variacao(usoDia(a), usoDia(antes)),
+      horasUsoDia: variacao(usoDia(a, diasOp), usoDia(antes, diasOpAnt)),
     },
     semDados: a.sessoes === 0 && a.receita === 0,
   };
@@ -480,7 +496,8 @@ export function resumoDoPonto(pontoId: string, id: PeriodoId = 'mes'): ResumoPer
     const ponto = obterPonto(pontoId);
     return montarResumo(
       p, atual.get(pontoId) ?? novoAgregado(), antes.get(pontoId) ?? novoAgregado(),
-      carregadoresDoPonto(pontoId).length, ponto && pontoAtivo(ponto) ? 1 : 0,
+      carregadoresDoPonto(pontoId).length,
+      diasOperando(ponto, p.inicio, p.diasDecorridos), diasOperando(ponto, p.anterior.inicio, diasDaAnterior(p)),
     );
   });
 }
@@ -606,7 +623,7 @@ export function demandaDoPonto(pontoId: string) {
   const ponto = obterPonto(pontoId)!;
   const carregadores = carregadoresDoPonto(pontoId);
   const ativas = sessoesAtivas(pontoId);
-  const h = new Date().getHours();
+  const h = horaLocal();
   // o sol gerando no ponto alivia a entrada elétrica: o motor enxerga a carga líquida
   const cargaComercioKW = Math.max(0, cargaComercioNaHora(ponto, h) - geracaoSolarKW(ponto, h));
 
@@ -759,6 +776,11 @@ export function situacaoDaVaga(c: Carregador): SituacaoVaga {
         return { estado: 'PAGO', sessao: s, texto: 'Paga — o carro ainda está no cabo' };
     }
   }
+  // código venceu com o mesmo carro ainda no cabo: o motorista precisa reconectar para gerar outro
+  const ultima = base.sessoes.filter((x) => x.carregadorId === c.id).sort((a, b) => b.inicio.localeCompare(a.inicio))[0];
+  if (c.carro && ultima?.estado === 'EXPIRADA' && c.carro.sessaoId === ultima.id) {
+    return { estado: 'EXPIRADA', sessao: ultima, texto: 'Código vencido — desconecte e conecte o cabo de novo para gerar outro' };
+  }
   if (c.estado === 'OCUPADO' || c.carro) return { estado: 'OCUPADO', texto: 'Carro conectado — abrindo a recarga' };
   return { estado: 'DISPONIVEL', texto: 'Livre — pronta para receber um carro' };
 }
@@ -888,12 +910,11 @@ export interface PassoAtivacao {
 }
 
 /** Os passos do fluxograma entre a concessão e o ponto no mapa do motorista. */
-export function checklistAtivacao(pontoId: string): PassoAtivacao[] {
+/** totemPareado vem da tabela totens (src/data/totens.ts); undefined = ainda não consultado */
+export function checklistAtivacao(pontoId: string, totemPareado?: boolean): PassoAtivacao[] {
   const p = obterPonto(pontoId);
   if (!p) return [];
   const dadosOk = Boolean(p.nome && p.endereco && p.precoBaseKWh > 0 && p.limitePotenciaKW > 0);
-  // o pareamento do totem ainda não vem na base; quando vier como `totemPareadoEm`, o passo passa a se marcar sozinho
-  const registro = p as Ponto & { totemPareadoEm?: string | null };
   return [
     {
       id: 'dados', titulo: 'Dados do local e tarifa', feito: dadosOk,
@@ -902,7 +923,7 @@ export function checklistAtivacao(pontoId: string): PassoAtivacao[] {
     {
       id: 'totem', titulo: 'Parear o totem',
       detalhe: 'Abra o totem no aparelho do ponto: ele mostra um código de 6 dígitos. Digite-o em Meu ponto e totem.',
-      feito: 'totemPareadoEm' in registro ? Boolean(registro.totemPareadoEm) : undefined,
+      feito: totemPareado,
     },
     {
       id: 'ativar', titulo: 'Ativar o ponto', feito: statusDoPonto(p) === 'ATIVO',
@@ -1001,7 +1022,10 @@ export function resumoDaRede(id: PeriodoId = 'mes'): ResumoRede {
     const a = somar([...atual.values()]);
     const ant = somar([...antes.values()]);
     const horasOperando = somar(operando.map((x) => atual.get(x.id))).horas;
-    const plataforma = plataformaProporcional(operando.length, p);
+    const diasOp = operando.map((x) => diasOperando(x, p.inicio, p.diasDecorridos));
+    const plataforma = plataformaDosDias(diasOp.reduce((t, d) => t + d, 0), p);
+    // vaga-dias de verdade: ponto inaugurado no meio do mês não dilui o uso da rede
+    const vagaDias = operando.reduce((t, x, i) => t + base.carregadores.filter((c) => c.pontoId === x.id).length * diasOp[i], 0);
     const receitaGoodWe = a.royalties + plataforma;
     const mensal = a.royalties * (p.diasRef / p.diasDecorridos) + operando.length * REGRAS.plataformaMes;
     return {
@@ -1015,7 +1039,7 @@ export function resumoDaRede(id: PeriodoId = 'mes'): ResumoRede {
       plataforma, receitaGoodWe,
       receitaGoodWeMensal: mensal,
       projecaoAnual: mensal * 12,
-      horasUsoDia: vagas > 0 ? horasOperando / p.diasDecorridos / vagas : 0,
+      horasUsoDia: vagaDias > 0 ? horasOperando / vagaDias : 0,
       variacao: {
         receita: variacao(a.receita, ant.receita),
         energia: variacao(a.energia, ant.energia),
@@ -1222,7 +1246,7 @@ export function solarDoPonto(pontoId: string) {
   const regiao = regiaoDoPonto(ponto);
   const kpis = kpisDoPonto(pontoId);
   // potencia media dedicada a recarga ao longo do dia
-  const recargaMediaKW = kpis.energiaMesKWh / Math.max(1, new Date().getDate()) / 14;
+  const recargaMediaKW = kpis.energiaMesKWh / Math.max(1, Number(diaLocal().slice(8, 10))) / 14;
 
   const resumo = resumoSolar(ponto, regiao, recargaMediaKW);
 

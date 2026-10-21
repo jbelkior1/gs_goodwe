@@ -165,14 +165,14 @@ async function ciclo() {
         continue;
       }
       if (!vaga.carro) {                                     // cabo removido
-        if (s.estado === 'ABERTA') await q(sb.from('sessoes').update({ estado: 'EXPIRADA', codigoVinculo: null }).eq('id', s.id).eq('estado', 'ABERTA'));
+        if (s.estado === 'ABERTA') await q(sb.from('sessoes').update({ estado: 'EXPIRADA', codigoVinculo: null, fim: new Date().toISOString() }).eq('id', s.id).eq('estado', 'ABERTA'));
         else if (EM_CARGA.includes(s.estado)) { await fecharConta(s, ponto, 'cabo removido'); fechadas.add(s.id); }
         await q(sb.from('carregadores').update({ estado: 'DISPONIVEL', potenciaPermitidaKW: 0 }).eq('id', vaga.id));
         continue;
       }
       if (s.estado === 'ABERTA' && agora - new Date(s.inicio).getTime() > EXPIRA_MIN * 60000) {
         // o motorista pode ter confirmado bem na hora: só expira o que ainda está ABERTA
-        const expirou = await q<{ id: string }[]>(sb.from('sessoes').update({ estado: 'EXPIRADA', codigoVinculo: null }).eq('id', s.id).eq('estado', 'ABERTA').select('id'));
+        const expirou = await q<{ id: string }[]>(sb.from('sessoes').update({ estado: 'EXPIRADA', codigoVinculo: null, fim: new Date().toISOString() }).eq('id', s.id).eq('estado', 'ABERTA').select('id'));
         if (!expirou.length) continue;
         await q(sb.from('carregadores').update({ carro: null, estado: 'DISPONIVEL' }).eq('id', vaga.id));
         log(`código ${s.codigoVinculo} expirou`);
@@ -181,7 +181,8 @@ async function ciclo() {
       if (s.estado === 'FATURADO') {                         // pagou: o motorista desconecta alguns segundos depois
         const vista = pagasVistas.get(s.id) ?? agora;
         pagasVistas.set(s.id, vista);
-        if (agora - vista > 6000) {
+        // o motorista tira o cabo uns 20 s depois de pagar: dá tempo de o totem mostrar o recibo
+        if (agora - vista > 20000) {
           await q(sb.from('carregadores').update({ carro: null, estado: 'DISPONIVEL', potenciaPermitidaKW: 0 }).eq('id', vaga.id));
           pagasVistas.delete(s.id);
           log(`carro saiu de ${vaga.apelido} (${ponto.nome})`);

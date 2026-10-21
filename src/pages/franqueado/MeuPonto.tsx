@@ -7,7 +7,8 @@ import { ativarPonto, definirManutencao, salvarPonto } from '../../data/acoes';
 import { curvaDoDia, validarPrecoBase } from '../../domain/engine/tarifa';
 import { num, tarifaKWh } from '../../domain/formato';
 import { Card, KPI, Nota, Tabela, EstadoBadge } from '../../ui/kit';
-import { QR, linkDoApp } from '../../ui/QR';
+import { QR, linkDoApp, linkSoNesteAparelho } from '../../ui/QR';
+import { ParearTotem } from '../../ui/ParearTotem';
 
 type Aviso = { ok: boolean; texto: string } | null;
 
@@ -35,7 +36,8 @@ function PainelDoPonto({ ponto }: { ponto: Ponto }) {
   const status = ponto.status ?? (ponto.ativo ? 'ATIVO' : 'INSTALACAO');
   const operando = status === 'ATIVO';
   const tarifa = tarifaAtual(ponto.id);
-  const linkTotem = linkDoApp(`/totem?ponto=${ponto.id}&tela=cheia`);
+  // o aparelho novo abre o totem sem ponto, mostra um código de 6 números e é pareado aqui
+  const linkTotem = linkDoApp('/totem?tela=cheia');
 
   // validação ao vivo do preço base digitado
   const preco = lerPreco(precoTxt);
@@ -110,12 +112,26 @@ function PainelDoPonto({ ponto }: { ponto: Ponto }) {
             {msg && <span className="tiny" role={msg.ok ? undefined : 'alert'} style={{ color: msg.ok ? 'var(--k-ok)' : 'var(--k-red2)' }}>{msg.texto}</span>}
           </div>
         </Card>
-        <Card title="Totem do ponto" sub="Abra este endereço no tablet ou monitor do totem">
-          <div className="stack" style={{ alignItems: 'center' }}>
-            <QR texto={linkTotem} tamanho={150} />
-            <Link className="btn" to={`/totem?ponto=${ponto.id}&tela=vitrine`}>Abrir o totem aqui</Link>
-            <div className="tiny muted" style={{ wordBreak: 'break-all' }}>{linkTotem}</div>
-            {/* pareamento do totem */}
+        <Card title="Totem do ponto" sub="Parear o aparelho do totem com este ponto">
+          <div className="stack" style={{ gap: 12 }}>
+            <ol className="tiny" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+              <li>No tablet ou monitor do totem, abra o endereço do QR abaixo.</li>
+              <li>O totem mostra um código de 6 números.</li>
+              <li>Digite o código aqui para ligar o totem a este ponto.</li>
+            </ol>
+            <div className="row" style={{ gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+              <QR texto={linkTotem} tamanho={132} />
+              <div className="stack" style={{ gap: 6, minWidth: 0, flex: 1 }}>
+                <div className="tiny muted" style={{ wordBreak: 'break-all' }}>{linkTotem}</div>
+                {linkSoNesteAparelho() && (
+                  <div className="tiny" style={{ color: 'var(--k-warn, #ffb020)' }}>
+                    Este endereço só abre neste computador. Para outro aparelho, abra o app pelo IP da rede (npm run dev:rede) e defina VITE_URL_PUBLICA.
+                  </div>
+                )}
+                <Link className="btn" to={`/totem?ponto=${ponto.id}&tela=vitrine`}>Ver o totem deste ponto aqui</Link>
+              </div>
+            </div>
+            <ParearTotem pontoId={ponto.id} />
           </div>
         </Card>
       </div>

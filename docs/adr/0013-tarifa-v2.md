@@ -30,7 +30,7 @@ A tarifa v1 (`engine/tarifa.ts`) tinha problemas que apareceram ao revisar o flu
 - **Preço travado na cotação**: o simulador grava `tarifaAplicadaKWh` na sessão ABERTA (mesmo motor, hora local, ocupação com a própria vaga) e registra a composição no evento `SESSAO_COTADA`. A cotação vale `REGRAS.codigoValidadeMin` (10 min) a partir de `sessao.inicio`. `vincularSessao` e `iniciarVisitante` **usam o preço da sessão** dentro da validade, sem recalcular. Fora da validade, ou com preço nulo ou ≤ 0, recotam, e o app mostra o preço novo antes de confirmar. A tela envia o preço que mostrou (`precoEsperado`); se o preço de gravação for outro, a ação falha com "O preço mudou" e nada é gravado.
 - **Simulador**: tarifa nula ou ≤ 0 nunca vira FATURADO de graça; recota, grava o preço na sessão e registra `ERRO_TARIFA_INVALIDA`.
 - **Banco**: `check ("precoBaseKWh" > 0)` em `pontos` e `check ("tarifaAplicadaKWh" is null or "tarifaAplicadaKWh" > 0)` em `sessoes`, ambos `NOT VALID` (valem para linhas novas; o histórico não é reprovado).
-- **Migração do nível de preço**: `npm run tarifa:migrar` troca o preço base de cada ponto por cent(base × fator de energia antigo da região), uma vez por ponto (evento `TARIFA_V2_MIGRADA`), para manter o nível de preço que o franqueado já praticava.
+- **Migração do nível de preço**: não houve. Em 21/10/2026 a rede de demonstração foi recriada (10 pontos em São Paulo) já com preços da v2, então o script que aplicava o fator de energia antigo foi removido: rodá-lo sobre pontos da v2 subiria o preço indevidamente.
 - **Prioridade da demanda**: o bônus de quem paga mais passa a ser relativo à base do ponto (≥ base × 1,05), não um limiar fixo de R$ 2,00.
 
 ## Parâmetros
@@ -80,5 +80,5 @@ Constante `TARIFA` em `src/domain/catalogo.ts` (taxas em `REGRAS`).
 ## Itens de ação
 
 1. [x] Motor v2, preço travado, validação de base, migration e script de migração de nível.
-2. [ ] Aplicar `supabase/migrations/20261021120000_tarifa_v2.sql` e rodar `npm run tarifa:migrar` (primeiro com `-- --simular`).
+2. [x] Aplicar `supabase/migrations/20261021120000_tarifa_v2.sql` (aplicada em 21/10/2026; a rede foi recriada na v2, sem migração de preço).
 3. [ ] Revisão tributária (ICMS) e da premissa do crédito solar.
