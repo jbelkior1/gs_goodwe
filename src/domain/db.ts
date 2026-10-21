@@ -53,15 +53,46 @@ const TABELAS = {
   sessoes: 'sessoes', telemetria: 'telemetria', cobrancas: 'cobrancas', homologacoes: 'homologacoes',
 } as const;
 
-export async function carregarBase(): Promise<'banco' | 'local'> {
+/**
+ * Quanto histórico de sessões e cobranças cada aparelho baixa ao abrir (o banco guarda tudo).
+ * A conta mais longa dos painéis é "30 dias contra os 30 anteriores" (ou o mês contra o mês anterior):
+ * olha até ~61 dias para trás. Totem e celular em tela cheia só mostram o que está acontecendo:
+ * baixam 2 dias, mais o que ainda está em aberto, e abrem bem mais rápido.
+ */
+const DIAS_HISTORICO = 62;
+const DIAS_QUIOSQUE = 2;
+let janelaDias = DIAS_HISTORICO;
+/** a base já tem os 62 dias (só vira true quando uma releitura com a janela longa dá certo) */
+let historicoCompleto = true;
+/** pedido de histórico esperando: uma releitura em andamento ou uma nova tentativa depois de falhar */
+let pedirHistorico: (() => void) | null = null;
+
+export async function carregarBase(opcoes: { quiosque?: boolean } = {}): Promise<'banco' | 'local'> {
   if (!supabase) {
     Object.assign(base, gerarBase());
     return 'local';
   }
+  janelaDias = opcoes.quiosque ? DIAS_QUIOSQUE : DIAS_HISTORICO;
+  historicoCompleto = !opcoes.quiosque;
   // assina antes de ler: o que mudar durante a leitura fica na fila e é aplicado depois
   assinarTempoReal();
   await reler();
   return 'banco';
+}
+
+/** Saiu do quiosque para uma tela com relatórios (ex.: "Sair da tela cheia"): baixa o histórico que faltava. */
+export function garantirHistorico() {
+  if (!supabase || historicoCompleto || pedirHistorico) return;
+  janelaDias = DIAS_HISTORICO;
+  const tentar = () => {
+    if (relendo) return; // a releitura em andamento usou a janela curta: chama de novo quando terminar
+    pedirHistorico = null;
+    reler()
+      .then(() => { historicoCompleto = true; })
+      .catch(() => { pedirHistorico = tentar; setTimeout(() => pedirHistorico?.(), 15_000); });
+  };
+  pedirHistorico = tentar;
+  tentar();
 }
 
 type Chave = (typeof TABELAS)[keyof typeof TABELAS];
@@ -76,6 +107,7 @@ async function reler() {
     relendo = false;
     fila.splice(0).forEach(([chave, p]) => aplicar(chave, p));
     avisarMudanca();
+    pedirHistorico?.();
   }
 }
 
@@ -90,16 +122,20 @@ function aplicar(chave: Chave, p: any) {
   }
 }
 
+/** sessão que ainda pode mudar de tela (do QR ao Pix): entra sempre, mesmo fora da janela */
+const SESSAO_EM_ABERTO = 'ABERTA,AUTENTICADO,CARREGANDO,PAUSADO,ENCERRANDO,CONCLUIDO';
+
 async function buscarBase() {
   const desde = new Date(Date.now() - 6 * 3600_000).toISOString();
+  const desdeDia = new Date(Date.now() - janelaDias * 86_400_000).toISOString().slice(0, 10);
   const [franqueados, pontos, carregadores, motoristas, sessoes, telemetria, cobrancas, homologacoes] = await Promise.all([
     buscarTudo<BaseDados['franqueados'][number]>('franqueados'),
     buscarTudo<Ponto>('pontos'),
     buscarTudo<Carregador>('carregadores'),
     buscarTudo<Motorista>('motoristas'),
-    buscarTudo<Sessao>('sessoes'),
+    buscarTudo<Sessao>('sessoes', (q) => q.or(`inicio.gte.${desdeDia},estado.in.(${SESSAO_EM_ABERTO})`)),
     buscarTudo<BaseDados['telemetria'][number]>('telemetria', (q) => q.gte('ts', desde)),
-    buscarTudo<Cobranca>('cobrancas'),
+    buscarTudo<Cobranca>('cobrancas', (q) => q.or(`criadaEm.gte.${desdeDia},status.eq.PENDENTE`)),
     buscarTudo<BaseDados['homologacoes'][number]>('homologacoes'),
   ]);
   return { franqueados, pontos, carregadores, motoristas, sessoes, telemetria, cobrancas, homologacoes,
@@ -179,6 +215,25 @@ export const sessaoDoMotorista = (motoristaId?: string | null): Sessao | undefin
         .filter((s) => s.motoristaId === motoristaId && ['AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO', 'CONCLUIDO'].includes(s.estado))
         .sort((a, b) => b.inicio.localeCompare(a.inicio))[0]
     : undefined;
+
+/**
+ * O que a tela "Minha recarga" mostra sem id na rota: a recarga em andamento ou, logo depois do Pix,
+ * a que acabou de ser paga (para o recibo não sumir no instante do pagamento). `pontoId` restringe
+ * a um ponto (o celular do Palco segue só o ponto da demonstração).
+ */
+export const sessaoRecenteDoMotorista = (motoristaId?: string | null, pontoId?: string | null, reciboMs = 15 * 60_000): Sessao | undefined => {
+  if (!motoristaId) return undefined;
+  const minhas = base.sessoes
+    .filter((s) => s.motoristaId === motoristaId && (!pontoId || s.pontoId === pontoId))
+    .sort((a, b) => b.inicio.localeCompare(a.inicio));
+  const ativa = minhas.find((s) => ['AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO', 'CONCLUIDO'].includes(s.estado));
+  if (ativa) return ativa;
+  const ultima = minhas[0];
+  if (ultima?.estado !== 'FATURADO') return undefined;
+  // conta a partir do pagamento (o Pix pode ser pago minutos depois do fim da carga)
+  const pagaEm = base.cobrancas.find((c) => c.sessaoId === ultima.id)?.pagaEm ?? ultima.fim;
+  return pagaEm && Date.now() - new Date(pagaEm).getTime() < reciboMs ? ultima : undefined;
+};
 
 export const obterRegiao = (id: string): Regiao =>
   REGIOES.find((r) => r.id === id) ?? REGIOES[0];

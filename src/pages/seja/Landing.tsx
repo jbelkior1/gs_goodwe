@@ -234,9 +234,9 @@ export function Formatos({ aoEscolher }: { aoEscolher: (f: FormatoFranquia) => v
             <tr><th scope="row">Vagas com carregador</th>{FORMATOS_LISTA.map((f) => <td key={f}>{num(FORMATOS[f].carregadores)}</td>)}</tr>
             <tr><th scope="row">Potência por vaga</th>{FORMATOS_LISTA.map((f) => <td key={f}>{kw(MODELOS_CARREGADOR[FORMATOS[f].modelo].potenciaKW)}</td>)}</tr>
             <tr><th scope="row">Entrada elétrica mínima</th>{FORMATOS_LISTA.map((f) => <td key={f}>{kw(cargaNecessariaKW(f))}</td>)}</tr>
-            <tr><th scope="row">Investimento</th>{FORMATOS_LISTA.map((f) => <td key={f}>{brl(FORMATOS[f].capex)}</td>)}</tr>
-            <tr><th scope="row">Taxa de franquia</th>{FORMATOS_LISTA.map((f) => <td key={f}>{brl(FORMATOS[f].taxaFranquia)}</td>)}</tr>
-            <tr><th scope="row">Mensalidade da plataforma</th>{FORMATOS_LISTA.map((f) => <td key={f}>{brl(REGRAS.plataformaMes)}</td>)}</tr>
+            <tr><th scope="row">Investimento sugerido</th>{FORMATOS_LISTA.map((f) => <td key={f}>{brl(FORMATOS[f].capex)}</td>)}</tr>
+            <tr><th scope="row">Taxa de franquia sugerida</th>{FORMATOS_LISTA.map((f) => <td key={f}>{brl(FORMATOS[f].taxaFranquia)}</td>)}</tr>
+            <tr><th scope="row">Mensalidade sugerida</th>{FORMATOS_LISTA.map((f) => <td key={f}>{brl(REGRAS.plataformaMes)}</td>)}</tr>
             <tr><th scope="row">Indicado para</th>{FORMATOS_LISTA.map((f) => <td key={f} className="lp-para">{PARA_QUEM[f]}</td>)}</tr>
             <tr>
               <td />
@@ -256,23 +256,23 @@ export function Formatos({ aoEscolher }: { aoEscolher: (f: FormatoFranquia) => v
               <div><dt>Vagas com carregador</dt><dd>{num(FORMATOS[f].carregadores)}</dd></div>
               <div><dt>Potência por vaga</dt><dd>{kw(MODELOS_CARREGADOR[FORMATOS[f].modelo].potenciaKW)}</dd></div>
               <div><dt>Entrada elétrica mínima</dt><dd>{kw(cargaNecessariaKW(f))}</dd></div>
-              <div><dt>Investimento</dt><dd>{brl(FORMATOS[f].capex)}</dd></div>
-              <div><dt>Taxa de franquia</dt><dd>{brl(FORMATOS[f].taxaFranquia)}</dd></div>
-              <div><dt>Mensalidade da plataforma</dt><dd>{brl(REGRAS.plataformaMes)}</dd></div>
+              <div><dt>Investimento sugerido</dt><dd>{brl(FORMATOS[f].capex)}</dd></div>
+              <div><dt>Taxa de franquia sugerida</dt><dd>{brl(FORMATOS[f].taxaFranquia)}</dd></div>
+              <div><dt>Mensalidade sugerida</dt><dd>{brl(REGRAS.plataformaMes)}</dd></div>
             </dl>
             <p>{PARA_QUEM[f]}</p>
             <button className="lp-btn lp-btn-contorno" onClick={() => aoEscolher(f)}>Simular o {f}</button>
           </div>
         ))}
       </div>
-      <p className="lp-nota">Valores de referência da rede. O valor final sai da vistoria, com o projeto elétrico do seu local.</p>
+      <p className="lp-nota">Preços sugeridos, sujeitos a ajuste. O valor final sai da vistoria, com o projeto elétrico do seu local.</p>
     </section>
   );
 }
 
 // ---------------------------------------------------------------- dúvidas
 const DUVIDAS: { p: string; r: string }[] = [
-  { p: 'Quanto custa para começar?', r: `Depende do formato: de ${brl(FORMATOS.Light.capex)} (Light, uma vaga) a ${brl(FORMATOS.Hub.capex)} (Hub, quatro vagas), mais a taxa de franquia. A tabela de formatos mostra os valores de referência; o valor final sai da vistoria.` },
+  { p: 'Quanto custa para começar?', r: `Depende do formato: de ${brl(FORMATOS.Light.capex)} (Light, uma vaga) a ${brl(FORMATOS.Hub.capex)} (Hub, quatro vagas), mais a taxa de franquia. A tabela de formatos mostra os preços sugeridos, sujeitos a ajuste; o valor final sai da vistoria.` },
   { p: 'Quem paga a energia das recargas?', r: 'A energia entra na conta de luz do comércio, como hoje. O custo dela já sai do valor de cada recarga antes de calcular o que fica para você.' },
   { p: 'Quanto fica para o comércio?', r: `Do valor de cada recarga saem a energia, ${pct(REGRAS.royaltyPct)} de royalty, ${pct(REGRAS.fundoPct)} de fundo de marketing e a taxa do Pix. O resto é seu, menos a mensalidade da plataforma de ${brl(REGRAS.plataformaMes)}. O que o cliente compra na loja não entra nessa conta.` },
   { p: 'A entrada elétrica da minha loja aguenta?', r: 'O controle de demanda divide a potência entre a loja e os carros e nunca passa do limite do disjuntor. Na vistoria, a GoodWe confere a entrada e indica se é preciso algum ajuste.' },

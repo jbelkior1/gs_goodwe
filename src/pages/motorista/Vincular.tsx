@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../../app/estado';
-import { carregadoresDoPonto, cotacaoDaSessao, obterMotorista, obterPonto, sessaoPorCodigo } from '../../domain/db';
+import { carregadoresDoPonto, cotacaoDaSessao, obterMotorista, obterPonto, sessaoDoMotorista, sessaoPorCodigo } from '../../domain/db';
 import { vincularSessao } from '../../data/acoes';
 import { ALFABETO_CODIGO, REGRAS, VEICULOS } from '../../domain/catalogo';
 import { horaMin, tarifaKWh } from '../../domain/formato';
@@ -22,6 +22,8 @@ export default function Vincular() {
   const nav = useNavigate();
   const { perfil, motoristaId } = useApp();
   const [codigo, setCodigo] = useState(() => limparCodigo(params.get('c') ?? ''));
+  // chegou pelo QR do totem (o link traz ?c=); se a pessoa mexe no campo, passa a ser código digitado
+  const [peloQR, setPeloQR] = useState(() => limparCodigo(params.get('c') ?? '').length === 4);
   const [cortou, setCortou] = useState(false);
   const [soc, setSoc] = useState('');
   const [limite, setLimite] = useState('');
@@ -44,20 +46,27 @@ export default function Vincular() {
   const ponto = sessao ? obterPonto(sessao.pontoId) : undefined;
   const vaga = sessao ? carregadoresDoPonto(sessao.pontoId).find((c) => c.id === sessao.carregadorId) : undefined;
   const cot = sessao && ponto ? cotacaoDaSessao(sessao) : undefined;
+  // uma recarga por vez: com outra em andamento (ou a pagar), não assume esta
+  const outraAtiva = (() => {
+    const a = sessaoDoMotorista(quemId);
+    return a && a.id !== sessao?.id && a.id !== confirmando?.id ? a : undefined;
+  })();
+  const pontoDaOutra = outraAtiva ? obterPonto(outraAtiva.pontoId) : undefined;
 
   const digitar = (valor: string) => {
     const limpo = limparCodigo(valor);
     setCortou(limpo.length < valor.trim().length && limpo.length < 4);
     setCodigo(limpo);
+    setPeloQR(false);
     setErro('');
   };
 
   const confirmar = async () => {
-    if (!sessao || !cot || !quemId) return;
+    if (!sessao || !cot || !quemId || outraAtiva) return;
     setErro(''); setOcupado(true); setConfirmando(sessao);
     try {
       const s = await vincularSessao(sessao, quemId, veiculoId,
-        soc ? Number(soc) : undefined, limite ? Number(limite) : undefined, cot.precoKWh);
+        soc ? Number(soc) : undefined, limite ? Number(limite) : undefined, cot.precoKWh, peloQR ? 'QR' : 'CODIGO');
       nav(`/motorista/recarga/${s.id}`);
     } catch (e) {
       setErro((e as Error).message);
@@ -83,7 +92,7 @@ export default function Vincular() {
           <div className="cod-ajuda">
             {cortou
               ? 'Esse caractere não existe no código. Ele não usa 0, O, 1, I, 5, S, 8, B, 2, Z, 6, G, Q nem L.'
-              : 'Sem 0, O, 1, I, 5, S, 8 ou B: o totem só usa letras e números que não se confundem.'}
+              : 'Sem 0, O, 1, I, 5, S, 8, B, 2, Z, 6, G, Q nem L: o totem só usa letras e números que não se confundem.'}
           </div>
         </div>
       </Card>
@@ -123,7 +132,13 @@ export default function Vincular() {
             )}
             <LinhasDoPreco linhas={cot.composicao.explicacao} />
 
-            {quemId ? (
+            {quemId && outraAtiva ? (
+              <Nota titulo="Você já tem uma recarga em andamento" tom="amber">
+                {outraAtiva.estado === 'CONCLUIDO' ? 'Falta pagar o Pix da recarga' : 'A recarga'} em {pontoDaOutra?.nome ?? 'outro ponto'} ainda não terminou.
+                Encerre {outraAtiva.estado === 'CONCLUIDO' ? 'e pague ' : ''}aquela antes de começar outra.{' '}
+                <Link to={`/motorista/recarga/${outraAtiva.id}`}>Ver minha recarga</Link>
+              </Nota>
+            ) : quemId ? (
               <>
                 <div className="sep" style={{ margin: '4px 0' }} />
                 <select id="veiculo" className="btn" value={veiculoId} onChange={(e) => { setVeiculoId(e.target.value); setMexeuNoCarro(true); }} aria-label="Seu carro">

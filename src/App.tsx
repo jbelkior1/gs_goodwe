@@ -8,6 +8,7 @@ import { GuiaDemo } from './ui/GuiaDemo';
 import { useApp } from './app/estado';
 import { bancoConfigurado } from './data/supabase';
 import { lerPontoGuardado } from './data/totens';
+import { garantirHistorico } from './domain/db';
 import Demo from './pages/demo/Demo';
 import { DemoGlobal } from './pages/demo/DemoGlobal';
 import Entrar from './pages/entrar/Entrar';
@@ -86,6 +87,17 @@ function TotemNaTela() {
     : <Totem />;
 }
 
+/** fora do quiosque (painéis, vitrine, franquia) as telas precisam do histórico inteiro da janela */
+function HistoricoFora() {
+  const { pathname, search } = useLocation();
+  const embutido = new URLSearchParams(search).get('embed') === '1';
+  const quiosque = embutido
+    || (pathname.startsWith('/totem') && telaCheia('totem', search))
+    || (pathname.startsWith('/motorista') && telaCheia('motorista', search));
+  useEffect(() => { if (!quiosque) garantirHistorico(); }, [quiosque]);
+  return null;
+}
+
 export default function App() {
   // lê o contexto para recriar as telas a cada atualização do banco em tempo real
   useApp();
@@ -93,6 +105,7 @@ export default function App() {
     <>
     {/* ?conta= e ?guia= da demonstração, em qualquer rota */}
     <DemoGlobal />
+    <HistoricoFora />
     <Routes>
       {/* porta de entrada: escolha do painel */}
       <Route path="/" element={<Portal />} />

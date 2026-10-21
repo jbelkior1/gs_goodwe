@@ -9,7 +9,7 @@ import {
 } from '../../domain/db';
 import { cent, curvaDoDia, decomporPreco, type FaixaTarifa } from '../../domain/engine/tarifa';
 import { REGRAS, TARIFA } from '../../domain/catalogo';
-import { brl, dataHora, delta, num, pct, tarifaKWh } from '../../domain/formato';
+import { brl, dataHora, delta, num, pct, plural, tarifaKWh } from '../../domain/formato';
 import { fimDeSemana, horaLocal } from '../../domain/tempo';
 import {
   Card, KPI, Tabela, EstadoBadge, Vazio, Nota, Badge, tipBRL,
@@ -17,6 +17,9 @@ import {
 } from '../../ui/kit';
 import { LinhasDoPreco } from '../motorista/ComoCarregar';
 import './financeiro.css';
+
+/** parte do faturamento: fatias pequenas com uma casa (o Pix de 1,5% não aparece como 1% ou 2%) */
+const pctParte = (f: number) => pct(f, f > 0 && f < 0.1 ? 1 : 0);
 
 /** cor e nome de cada faixa de horário: o mesmo vocabulário no gráfico, na legenda e na dica */
 const FAIXA: Record<FaixaTarifa, { nome: string; cor: string }> = {
@@ -224,7 +227,7 @@ export default function Financeiro() {
                   <li key={p.nome}>
                     <span className="fin-cor" style={{ background: p.cor }} />
                     <span>{p.nome}</span>
-                    <span className="val">{brl(p.valor)} <span className="muted">· {pct(totais.bruto ? p.valor / totais.bruto : 0)}</span></span>
+                    <span className="val">{brl(p.valor)} <span className="muted">· {pctParte(totais.bruto ? p.valor / totais.bruto : 0)}</span></span>
                   </li>
                 ))}
               </ul>
@@ -244,7 +247,7 @@ export default function Financeiro() {
               <td>
                 Margem do varejo incremental
                 <div className="tiny muted">
-                  {num(kpis.sessoesMes * REGRAS.conversaoLoja)} clientes entrando na loja ×{' '}
+                  {plural(kpis.sessoesMes, 'recarga', 'recargas')} × {pct(REGRAS.conversaoLoja)} que compram na loja ×{' '}
                   {brl(REGRAS.ticketVarejoIncremental)} × {pct(REGRAS.margemVarejo)} de margem
                 </div>
               </td>
@@ -268,12 +271,12 @@ export default function Financeiro() {
         </Card>
       </div>
 
-      <Card title="Cobranças" sub={falhas > 0 ? `${falhas} cobranças falharam no período` : 'Todas as cobranças do ponto'}>
+      <Card title="Cobranças" sub={falhas > 0 ? `${falhas} cobranças falharam no período` : 'Cobranças dos últimos dois meses e as que ainda estão a pagar'}>
         {cobrancas.length === 0 ? (
           <Vazio>{operando ? 'Nenhuma cobrança registrada.' : 'Sem cobranças: as recargas começam quando o ponto estiver ativo.'}</Vazio>
         ) : (
           <div className="scroll-y">
-            <Tabela cabecalho={['Data', 'Motorista', 'txid', '#Bruto', '#Energia', '#Royalty', '#Líquido', 'Status']}>
+            <Tabela cabecalho={['Data', 'Motorista', 'txid', '#Bruto', '#Energia', `#GoodWe (${pct(REGRAS.royaltyPct + REGRAS.fundoPct)})`, '#Pix', '#Líquido', 'Status']}>
               {cobrancas.slice(0, 120).map((c) => {
                 const s = obterSessao(c.sessaoId);
                 const m = s ? obterMotorista(s.motoristaId) : undefined;
@@ -285,6 +288,7 @@ export default function Financeiro() {
                     <td className="r num">{brl(c.valor)}</td>
                     <td className="r num muted">{brl(c.custoEnergia)}</td>
                     <td className="r num muted">{brl(cent(c.royaltyGoodWe + c.fundoMarketing))}</td>
+                    <td className="r num muted">{brl(c.gateway)}</td>
                     <td className="r num strong">{brl(c.liquidoLojista)}</td>
                     <td><EstadoBadge estado={c.status} /></td>
                   </tr>

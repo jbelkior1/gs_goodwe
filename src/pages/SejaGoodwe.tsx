@@ -295,8 +295,8 @@ export default function SejaGoodwe() {
                     <span className="sg-formato-lema">{LEMA[f]}</span>
                     <dl>
                       <div><dt>Vagas</dt><dd>{plural(c.carregadores, 'vaga', 'vagas')} de {kw(MODELOS_CARREGADOR[c.modelo].potenciaKW)}</dd></div>
-                      <div><dt>Investimento estimado</dt><dd>{brl(c.capex)}</dd></div>
-                      <div><dt>Taxa de franquia</dt><dd>{brl(c.taxaFranquia)}</dd></div>
+                      <div><dt>Investimento sugerido</dt><dd>{brl(c.capex)}</dd></div>
+                      <div><dt>Taxa de franquia sugerida</dt><dd>{brl(c.taxaFranquia)}</dd></div>
                       <div><dt>Entrada elétrica</dt><dd>{kw(cargaNecessariaKW(f))}</dd></div>
                     </dl>
                   </label>

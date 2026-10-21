@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from './estado';
 import { comTela, telaDoNavegador } from './tela';
-import { sessaoDoMotorista } from '../domain/db';
+import { sessaoDoMotorista, sessaoRecenteDoMotorista } from '../domain/db';
 import { GuiaDemo } from '../ui/GuiaDemo';
 import { Icone, type NomeIcone } from '../ui/icones';
 import { EMBUTIDO, SEGUIR_RECARGA, useGuiaVisivel } from '../pages/demo/ambienteDemo';
@@ -32,8 +32,12 @@ export default function AppMotorista() {
   const titulo = TITULOS[pathname] ?? (pathname.startsWith('/motorista/recarga') ? 'Minha recarga' : 'Ponto W');
 
   // celular do Palco (?seguir=1): vai para "Minha recarga" quando a recarga existe e volta ao mapa quando acaba
+  // segue só o ponto da demonstração (?ponto=) e deixa o recibo na tela por 1 minuto depois do Pix
   const emRecarga = pathname.startsWith('/motorista/recarga');
-  const temRecarga = !!ativa;
+  const pontoSeguido = SEGUIR_RECARGA ? new URLSearchParams(search).get('ponto') : null;
+  const temRecarga = SEGUIR_RECARGA
+    ? !!sessaoRecenteDoMotorista(perfil?.motoristaId ?? motoristaId, pontoSeguido, 60_000)
+    : !!ativa;
   useEffect(() => {
     if (!SEGUIR_RECARGA) return;
     if (temRecarga && !emRecarga) navigate({ pathname: '/motorista/recarga', search }, { replace: true });

@@ -147,7 +147,8 @@ export type EstadoSessao =
   | 'EXPIRADA';
 
 /** VISITANTE: iniciada no totem, sem app (quem encerra e paga é o próprio totem) */
-export type MeioAutorizacao = 'RFID' | 'APP' | 'QR' | 'VISITANTE';
+/** QR: leu o QR do totem · CODIGO: digitou as 4 letras no app · VISITANTE: começou no totem, sem conta */
+export type MeioAutorizacao = 'RFID' | 'APP' | 'QR' | 'CODIGO' | 'VISITANTE';
 
 export interface Sessao {
   id: string;

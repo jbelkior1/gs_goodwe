@@ -12,7 +12,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { calcularDemanda, cargaComercioNaHora } from '../src/domain/engine/demanda';
-import { calcularTarifa, cent, cotarPonto, repartir, gerarTxid } from '../src/domain/engine/tarifa';
+import { calcularTarifa, cent, centAbaixo, cotarPonto, repartir, gerarTxid } from '../src/domain/engine/tarifa';
 import { geracaoSolarKW } from '../src/domain/engine/solar';
 import { ALFABETO_CODIGO, REGIOES, REGRAS, VEICULOS } from '../src/domain/catalogo';
 import { fimDeSemana, horaLocal } from '../src/domain/tempo';
@@ -205,8 +205,6 @@ async function ciclo() {
       const a = d.alocacoes.find((x) => x.sessaoId === s.id);
       const pot = a?.potenciaConcedidaKW ?? 0;
       const v = veiculo(s.veiculoId);
-      const energia = s.energiaKWh + pot * dtH;
-      const soc = Math.min(100, s.socAtual + ((pot * dtH * 0.92) / v.capacidadeKWh) * 100);
       let preco = s.tarifaAplicadaKWh;
       if (!(preco > 0)) {                                    // preço nulo ou <= 0 nunca vira recarga de graça: recota e avisa
         preco = cotar(ponto, doPonto, sessoes, s.carregadorId).precoFinalKWh;
@@ -214,6 +212,12 @@ async function ciclo() {
         await registrarErro('ERRO_TARIFA_INVALIDA', s, { gravada: s.tarifaAplicadaKWh ?? null, recotada: preco });
         s.tarifaAplicadaKWh = preco;
       }
+      // limite em R$: o último passo entrega só a energia que cabe nele (antes estourava até um passo inteiro)
+      const tetoKWh = s.limiteValor && s.limiteValor > 0 ? Math.floor((centAbaixo(s.limiteValor) / preco) * 1000) / 1000 : Infinity;
+      const energia = Math.min(s.energiaKWh + pot * dtH, Math.max(s.energiaKWh, tetoKWh));
+      const entregue = energia - s.energiaKWh;
+      const soc = Math.min(100, s.socAtual + ((entregue * 0.92) / v.capacidadeKWh) * 100);
+      const noLimite = energia >= tetoKWh;
       const custo = r2(energia * preco);
       const pausado = !!a?.pausado;
       const atualizado = {
@@ -229,7 +233,7 @@ async function ciclo() {
         amostras.push({ sessaoId: s.id, tensaoV: Number(tensao.toFixed(1)), correnteA: Number(((pot * 1000) / tensao).toFixed(1)),
           potenciaKW: atualizado.potenciaAtualKW, soc: atualizado.socAtual, energiaAcumKWh: atualizado.energiaKWh });
       }
-      const fechar = soc >= 99.5 ? 'bateria cheia' : s.limiteValor && custo >= s.limiteValor ? 'limite de valor' : null;
+      const fechar = soc >= 99.5 ? 'bateria cheia' : noLimite ? 'limite de valor' : null;
       if (fechar) await fecharConta({ ...s, ...atualizado } as Sessao, ponto, fechar);
     }
   }

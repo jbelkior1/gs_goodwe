@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import { useApp } from '../../app/estado';
 import {
   obterSessao, telemetriaDaSessao, obterPonto, obterVeiculo, obterMotorista, regiaoDoPonto,
-  sessaoDoMotorista, cobrancaDaSessao, carregadoresDoPonto,
+  sessaoRecenteDoMotorista, cobrancaDaSessao, carregadoresDoPonto,
 } from '../../domain/db';
 import { cent, repartir, gerarTxid, gerarPixCopiaECola } from '../../domain/engine/tarifa';
 import { REGRAS } from '../../domain/catalogo';
@@ -21,6 +21,10 @@ import { CenaCarro3D } from '../../ui/CenaCarro3D';
 import { duracaoTexto, minutosAte100 } from '../../domain/engine/totem';
 import { QR } from '../../ui/QR';
 import { ComoCarregar } from './ComoCarregar';
+
+const MEIO: Record<string, string> = {
+  QR: 'QR do totem', CODIGO: 'Código digitado', APP: 'App', RFID: 'Cartão RFID', VISITANTE: 'Totem, sem app',
+};
 
 /** Sem recarga para mostrar: explica de onde ela nasce (o cabo no totem) e leva ao código. */
 function SemRecarga({ aviso, codigo }: { aviso?: string; codigo?: string | null }) {
@@ -43,7 +47,11 @@ export default function Recarga() {
   const { perfil, motoristaId } = useApp();
   const [erro, setErro] = useState('');
   const [ocupado, setOcupado] = useState(false);
-  const sessao = sessaoId ? obterSessao(sessaoId) : sessaoDoMotorista(perfil?.motoristaId ?? motoristaId);
+  const [params] = useSearchParams();
+  // sem id: a recarga em andamento ou a recém-paga; com ?ponto= (celular do Palco), só desse ponto
+  const sessao = sessaoId
+    ? obterSessao(sessaoId)
+    : sessaoRecenteDoMotorista(perfil?.motoristaId ?? motoristaId, params.get('ponto'));
 
   if (!sessao) return <SemRecarga />;
   if (sessao.estado === 'EXPIRADA') return <SemRecarga aviso={`O código venceu: ele vale ${REGRAS.codigoValidadeMin} minutos depois que o cabo é conectado. Desconecte e conecte o cabo de novo para o totem gerar outro.`} />;
@@ -103,7 +111,7 @@ export default function Recarga() {
           <KPI label="Local" value={ponto.nome} sm foot={ponto.endereco} />
           <KPI label="Preço travado" value={precoTravado > 0 ? tarifaKWh(precoTravado) : '—'} sm accent="red"
                foot={sessao.limiteValor ? `Para sozinho em ${brl(sessao.limiteValor)}` : 'Confirmado no início — não muda até o fim'} />
-          <KPI label="Identificado por" value={sessao.autorizacao ?? 'QR'} sm foot={motorista?.nome ?? ''} />
+          <KPI label="Identificado por" value={MEIO[sessao.autorizacao] ?? 'QR do totem'} sm foot={motorista?.nome ?? ''} />
           {emCarga && sessao.estado !== 'ENCERRANDO' && (
             <button className="btn primary" disabled={ocupado} style={{ justifyContent: 'center' }}
                     onClick={agir(() => encerrarSessao(sessao, 'app'))}>Encerrar recarga</button>

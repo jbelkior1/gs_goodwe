@@ -42,13 +42,13 @@ function precoDaSessao(sessao: Sessao, precoEsperado?: number) {
  * O motorista leu o QR: assume a sessão e a recarga começa (o simulador libera a vaga).
  * O preço é o cotado no totem e fica travado; só é refeito se a cotação venceu.
  */
-export async function vincularSessao(sessao: Sessao, motoristaId: string, veiculoId: string, socInformado?: number, limiteValor?: number, precoEsperado?: number) {
+export async function vincularSessao(sessao: Sessao, motoristaId: string, veiculoId: string, socInformado?: number, limiteValor?: number, precoEsperado?: number, meio: 'QR' | 'CODIGO' = 'QR') {
   if (socInformado != null && (!Number.isFinite(socInformado) || socInformado < 0 || socInformado > 100)) {
     throw new Error('Informe a bateria entre 0 e 100%.');
   }
   const cot = precoDaSessao(sessao, precoEsperado);
   const linhas = await ok<Sessao[]>(exigirBanco().from('sessoes').update({
-    estado: 'AUTENTICADO', motoristaId, veiculoId, autorizacao: 'QR', codigoVinculo: null,
+    estado: 'AUTENTICADO', motoristaId, veiculoId, autorizacao: meio, codigoVinculo: null,
     ...(cot.travada ? {} : { tarifaAplicadaKWh: cot.precoKWh }),
     ...(socInformado != null ? { socInicial: socInformado, socAtual: socInformado } : {}),
     limiteValor: limiteValor && limiteValor > 0 ? limiteValor : null,
