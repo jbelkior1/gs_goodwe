@@ -21,10 +21,16 @@ export default function Vincular() {
   const { pathname, search } = useLocation();
   const nav = useNavigate();
   const { perfil, motoristaId } = useApp();
-  const [codigo, setCodigo] = useState(() => limparCodigo(params.get('c') ?? ''));
+  // o campo guarda o que foi digitado (até 8 caracteres) e o código sai dele: assim dá para perceber
+  // quando a pessoa digita os 6 números do pareamento do totem, mesmo tecla por tecla
+  const [digitado, setDigitado] = useState(() => limparCodigo(params.get('c') ?? ''));
+  const codigo = limparCodigo(digitado);
   // chegou pelo QR do totem (o link traz ?c=); se a pessoa mexe no campo, passa a ser código digitado
   const [peloQR, setPeloQR] = useState(() => limparCodigo(params.get('c') ?? '').length === 4);
-  const [cortou, setCortou] = useState(false);
+  const semEspaco = digitado.replace(/\s/g, '');
+  // 6 números é o código de pareamento do totem novo (do franqueado), não o da recarga
+  const pareceParear = /^\d{5,6}$/.test(semEspaco);
+  const cortou = !pareceParear && semEspaco.length > 0 && limparCodigo(semEspaco).length < Math.min(semEspaco.length, 4);
   const [soc, setSoc] = useState('');
   const [limite, setLimite] = useState('');
   const [erro, setErro] = useState('');
@@ -54,9 +60,7 @@ export default function Vincular() {
   const pontoDaOutra = outraAtiva ? obterPonto(outraAtiva.pontoId) : undefined;
 
   const digitar = (valor: string) => {
-    const limpo = limparCodigo(valor);
-    setCortou(limpo.length < valor.trim().length && limpo.length < 4);
-    setCodigo(limpo);
+    setDigitado(valor.toUpperCase().slice(0, 8));
     setPeloQR(false);
     setErro('');
   };
@@ -85,12 +89,14 @@ export default function Vincular() {
     <div className="stack">
       <Card title="Código da recarga" sub="4 letras que o totem mostra depois que o cabo é conectado">
         <div className="stack" style={{ gap: 8 }}>
-          <input id="codigo" className="btn cod-campo" value={codigo} maxLength={8} placeholder="7K4W"
+          <input id="codigo" className="btn cod-campo" value={digitado} maxLength={8} placeholder="7K4W"
                  inputMode="text" autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck={false}
                  enterKeyHint="go" aria-label="Código de 4 letras do totem"
                  onChange={(e) => digitar(e.target.value)} />
           <div className="cod-ajuda">
-            {cortou
+            {pareceParear
+              ? 'Esse é o código de 6 números do totem novo: ele é do franqueado, para ligar o totem ao ponto em Meu ponto e totem. O código da recarga tem 4 letras e aparece no totem depois que o cabo é conectado.'
+              : cortou
               ? 'Esse caractere não existe no código. Ele não usa 0, O, 1, I, 5, S, 8, B, 2, Z, 6, G, Q nem L.'
               : 'Sem 0, O, 1, I, 5, S, 8, B, 2, Z, 6, G, Q nem L: o totem só usa letras e números que não se confundem.'}
           </div>

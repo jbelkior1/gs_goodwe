@@ -42,6 +42,7 @@ export function ParearTotem({ pontoId }: { pontoId: string }) {
     <div className="stack" style={{ gap: 10, width: '100%' }}>
       <div className="tiny muted">
         No aparelho do totem, abra o endereço do totem: ele mostra um código de 6 números. Digite o código aqui.
+        Não confunda com o código da recarga, de 4 letras, que o motorista digita no app.
       </div>
       <form className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }} onSubmit={parear}>
         <input
