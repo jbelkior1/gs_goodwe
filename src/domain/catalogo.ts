@@ -109,6 +109,8 @@ export const REGRAS = {
   ticketVarejoIncremental: 28,
   margemVarejo: 0.35,
   conversaoLoja: 0.5,
+  /** validade do código do QR e da cotação de preço mostrada no totem (min) */
+  codigoValidadeMin: 10,
 } as const;
 
 /**

@@ -19,6 +19,15 @@ export interface ComposicaoTarifa {
   margemKWh: number;
   margemPct: number;
   explicacao: string[];
+  /** faixa publicada da hora (vale/normal/pico) */
+  faixa?: 'VALE' | 'NORMAL' | 'PICO';
+  /** próxima mudança de preço no dia, para o totem e o app avisarem antes */
+  proxima?: { hora: number; precoKWh: number; faixa: 'VALE' | 'NORMAL' | 'PICO' };
+  /** limites aplicados (nunca vende abaixo do custo; teto protege o motorista) */
+  pisoKWh?: number;
+  tetoKWh?: number;
+  /** ponto que ainda não opera: preço só de prévia */
+  previa?: boolean;
 }
 
 /**
