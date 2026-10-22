@@ -6,9 +6,9 @@ import { calcularDemanda, cargaComercioNaHora } from './engine/demanda';
 import { cotarPonto, medirOcupacao, type ComposicaoTarifa } from './engine/tarifa';
 import { preverDemanda, gerarRecomendacoes, resumoGerencial, detectarAnomalias, preverFinanceiro } from './engine/ia';
 import type { PrevisaoFinanceira } from './engine/ia';
-import { sessaoAtualDaVaga, sessaoNoTotem } from './engine/totem';
+import { contaSemCabo, sessaoAtualDaVaga, sessaoNoTotem } from './engine/totem';
 import { diaLocal, horaLocal, minutoLocal } from './tempo';
-import { horaMin, horas, kw, mesCurto, num, plural, tarifaKWh } from './formato';
+import { brl, horaMin, horas, kw, mesCurto, num, plural, tarifaKWh } from './formato';
 import type {
   Carregador,
   Cobranca,
@@ -829,6 +829,13 @@ export function situacaoDaVaga(c: Carregador): SituacaoVaga {
     return { estado: 'EXPIRADA', sessao: ultima, texto: 'Código vencido — desconecte e conecte o cabo de novo para gerar outro' };
   }
   if (c.estado === 'OCUPADO' || c.carro) return { estado: 'OCUPADO', texto: 'Carro conectado — abrindo a recarga' };
+  // o motorista tirou o cabo antes de pagar: a vaga está livre, mas a conta continua esperando o Pix
+  // (mesma regra e mesma janela do totem; o preço e o mapa do motorista não contam isso como ocupado)
+  const pendente = contaSemCabo(base.sessoes.filter((x) => x.carregadorId === c.id), cobrancaDaSessao, false, Date.now());
+  if (pendente?.estado === 'CONCLUIDO' && cobrancaDaSessao(pendente.id)?.status !== 'PAGO') {
+    const valor = cobrancaDaSessao(pendente.id)?.valor ?? pendente.custoAcumulado;
+    return { estado: 'A_PAGAR', sessao: pendente, texto: `Cabo retirado — aguardando o Pix de ${brl(valor)}; a vaga já está livre` };
+  }
   return { estado: 'DISPONIVEL', texto: 'Livre — pronta para receber um carro' };
 }
 

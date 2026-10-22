@@ -233,6 +233,7 @@ const ESTADOS: Record<string, { tom: TomEstado; rotulo: string; vivo?: boolean }
   ANALISE: { tom: 'info', rotulo: 'Em análise' },
   INSTALACAO: { tom: 'warn', rotulo: 'Em instalação' },
   PENDENTE: { tom: 'warn', rotulo: 'Pendente' },
+  A_PAGAR: { tom: 'warn', rotulo: 'A pagar' },
   PENDENTE_DOC: { tom: 'warn', rotulo: 'Falta documento' },
   VISTORIA: { tom: 'warn', rotulo: 'Vistoria' },
   PAUSADO: { tom: 'warn', rotulo: 'Pausado' },

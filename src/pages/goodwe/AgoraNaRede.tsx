@@ -24,6 +24,13 @@ export function AgoraNaRede() {
     // o histórico de demonstração também está pago; só entra o que foi pago agora há pouco
     .filter((c) => c.status === 'PAGO' && !(c as { demo?: boolean }).demo && c.pagaEm && agora - new Date(c.pagaEm).getTime() < JANELA_PAGAS_MS)
     .sort((a, b) => (b.pagaEm ?? '').localeCompare(a.pagaEm ?? ''));
+  // recarga fechada, Pix ainda não pago (com o carro no cabo ou já fora): aparece até ser paga, por meia hora
+  const sessaoDe = (id: string) => base.sessoes.find((x) => x.id === id);
+  const aPagar = base.cobrancas
+    .filter((c) => c.status === 'PENDENTE' && !(c as { demo?: boolean }).demo)
+    .map((c) => ({ c, s: sessaoDe(c.sessaoId) }))
+    .filter(({ s }) => s?.fim && agora - new Date(s.fim).getTime() < JANELA_PAGAS_MS)
+    .sort((a, b) => (b.s?.fim ?? '').localeCompare(a.s?.fim ?? ''));
 
   const kwAgora = ativas.reduce((t, s) => t + (s.potenciaAtualKW || 0), 0);
   const valorCorrendo = ativas.reduce((t, s) => t + (s.custoAcumulado || 0), 0);
@@ -54,7 +61,7 @@ export function AgoraNaRede() {
             <MapaRede pontos={mapa} selecionado={sel} aoSelecionar={setSel} compacto />
           </div>
           <div className="anr-lista">
-            {ativas.length === 0 && aguardando.length === 0 && pagas.length === 0 ? (
+            {ativas.length === 0 && aguardando.length === 0 && aPagar.length === 0 && pagas.length === 0 ? (
               <EmptyState icone="raio" titulo="Nenhuma recarga neste momento">
                 Quando um carro conectar num ponto, ele aparece aqui na hora.
               </EmptyState>
@@ -90,6 +97,23 @@ export function AgoraNaRede() {
                       </div>
                       <div className="tiny muted">
                         {vagaDe(s.pontoId, s.carregadorId)} · carro conectado {relativo(s.inicio)} · código {s.codigoVinculo ?? '—'}
+                      </div>
+                    </button>
+                  );
+                })}
+                {aPagar.length > 0 && <div className="kpi-label anr-sep">Aguardando o Pix</div>}
+                {aPagar.map(({ c, s }) => {
+                  const p = obterPonto(c.pontoId);
+                  const comCabo = carregadoresDoPonto(c.pontoId).find((v) => v.id === s?.carregadorId)?.carro?.sessaoId === s?.id;
+                  return (
+                    <button key={c.id} className={`anr-item ${sel === c.pontoId ? 'on' : ''}`} onClick={() => setSel(c.pontoId)}>
+                      <div className="anr-item-topo">
+                        <span className="strong">{p?.nome ?? c.pontoId}</span>
+                        <StatusBadge estado="A_PAGAR" />
+                      </div>
+                      <div className="tiny muted">
+                        {s ? `${vagaDe(c.pontoId, s.carregadorId)} · ` : ''}{brl(c.valor)} a pagar
+                        {s ? ` · ${kwh(s.energiaKWh)} · fechou ${relativo(s.fim!)}` : ''} · {comCabo ? 'carro ainda no cabo' : 'cabo já retirado'}
                       </div>
                     </button>
                   );
