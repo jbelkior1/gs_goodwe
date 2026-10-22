@@ -22,6 +22,8 @@ export const TEMPO = {
   escolhaManualMs: 45_000,
   /** sem toque há esse tempo: o totem zera conversa, escolha e erros */
   inatividadeMs: 45_000,
+  /** quem tirou o cabo sem pagar: o totem continua mostrando o Pix dessa conta por esse tempo */
+  contaSemCaboMs: 15 * 60_000,
 } as const;
 
 export type NomeTela =
@@ -60,7 +62,7 @@ const NIVEL: Record<SituacaoNoTotem, number> = {
 
 export interface VagaDados {
   vaga: Carregador;
-  /** sessaoDaVaga(vaga.id): a em andamento ou a que acabou de terminar com o mesmo carro no cabo */
+  /** sessaoNoTotem(...): a em andamento, a que terminou com o mesmo carro no cabo ou a conta de quem tirou o cabo sem pagar */
   sessao?: Sessao;
   cobranca?: Cobranca;
   /** semSinal(vaga) de db.ts */
@@ -135,6 +137,61 @@ export const veiculoDaVaga = (sessao?: Sessao, vaga?: Carregador): Veiculo | und
 export const vagaLivre = (v: Carregador): boolean => v.estado === 'DISPONIVEL' && !v.carro;
 
 const comparaApelido = (a: string, b: string) => a.localeCompare(b, 'pt-BR', { numeric: true });
+
+// ---------------------------------------------------------------- qual recarga a vaga mostra
+const EM_ANDAMENTO: Sessao['estado'][] = ['ABERTA', 'AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO'];
+const maisNovaPrimeiro = (a: Sessao, b: Sessao) => b.inicio.localeCompare(a.inicio);
+
+/**
+ * Sessão "da vaga agora" (a regra de todo o app: preço, painéis e totem): a que está em andamento ou,
+ * enquanto o mesmo carro continua no cabo, a que acabou de terminar (a pagar ou paga). Conta pendente
+ * de carro que já saiu não trava a vaga: a ocupação e o preço não contam com ela.
+ */
+export function sessaoAtualDaVaga(sessoesDaVaga: Sessao[], carro: Carregador['carro']): Sessao | undefined {
+  const daVaga = [...sessoesDaVaga].sort(maisNovaPrimeiro);
+  const andamento = daVaga.find((s) => EM_ANDAMENTO.includes(s.estado));
+  if (andamento) return andamento;
+  const ultima = daVaga[0];
+  if (!carro || !ultima?.fim || !['CONCLUIDO', 'FATURADO'].includes(ultima.estado)) return undefined;
+  const mesmoCarro = carro.sessaoId
+    ? carro.sessaoId === ultima.id
+    : new Date(carro.conectadoEm).getTime() <= new Date(ultima.fim).getTime();
+  return mesmoCarro ? ultima : undefined;
+}
+
+/**
+ * A conta de quem tirou o cabo antes de pagar, que só o TOTEM mostra (o resto do app segue a regra
+ * acima): a última recarga da vaga terminou (CONCLUIDO, com a cobrança ainda pendente) há até
+ * TEMPO.contaSemCaboMs, ou foi paga há até TEMPO.pagoVisivelMs (para a confirmação aparecer). Com
+ * carro no cabo não vale: o carro novo sempre ganha, e a conta antiga continua em aberto no financeiro.
+ */
+export function contaSemCabo(
+  sessoesDaVaga: Sessao[], cobrancaDe: (sessaoId: string) => Cobranca | undefined, comCarro: boolean, agora: number,
+): Sessao | undefined {
+  if (comCarro) return undefined;
+  const ultima = [...sessoesDaVaga].sort(maisNovaPrimeiro)[0];
+  const fim = ms(ultima?.fim);
+  if (!ultima || fim == null) return undefined;
+  const cobranca = cobrancaDe(ultima.id);
+  if (ultima.estado === 'CONCLUIDO') {
+    if (cobranca?.status === 'PAGO') {
+      const pagaEm = ms(cobranca.pagaEm) ?? fim;
+      return agora - pagaEm <= TEMPO.pagoVisivelMs ? ultima : undefined;
+    }
+    return agora - fim <= TEMPO.contaSemCaboMs ? ultima : undefined;
+  }
+  // paga: só com pagamento de verdade (recarga de valor zero vai direto para FATURADO, sem Pix para confirmar)
+  if (ultima.estado === 'FATURADO' && cobranca?.status === 'PAGO') {
+    const pagaEm = ms(cobranca.pagaEm) ?? fim;
+    return agora - pagaEm <= TEMPO.pagoVisivelMs ? ultima : undefined;
+  }
+  return undefined;
+}
+
+/** a recarga que o totem mostra na vaga: a da vaga agora ou, sem carro no cabo, a conta que ficou para pagar */
+export const sessaoNoTotem = (
+  sessoesDaVaga: Sessao[], carro: Carregador['carro'], cobrancaDe: (sessaoId: string) => Cobranca | undefined, agora: number,
+): Sessao | undefined => sessaoAtualDaVaga(sessoesDaVaga, carro) ?? contaSemCabo(sessoesDaVaga, cobrancaDe, !!carro, agora);
 
 // ---------------------------------------------------------------- situação de cada vaga
 export function situacaoNoTotem(d: VagaDados, agora: number): SituacaoNoTotem {

@@ -7,6 +7,7 @@ import { cotarPonto, medirOcupacao, type ComposicaoTarifa } from './engine/tarif
 import { preverDemanda, gerarRecomendacoes, resumoGerencial, detectarAnomalias, preverFinanceiro } from './engine/ia';
 import type { PrevisaoFinanceira } from './engine/ia';
 import { resumoSolar, mixDoDia } from './engine/solar';
+import { sessaoAtualDaVaga, sessaoNoTotem } from './engine/totem';
 import { diaLocal, horaLocal, minutoLocal } from './tempo';
 import { horaMin, horas, kw, mesCurto, num, plural, tarifaKWh } from './formato';
 import type {
@@ -182,24 +183,16 @@ export const obterPonto = (id: string): Ponto | undefined =>
 
 export const pontoAtivo = (p: Ponto) => p.ativo && (p.status ?? 'ATIVO') === 'ATIVO';
 
-const EM_ANDAMENTO = ['ABERTA', 'AUTENTICADO', 'CARREGANDO', 'PAUSADO', 'ENCERRANDO'];
+/** Sessão "da vaga agora" (regra em engine/totem.ts): em andamento ou terminada com o mesmo carro no cabo. */
+export const sessaoDaVaga = (carregadorId: string): Sessao | undefined =>
+  sessaoAtualDaVaga(base.sessoes.filter((s) => s.carregadorId === carregadorId), base.carregadores.find((c) => c.id === carregadorId)?.carro);
 
-/**
- * Sessão "da vaga agora": a que está em andamento ou, enquanto o mesmo carro continua no cabo,
- * a que acabou de terminar (a pagar ou paga). Conta pendente de carro que já saiu não trava a vaga.
- */
-export const sessaoDaVaga = (carregadorId: string): Sessao | undefined => {
-  const daVaga = base.sessoes.filter((s) => s.carregadorId === carregadorId).sort((a, b) => b.inicio.localeCompare(a.inicio));
-  const andamento = daVaga.find((s) => EM_ANDAMENTO.includes(s.estado));
-  if (andamento) return andamento;
-  const carro = base.carregadores.find((c) => c.id === carregadorId)?.carro;
-  const ultima = daVaga[0];
-  if (!carro || !ultima?.fim || !['CONCLUIDO', 'FATURADO'].includes(ultima.estado)) return undefined;
-  const mesmoCarro = carro.sessaoId
-    ? carro.sessaoId === ultima.id
-    : new Date(carro.conectadoEm).getTime() <= new Date(ultima.fim).getTime();
-  return mesmoCarro ? ultima : undefined;
-};
+/** A recarga que o TOTEM mostra: a da vaga agora ou, com o cabo já fora, a conta que ficou para pagar. */
+export const sessaoParaOTotem = (carregadorId: string, agora = Date.now()): Sessao | undefined =>
+  sessaoNoTotem(
+    base.sessoes.filter((s) => s.carregadorId === carregadorId),
+    base.carregadores.find((c) => c.id === carregadorId)?.carro, cobrancaDaSessao, agora,
+  );
 
 /** o agente da vaga manda sinal a cada 20 s; sem sinal há mais de 90 s, a vaga está fora do ar */
 // sem banco (base local) ninguém renova o sinal: aí só OFFLINE conta como fora do ar

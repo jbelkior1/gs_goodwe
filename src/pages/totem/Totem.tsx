@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useApp } from '../../app/estado';
 import {
-  carregadoresDoPonto, cobrancaDaSessao, conexaoTempoReal, obterPonto, semSinal, sessaoDaVaga, solarDoPonto,
+  carregadoresDoPonto, cobrancaDaSessao, conexaoTempoReal, obterPonto, semSinal, sessaoParaOTotem, solarDoPonto,
   tarifaAtual, telemetriaDaSessao,
 } from '../../domain/db';
 import type { ContextoVolt } from '../../domain/engine/assistente';
@@ -73,7 +73,8 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
   const expiradas = useExpiradas(pontoId);
 
   const dados: VagaDados[] = (ponto ? carregadoresDoPonto(pontoId) : []).map((vaga) => {
-    const s = sessaoDaVaga(vaga.id);
+    // inclui a conta de quem tirou o cabo antes de pagar: o Pix continua no totem
+    const s = sessaoParaOTotem(vaga.id, agora);
     return { vaga, sessao: s, cobranca: s ? cobrancaDaSessao(s.id) : undefined, semSinal: semSinal(vaga), expirada: expiradas[vaga.id] };
   });
   const r = telaDoTotem({ ponto, vagas: dados, agora, escolha, semInternet: !online });

@@ -196,6 +196,7 @@ export function partePagar(d: DadosTela): Partes {
       <h1 className="tk-titulo">Pague com Pix</h1>
       <QrFlex texto={payload} rotulo="QR do Pix" />
       <div className="tk-pix-textos">
+        {!d.foco?.comCarro && <p className="tk-instrucao tk-alerta">O cabo saiu e a recarga foi encerrada. Falta só pagar.</p>}
         <p className="tk-instrucao-g">Abra o app do seu banco e leia o QR</p>
         {!ehVisitante(d) && <p className="tk-instrucao dim">Se você usa o app Ponto W, dá para pagar por lá também</p>}
       </div>
@@ -219,7 +220,7 @@ export function partePago(d: DadosTela): Partes {
   const pagaEm = d.cobranca?.pagaEm;
   return {
     etapa: { n: 4, tom: 'ok', concluida: true, visitante: ehVisitante(d) },
-    estado: <Bloco icone="check" tom="ok" titulo="Pagamento recebido" texto="Pode retirar o cabo. Boa viagem!" />,
+    estado: <Bloco icone="check" tom="ok" titulo="Pagamento recebido" texto={d.foco?.comCarro ? 'Pode retirar o cabo. Boa viagem!' : 'Obrigado. Boa viagem!'} />,
     numeros: (
       <div className="tk-pago-lado">
         <Cartao tom="ok" rotulo={`Recibo · ${d.foco?.apelido ?? 'Vaga'}`} lado={pagaEm ? `Pix às ${horaMin(pagaEm)}` : undefined}>
@@ -239,6 +240,8 @@ export function partePago(d: DadosTela): Partes {
         </div>
       </div>
     ),
-    acao: <Instrucao icone="tomada">A vaga fica livre quando o cabo sair</Instrucao>,
+    acao: d.foco?.comCarro
+      ? <Instrucao icone="tomada">A vaga fica livre quando o cabo sair</Instrucao>
+      : <Instrucao icone="check">A vaga já está livre para o próximo carro</Instrucao>,
   };
 }
