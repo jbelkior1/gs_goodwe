@@ -182,7 +182,11 @@ export function parteEncerrando(d: DadosTela): Partes {
 export function partePagar(d: DadosTela): Partes {
   const c = d.cobranca!;
   const s = d.sessao!;
-  const payload = gerarPixCopiaECola(c.txid || gerarTxid(s.id), c.valor);
+  // na demonstração o QR abre no celular a tela de pagamento (faz o papel do app do banco e confirma o
+  // Pix com um toque); fora dela é o Pix de verdade, lido pelo app do banco
+  const payload = d.demo
+    ? linkDoApp(`/motorista/pagar/${c.id}?tela=cheia`)
+    : gerarPixCopiaECola(c.txid || gerarTxid(s.id), c.valor);
   const total = (
     <Cartao tom="vermelho" rotulo="Total a pagar" className="tk-cartao-total">
       <div className="tk-total">
@@ -197,7 +201,7 @@ export function partePagar(d: DadosTela): Partes {
       <QrFlex texto={payload} rotulo="QR do Pix" />
       <div className="tk-pix-textos">
         {!d.foco?.comCarro && <p className="tk-instrucao tk-alerta">O cabo saiu e a recarga foi encerrada. Falta só pagar.</p>}
-        <p className="tk-instrucao-g">Abra o app do seu banco e leia o QR</p>
+        <p className="tk-instrucao-g">{d.demo ? 'Leia o QR com a câmera do celular e toque em Pagar' : 'Abra o app do seu banco e leia o QR'}</p>
         {!ehVisitante(d) && <p className="tk-instrucao dim">Se você usa o app Ponto W, dá para pagar por lá também</p>}
       </div>
     </div>

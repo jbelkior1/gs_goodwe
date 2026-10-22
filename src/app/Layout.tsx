@@ -195,7 +195,9 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
   const titulo = TITULOS[location.pathname]
     ?? (location.pathname.startsWith('/motorista/recarga')
       ? TITULOS['/motorista/recarga']
-      : { t: 'Ponto W', s: '' });
+      : location.pathname.startsWith('/motorista/pagar')
+        ? { t: 'Pagar com Pix', s: 'O Pix que o totem mostra, pago pelo celular' }
+        : { t: 'Ponto W', s: '' });
 
   const trocarPersona = (p: Persona) => {
     setPersona(p);

@@ -20,6 +20,7 @@ import SejaGoodwe from './pages/SejaGoodwe';
 import Portal from './pages/portal/Portal';
 
 import Recarga from './pages/motorista/Recarga';
+import Pagar from './pages/motorista/Pagar';
 import Assistente from './pages/motorista/Assistente';
 
 import Totem from './pages/totem/Totem';
@@ -126,6 +127,7 @@ export default function App() {
         <Route path="/motorista/vincular" element={<Vincular />} />
         <Route path="/motorista/recarga" element={<Recarga />} />
         <Route path="/motorista/recarga/:sessaoId" element={<RecargaComSessao />} />
+        <Route path="/motorista/pagar/:cobrancaId" element={<Pagar />} />
         <Route path="/motorista/assistente" element={<Assistente />} />
       </Route>
 

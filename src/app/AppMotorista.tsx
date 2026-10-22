@@ -12,7 +12,7 @@ const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
 const ABAS: { to: string; ico: NomeIcone; label: string; fim?: boolean }[] = [
   { to: '/motorista', ico: 'globo', label: 'Mapa', fim: true },
   { to: '/motorista/recarga', ico: 'raio', label: 'Recarga' },
-  { to: '/motorista/vincular', ico: 'check', label: 'Digitar código' },
+  { to: '/motorista/vincular', ico: 'qr', label: 'Ler QR' },
   { to: '/motorista/assistente', ico: 'chat', label: 'Volt' },
 ];
 
@@ -29,7 +29,8 @@ export default function AppMotorista() {
   const { perfil, motoristaId } = useApp();
   const guia = useGuiaVisivel();
   const ativa = sessaoDoMotorista(perfil?.motoristaId ?? motoristaId);
-  const titulo = TITULOS[pathname] ?? (pathname.startsWith('/motorista/recarga') ? 'Minha recarga' : 'Ponto W');
+  const titulo = TITULOS[pathname]
+    ?? (pathname.startsWith('/motorista/recarga') ? 'Minha recarga' : pathname.startsWith('/motorista/pagar') ? 'Pagar com Pix' : 'Ponto W');
 
   // celular do Palco (?seguir=1): vai para "Minha recarga" quando a recarga existe e volta ao mapa quando acaba
   // segue só o ponto da demonstração (?ponto=) e deixa o recibo na tela por 1 minuto depois do Pix

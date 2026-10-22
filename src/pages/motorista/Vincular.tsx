@@ -7,6 +7,8 @@ import { ALFABETO_CODIGO, REGRAS, VEICULOS } from '../../domain/catalogo';
 import { horaMin, tarifaKWh } from '../../domain/formato';
 import type { Sessao } from '../../domain/types';
 import { Card, Nota } from '../../ui/kit';
+import { Icone } from '../../ui/icones';
+import { LeitorQR } from '../../ui/LeitorQR';
 import { ComoCarregar, LinhasDoPreco } from './ComoCarregar';
 
 const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
@@ -36,6 +38,8 @@ export default function Vincular() {
   const [erro, setErro] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [confirmando, setConfirmando] = useState<Sessao | null>(null);
+  const [lendo, setLendo] = useState(false);
+  const [erroQR, setErroQR] = useState('');
 
   // quem confirma: a conta logada; no modo demonstração, sem login, o motorista de demonstração
   const quemId = perfil?.motoristaId ?? perfil?.id ?? (DEMO && motoristaId ? motoristaId : undefined);
@@ -65,6 +69,27 @@ export default function Vincular() {
     setErro('');
   };
 
+  // o QR do totem é um link do app (…/motorista/vincular?c=CÓDIGO); o do Pix, no modo demonstração,
+  // é o link da tela de pagamento. Qualquer outro QR não é de recarga.
+  const lerQR = (texto: string) => {
+    setLendo(false);
+    setErroQR('');
+    try {
+      const u = new URL(texto);
+      const raiz = import.meta.env.BASE_URL.replace(/\/$/, '');
+      const rota = u.pathname.startsWith(raiz) ? u.pathname.slice(raiz.length) || '/' : u.pathname;
+      if (rota.startsWith('/motorista/pagar/')) { nav(rota + u.search); return; }
+      const c = limparCodigo(u.searchParams.get('c') ?? '');
+      if (rota.startsWith('/motorista/vincular') && c.length === 4) {
+        setDigitado(c); setPeloQR(true); setErro('');
+        return;
+      }
+    } catch { /* não é link: pode ser o código puro */ }
+    const puro = texto.trim();
+    if (puro.length === 4 && limparCodigo(puro).length === 4) { setDigitado(limparCodigo(puro)); setPeloQR(true); return; }
+    setErroQR('Esse QR não é de uma recarga Ponto W. Aponte a câmera para o QR que o totem mostra depois que o cabo é conectado.');
+  };
+
   const confirmar = async () => {
     if (!sessao || !cot || !quemId || outraAtiva) return;
     setErro(''); setOcupado(true); setConfirmando(sessao);
@@ -87,8 +112,14 @@ export default function Vincular() {
 
   return (
     <div className="stack">
-      <Card title="Código da recarga" sub="4 letras que o totem mostra depois que o cabo é conectado">
+      {lendo && <LeitorQR titulo="Ler o QR do totem" aoLer={lerQR} aoFechar={() => setLendo(false)} />}
+      <Card title="QR ou código da recarga" sub="O totem mostra os dois depois que o cabo é conectado">
         <div className="stack" style={{ gap: 8 }}>
+          <button type="button" className="btn primary" style={{ justifyContent: 'center', gap: 8, minHeight: 46 }} onClick={() => { setErroQR(''); setLendo(true); }}>
+            <Icone nome="qr" tamanho={16} /> Ler o QR com a câmera
+          </button>
+          {erroQR && <div className="tiny" role="alert" style={{ color: 'var(--k-red2)' }}>{erroQR}</div>}
+          <div className="tiny muted" style={{ textAlign: 'center' }}>ou digite o código de 4 letras</div>
           <input id="codigo" className="btn cod-campo" value={digitado} maxLength={8} placeholder="7K4W"
                  inputMode="text" autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck={false}
                  enterKeyHint="go" aria-label="Código de 4 letras do totem"
