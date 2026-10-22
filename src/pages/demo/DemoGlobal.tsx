@@ -17,7 +17,7 @@ import './demo.css';
 /** uma entrada por conta de cada vez: o StrictMode roda o efeito duas vezes e não pode logar duas vezes */
 const emAndamento = new Map<ContaDemo, Promise<string>>();
 
-/** site publicado: a senha demo não vai no código da página; o link leva à tela de entrada com o e-mail preenchido */
+/** site publicado: a senha demo não vai no código da página; o link segue sem conta (o modo demonstração abre os painéis) */
 const SEM_SENHA = 'sem-senha-demo';
 
 /** Entra com a conta (se ainda não estiver nela) e devolve o id do usuário. */
@@ -81,15 +81,11 @@ export function DemoGlobal() {
       .catch((e: Error) => {
         if (!vivo) return;
         if (e.message !== SEM_SENHA) { setFalha({ conta: contaValida, mensagem: e.message }); return; }
-        // entra uma vez com a senha e volta para este mesmo endereço; dali em diante o link entra sozinho
-        const p = new URLSearchParams(window.location.search);
-        p.delete('conta');
-        const resto = p.toString();
-        const volta = window.location.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') + (resto ? `?${resto}` : '');
-        navigate(`/entrar?volta=${encodeURIComponent(volta || '/')}&email=${encodeURIComponent(CONTAS_DEMO[contaValida].email)}`, { replace: true });
+        // sem a senha no site: segue sem conta, no ambiente de demonstração daquele papel
+        tirarConta();
       });
     return () => { vivo = false; };
-  }, [contaValida, tentativa, navigate]);
+  }, [contaValida, tentativa, tirarConta]);
 
   // entrou: espera o perfil da conta chegar (no máximo 6 s) e só então limpa o endereço, o que libera a tela
   const uidEsperado = entrou && entrou.conta === contaValida ? entrou.uid : null;

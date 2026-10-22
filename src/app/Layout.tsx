@@ -140,7 +140,10 @@ function Moldura({ persona, children }: { persona: Persona; children: ReactNode 
   return <>{children}</>;
 }
 
-/** Tela cheia é o ambiente real: o painel do franqueado e o da GoodWe pedem a conta daquele papel. */
+/**
+ * Tela cheia é o ambiente real: o painel do franqueado e o da GoodWe pedem a conta daquele papel.
+ * No modo demonstração, sem conta nenhuma, o painel abre direto (a apresentação não depende de login).
+ */
 function Porta({ persona, atual }: { persona: Persona; atual?: string }) {
   const { pathname, search } = useLocation();
   return (
@@ -331,7 +334,7 @@ export default function Layout({ cheia = false }: { cheia?: boolean }) {
         </header>
 
         <main className={`content content-${personaAtual}`}>
-          {cheia && !EMBUTIDO && bancoConfigurado && (personaAtual === 'franqueado' || personaAtual === 'goodwe') && perfil?.papel !== personaAtual
+          {cheia && !EMBUTIDO && bancoConfigurado && (personaAtual === 'franqueado' || personaAtual === 'goodwe') && perfil?.papel !== personaAtual && !(DEMO && !perfil)
             ? <Porta persona={personaAtual} atual={perfil ? `${perfil.nome} (${perfil.papel})` : undefined} />
             : personaAtual === 'franqueado' && !ponto
               ? <Nota titulo="Ponto não encontrado" tom="amber">Este ponto saiu da rede. Escolha outro ponto.</Nota>
