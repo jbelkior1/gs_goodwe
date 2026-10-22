@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useApp } from '../../app/estado';
 import {
-  carregadoresDoPonto, cobrancaDaSessao, conexaoTempoReal, obterPonto, semSinal, sessaoParaOTotem, solarDoPonto,
+  carregadoresDoPonto, cobrancaDaSessao, conexaoTempoReal, obterPonto, semSinal, sessaoParaOTotem,
   tarifaAtual, telemetriaDaSessao,
 } from '../../domain/db';
 import type { ContextoVolt } from '../../domain/engine/assistente';
@@ -113,8 +113,6 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
   const veiculo = veiculoDaVaga(sessao, r.foco?.dados.vaga);
   const precoKWh = sessao && sessao.tarifaAplicadaKWh > 0 ? sessao.tarifaAplicadaKWh : tarifa.precoFinalKWh;
   const emCurva = r.tela === 'carga' || r.tela === 'pausada';
-  // a autossuficiência solar (média do dia) só interessa na espera e na conversa com o Volt
-  const solarDoDia = ponto.temSolar && (r.tela === 'espera' || voltAberto) ? solarDoPonto(pontoId).resumo.autossuficiencia : null;
 
   const agir = (f: () => Promise<void>, depois?: () => void) => {
     if (ocupado) return;
@@ -127,7 +125,7 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
 
   const d: DadosTela = {
     orientacao, ponto, agora, demo: DEMO, foco: r.foco, vagas: r.vagas, vagasLivres: r.vagasLivres, sessao, cobranca, veiculo,
-    tarifa, precoKWh, solar: r.tela === 'espera' ? solarDoDia : null,
+    tarifa, precoKWh,
     serie: sessao && emCurva ? serieDePotencia(telemetriaDaSessao(sessao.id), sessao.potenciaAtualKW, r.tela === 'carga') : null,
     ocupado,
     pedir: (tipo) => abrir({ tipo }),
@@ -154,7 +152,6 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
     ponto, fase: r.fase, sessao: sessaoVolt, minutosRestantes: minutos ?? undefined,
     precoAgoraKWh: r.fase === 'qr' ? precoKWh : tarifa.precoFinalKWh,
     valorConta: sessaoVolt ? (cobranca?.valor ?? sessaoVolt.custoAcumulado) : undefined,
-    autossuficiencia: solarDoDia ?? undefined,
     vagasLivres: r.vagasLivres, totalVagas: r.vagas.length,
     potenciaVagaKW: r.vagas.length ? Math.max(...r.vagas.map((v) => v.potenciaKW)) : undefined,
     onde: 'totem',

@@ -246,8 +246,6 @@
 .tk-passo-texto b { font-size: 33px; font-weight: 500; line-height: 1.12; }
 .tk-passo-texto span { font-size: 25px; color: var(--tk-dim); line-height: 1.15; }
 .tk-passo > svg { color: var(--tk-dim); }
-.tk-solar { display: flex; align-items: center; gap: 14px; font-size: 27px; color: var(--tk-aviso); line-height: 1.2; }
-.tk-solar > svg { flex: none; }
 .tk-espera-lado { display: flex; flex-direction: column; gap: 20px; }
 .tk-h .tk-espera-carro { width: 300px; max-height: 200px; }
 .tk-h .tk-espera { gap: 20px; }

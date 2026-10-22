@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../../app/estado';
 import {
-  carregadoresDoPonto, cobrancaDaSessao, obterPonto, obterVeiculo, sessaoDoMotorista, solarDoPonto, tarifaAtual,
+  carregadoresDoPonto, cobrancaDaSessao, obterPonto, obterVeiculo, sessaoDoMotorista, tarifaAtual,
 } from '../../domain/db';
 import { responderVolt, saudacaoVolt, type ContextoVolt, type FaseVolt } from '../../domain/engine/assistente';
 import { minutosAte100, vagaLivre } from '../../domain/engine/totem';
@@ -41,7 +41,6 @@ export default function Assistente() {
       ? minutosAte100(ativa.socAtual, veiculo?.capacidadeKWh, ativa.potenciaAtualKW) ?? undefined : undefined,
     precoAgoraKWh: tarifa.precoFinalKWh,
     valorConta: ativa && fase === 'pagar' ? (cobrancaDaSessao(ativa.id)?.valor ?? ativa.custoAcumulado) : undefined,
-    autossuficiencia: ponto.temSolar ? solarDoPonto(ponto.id).resumo.autossuficiencia : undefined,
     vagasLivres: carregadores.filter(vagaLivre).length,
     totalVagas: carregadores.length,
   };

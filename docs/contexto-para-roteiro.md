@@ -6,7 +6,7 @@ O Ponto W é uma **rede de recarga de carro elétrico dentro de comércios**, no
 
 - **A ideia:** uma vaga do estacionamento de um comércio (mercado, farmácia, shopping, academia, restaurante, posto) vira ponto de recarga. O motorista fica de 1 a 2 horas carregando e, nesse tempo, compra na loja.
 - **O comércio** fica com o resultado da recarga e com tudo o que vende.
-- **A GoodWe** fornece o carregador, o totem, o ecossistema solar (inversor, painéis, bateria) e a plataforma. Ela recebe royalty **só sobre a recarga, nunca sobre as vendas da loja**.
+- **A GoodWe** fornece o carregador, o totem e a plataforma. Ela recebe royalty **só sobre a recarga, nunca sobre as vendas da loja**.
 - **O que existe hoje:** um MVP funcional e publicado.
   - App: https://jbelkior1.github.io/gs_goodwe
   - Análise do local em 3D (GSVR): https://jbelkior1.github.io/gs_vr
@@ -17,7 +17,7 @@ O Ponto W é uma **rede de recarga de carro elétrico dentro de comércios**, no
   - Hospedagem no GitHub Pages.
 - **Rede de demonstração no banco:**
   - 11 pontos em São Paulo, com marcas conhecidas usadas como exemplo (Graal, Pão de Açúcar, Carrefour, Shopping Eldorado, Drogasil, Smart Fit, Outback, Starbucks). São dados fictícios, sem parceria.
-  - O ponto da apresentação é a **FIAP Aclimação**: 2 vagas, painéis solares e bateria GoodWe.
+  - O ponto da apresentação é a **FIAP Aclimação**: 2 vagas.
   - Cerca de 6 mil recargas de histórico em 90 dias.
 - **A apresentação usa 4 aparelhos ao vivo e sincronizados:**
   - um celular (motorista);
@@ -96,7 +96,7 @@ Funciona no navegador do celular, sem instalar nada.
 - **Confirmar a recarga:**
   - O motorista lê o QR do totem ou digita o código de 4 letras. O código não usa caracteres que se confundem, como 0 e O ou 1 e I.
   - O app mostra o ponto, a vaga e o **preço travado, igual ao do totem**.
-  - Explica o porquê do preço. Exemplos: "Horário de pico (+12%)", "Últimas vagas (+8%)", "Energia do sol do ponto (−2%)".
+  - Explica o porquê do preço. Exemplos: "Horário de pico (+12%)", "Últimas vagas (+8%)".
   - Ele escolhe o carro e pode informar a bateria e um limite em reais.
 - **Minha recarga, ao vivo:** bateria (%), potência (kW), energia (kWh), custo até agora e tempo estimado para 100%.
 - **Fim da recarga:**
@@ -114,7 +114,7 @@ Fica em modo quiosque, na vertical (1080×1920) ou na horizontal.
 - **Espera:**
   - "Carregue seu elétrico aqui" e a recarga em 4 passos.
   - O **preço do kWh agora, com o motivo**, e o próximo preço.
-  - Vagas livres e quanto da energia vem do sol e da bateria GoodWe.
+  - Vagas livres, a potência e o conector.
 - **Carro conectado:** QR grande, código de 4 letras e contagem de 10 minutos, com o preço travado.
 - **Carregando:** bateria, valor até agora, kW, kWh e tempo para 100%. São os mesmos números do celular, para ver de longe.
 - **Pagamento:** "Pague com Pix" mostra o QR e o valor. "Pagamento confirmado" mostra o recibo e "pode desconectar o cabo".
@@ -172,11 +172,10 @@ Fica em modo quiosque, na vertical (1080×1920) ou na horizontal.
 
 Todos os valores abaixo são sugeridos e ajustáveis.
 
-- **Tarifa dinâmica:** preço = preço base × faixa de horário × últimas vagas − energia do sol.
+- **Tarifa dinâmica:** preço = preço base × faixa de horário × últimas vagas.
   - Vale (22h às 8h): −10%.
   - Pico (17h às 19h, dias úteis): +12%.
   - Últimas vagas: até +8%.
-  - Sol do ponto: até −8%.
   - Limites: nunca abaixo de 85% da base nem do custo + taxas + R$ 0,20; nunca acima de 130% da base.
   - O preço fica travado por 10 minutos e vai inteiro para a cobrança.
 - **Preço base sugerido em São Paulo: R$ 1,90 por kWh.** A conta: energia de R$ 0,85 mais margem alvo de R$ 0,85, divididas por (1 − 9,5% de taxas).
@@ -227,8 +226,7 @@ Todos os valores abaixo são sugeridos e ajustáveis.
 4. **Dinheiro repartido na hora.** Energia, GoodWe, Pix e comércio, em cada recarga.
 5. **Segurança elétrica.** O controle de demanda divide a potência sem desarmar o disjuntor da loja.
 6. **IA na homologação.** Só entra na rede o ponto que tem uso para se pagar.
-7. **Ecossistema GoodWe.** Sol e bateria baixam o custo da energia e aparecem no preço.
-8. **A recarga traz o cliente, e a venda é sua.** O royalty incide só sobre a recarga.
+7. **A recarga traz o cliente, e a venda é sua.** O royalty incide só sobre a recarga.
 
 ## 11. Links da demonstração
 

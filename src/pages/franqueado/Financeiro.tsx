@@ -165,7 +165,7 @@ export default function Financeiro() {
                 ))}
               </ul>
               <div className="tiny muted" style={{ marginTop: 6 }}>
-                Por kWh vendido a {tarifaKWh(tarifa.precoFinalKWh)}{ponto.temSolar ? '; o custo de energia já considera a economia do sol do ponto' : ''}.
+                Por kWh vendido a {tarifaKWh(tarifa.precoFinalKWh)}.
               </div>
             </div>
           </div>

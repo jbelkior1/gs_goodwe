@@ -161,7 +161,6 @@ const GANHOS: { ico: Parameters<typeof Icone>[0]['nome']; titulo: string; texto:
   { ico: 'dinheiro', titulo: 'Royalty só sobre a recarga', texto: `${pct(REGRAS.royaltyPct)} da recarga vão para a GoodWe e ${pct(REGRAS.fundoPct)} para o fundo de marketing. O que o cliente compra na loja continua 100% seu.` },
   { ico: 'tomada', titulo: 'A energia da loja fica protegida', texto: 'O controle de demanda divide a potência entre a loja e os carros e nunca passa do limite do seu disjuntor.' },
   { ico: 'raio', titulo: 'O preço se ajusta sozinho', texto: 'Você define o preço base. O kWh varia por horário dentro de um piso e um teto, e o motorista vê o preço travado antes de começar.' },
-  { ico: 'sol', titulo: 'Sol GoodWe no mesmo ponto', texto: 'Inversor, painéis e bateria GoodWe junto do carregador. Quando há sol, a recarga custa menos para você e para o motorista.' },
 ];
 
 export function Ganhos() {

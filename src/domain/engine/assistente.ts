@@ -1,6 +1,6 @@
 import type { Ponto, Sessao } from '../types';
 import { REGRAS } from '../catalogo';
-import { brl, num, plural, pct, tarifaKWh } from '../formato';
+import { brl, num, plural, tarifaKWh } from '../formato';
 import { faixaDaHora } from './tarifa';
 
 /**
@@ -36,8 +36,6 @@ export interface ContextoVolt {
   precoAgoraKWh?: number;
   /** valor da conta (fases pagar e pago) */
   valorConta?: number;
-  /** fração da demanda do ponto coberta por sol + bateria (0–1); só vale se o ponto tem solar */
-  autossuficiencia?: number;
   vagasLivres: number;
   totalVagas: number;
   /** potência nominal das vagas do ponto (kW) */
@@ -300,13 +298,10 @@ const INTENCOES: Intencao[] = [
     },
   },
   {
-    id: 'solar',
-    termos: ['solar', 'sol', 'painel', 'bateria do ponto', 'sustentavel', 'co2', 'limpa', 'verde'],
-    responder: (c) =>
-      c.ponto.temSolar && c.autossuficiencia
-        ? `Em um dia típico, cerca de ${pct(c.autossuficiencia)} da energia deste ponto vem do sol e da bateria GoodWe. ` +
-          'O resto vem da rede da distribuidora.'
-        : 'Este ponto não tem energia solar própria: a energia vem da rede da distribuidora.',
+    // os pontos não têm geração própria: quem pergunta de onde vem a energia ouve só isso
+    id: 'energia',
+    termos: ['de onde vem a energia', 'solar', 'painel', 'sustentavel', 'energia limpa'],
+    responder: () => 'A energia vem da rede da distribuidora, a mesma que abastece a loja.',
   },
   {
     id: 'horario',

@@ -138,7 +138,7 @@ Se for usar o telão, deixe a central (`/demo`) aberta: o fluxograma mostra, ao 
 
 ### Passo 1 · Pedido de franquia (2 min) · notebook do franqueado, na conta do comerciante
 Abra `http://<IP>:5191/seja-goodwe?conta=comerciante` (entra como **Comerciante**). Mostre a proposta: o cliente fica 1 a 2 horas e compra na loja;
-**royalty só sobre a recarga**, nunca sobre as vendas; ecossistema solar GoodWe.
+**royalty só sobre a recarga**, nunca sobre as vendas.
 - Escolha o formato (Light, Standard ou Hub) e veja capex e taxa.
 - **Pré-análise da IA ao vivo:** mude a carga elétrica e o fluxo de pessoas e veja o score e as horas de uso por vaga
   mudarem. Mostre uma entrada elétrica fraca reprovando.
@@ -155,7 +155,7 @@ pedido novo: score da IA, uso previsto, parecer. Peça a
 
 ### Passos 3 e 4 · Configurar o ponto e parear o totem (3 min) · notebook do franqueado e totem
 No notebook, toque em **Ir para o meu ponto**: em *Meu ponto*, o ponto está **em instalação**. Defina as vagas, a tarifa
-base e, se quiser, o solar.
+base.
 - Olhe para o **totem** (`http://<IP>:5191/totem?tela=cheia`, sem `?ponto=`): ele mostra um **código de 6 números**.
   Digite no painel do franqueado para parear. A tela do totem passa a mostrar o ponto.
 - Clique em **Ativar ponto**. Ele aparece no mapa do motorista.
@@ -178,9 +178,9 @@ composição dele (horário, lotação, custo de energia) e **trava o preço** a
 
 ### Passo 8 · O agente libera a potência (2 min) · celular e franqueado
 A recarga começa e aparece ao vivo no celular, no totem e no painel do franqueado.
-- Em *Controle de demanda* (notebook do franqueado, `/franqueado/demanda`): a entrada elétrica do comércio, a carga da loja, a recarga e o
-  que o sol cobre. Conecte um segundo carro e mostre a potência sendo dividida sem estourar o disjuntor.
-- Destaque: o controle de demanda protege a conta de luz do comerciante; o solar GoodWe aumenta a margem.
+- Em *Controle de demanda* (notebook do franqueado, `/franqueado/demanda`): a entrada elétrica do comércio, a carga da loja e a recarga.
+  Conecte um segundo carro e mostre a potência sendo dividida sem estourar o disjuntor.
+- Destaque: o controle de demanda protege a conta de luz do comerciante.
 
 ### Passo 9 · Encerrar e pagar (1,5 min) · celular
 **Encerrar** no app. A conta fecha e aparece o **Pix**. Pague (simulado). Mostre a **repartição do dinheiro**:
@@ -198,7 +198,7 @@ carregou), abra *Tarifas e financeiro* (`/franqueado/financeiro`): a recarga que
 
 ### Passo 11 · A GoodWe vê royalties e a rede (1,5 min) · notebook da GoodWe
 Em *Visão da rede* (`/goodwe`): faturamento por região, ranking de pontos, **royalties** (inclui a fatia da recarga que acabamos
-de pagar), saúde da frota e o ecossistema solar instalado. Feche voltando à tese: a GoodWe ganha com a rede
+de pagar), saúde da frota e a prospecção de novos locais. Feche voltando à tese: a GoodWe ganha com a rede
 crescendo, o comerciante ganha com a permanência.
 
 ## O que destacar em cada tela
@@ -211,9 +211,9 @@ crescendo, o comerciante ganha com a permanência.
 | Mapa do motorista | vagas e preço ao vivo; passo a passo de como carregar |
 | Totem | QR e código só depois que o cabo é conectado; visitante pode carregar sem app |
 | Confirmar recarga | **preço travado** antes de começar |
-| Controle de demanda | potência dividida entre as vagas dentro do limite da entrada; sol cobrindo parte |
+| Controle de demanda | potência dividida entre as vagas dentro do limite da entrada |
 | Pix e repartição | para onde vai cada real: energia, royalty, marketing, meio de pagamento, comerciante |
-| Visão da rede | royalties, ranking, frota e solar de toda a rede |
+| Visão da rede | royalties, ranking e frota de toda a rede |
 | Central `/demo` | fluxograma de 11 passos ao vivo, link e QR de cada aparelho, Palco com as quatro telas |
 
 ## Plano B

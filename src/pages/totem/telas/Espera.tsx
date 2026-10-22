@@ -1,5 +1,5 @@
 import { MODELOS_CARREGADOR, REGRAS } from '../../../domain/catalogo';
-import { num, pct, tarifaKWh } from '../../../domain/formato';
+import { num, tarifaKWh } from '../../../domain/formato';
 import carroDoTotem from '../../../assets/carro-totem.webp';
 import { Bloco, Cartao, CartaoDoPreco, Instrucao, ListaDePassos, Simulacao } from '../componentes';
 import { Ic, type NomeIc } from '../icones';
@@ -32,9 +32,6 @@ export function parteEspera(d: DadosTela): Partes {
       )}
     />
   );
-  const solar = d.solar != null && d.solar > 0 && (
-    <div className="tk-solar"><Ic nome="sol" tamanho={36} /><span>Em um dia típico, {pct(d.solar)} da energia do ponto vem do sol e da bateria GoodWe</span></div>
-  );
 
   return {
     estado: (
@@ -59,11 +56,10 @@ export function parteEspera(d: DadosTela): Partes {
             </li>
           ))}
         </ol>
-        {vertical && solar}
       </div>
     ),
-    // deitado, o preço fica na coluna da direita, com o sol
-    numeros: vertical ? undefined : <div className="tk-espera-lado">{preco}{solar}</div>,
+    // deitado, o preço fica na coluna da direita
+    numeros: vertical ? undefined : <div className="tk-espera-lado">{preco}</div>,
     acao: (
       <Instrucao icone="tomada">
         Conecte o cabo para começar

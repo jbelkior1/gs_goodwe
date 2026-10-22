@@ -142,7 +142,7 @@ function separarLinha(texto: string): [string, string] | null {
 }
 
 /**
- * De onde vem o preço (base, horário, últimas vagas, sol). Só aparece quando a composição é a do preço
+ * De onde vem o preço (base, horário, últimas vagas). Só aparece quando a composição é a do preço
  * mostrado: no QR o preço já está travado e pode ser de alguns minutos atrás.
  */
 export function LinhasDoPreco({ tarifa, precoKWh }: { tarifa: ComposicaoTarifa; precoKWh: number }) {

@@ -145,7 +145,7 @@ export function KPI({
 }: {
   label: string; value: ReactNode; foot?: ReactNode;
   /** legado: o valor do KPI fica sempre na cor do texto (cor só no delta e nos selos) */
-  accent?: 'red' | 'teal' | 'green' | 'solar'; sm?: boolean;
+  accent?: 'red' | 'teal' | 'green'; sm?: boolean;
   unit?: string;
   /** legado: variação sem base escrita; prefira `delta` */
   trend?: number;
@@ -195,8 +195,8 @@ export function Trend({ valor }: { valor: number }) {
 }
 
 // ------------------------------------------------------------------ badge
-/** os cinco tons de estado; os nomes antigos (green, red, teal, amber, gray, solar) seguem valendo */
-type Tom = 'pos' | 'neg' | 'warn' | 'info' | 'neu' | 'green' | 'red' | 'teal' | 'amber' | 'gray' | 'solar';
+/** os cinco tons de estado; os nomes antigos (green, red, teal, amber, gray) seguem valendo */
+type Tom = 'pos' | 'neg' | 'warn' | 'info' | 'neu' | 'green' | 'red' | 'teal' | 'amber' | 'gray';
 
 export function Badge({
   children, tom = 'gray', dot, pulse,
@@ -290,20 +290,15 @@ export function Bar({ valor, tom, thick }: { valor: number; tom?: string; thick?
  * o uso da entrada: até 85% normal, de 85 a 92% atenção, acima de 92% crítico.
  */
 export function LoadBar({
-  comercioKW, recargaKW, limiteKW, solarKW = 0,
-}: { comercioKW: number; recargaKW: number; limiteKW: number; solarKW?: number }) {
+  comercioKW, recargaKW, limiteKW,
+}: { comercioKW: number; recargaKW: number; limiteKW: number }) {
   const pc = Math.min(100, (comercioKW / limiteKW) * 100);
   const pr = Math.min(100 - pc, (recargaKW / limiteKW) * 100);
-  const ps = Math.min(100 - pc - pr, (solarKW / limiteKW) * 100);
   return (
     <div>
       <div className="load-bar">
         <div className="load-seg comercio" style={{ width: `${pc}%` }} />
         <div className="load-seg recarga" style={{ left: `${pc}%`, width: `${pr}%` }} />
-        {ps > 0 && (
-          <div className="load-seg solar" style={{ left: `${pc + pr}%`, width: `${ps}%` }}
-               title="Potência coberta pelo sol" />
-        )}
         <div className="load-limit" style={{ left: '92%' }} title="Margem de segurança (92% do limite)" />
         <div className="load-fim" title="Limite da entrada (disjuntor)" />
       </div>
@@ -316,12 +311,6 @@ export function LoadBar({
           <span className="amostra" style={{ background: 'var(--info)' }} />
           Recarga {kw(recargaKW)}
         </span>
-        {solarKW > 0 && (
-          <span className="chave">
-            <span className="amostra" style={{ background: 'var(--warn)' }} />
-            Sol {kw(solarKW)}
-          </span>
-        )}
         <span className="chave">
           <span className="traco tracejado" style={{ color: 'var(--warn)' }} />
           margem de segurança (92%) · {kw(limiteKW * 0.92)}

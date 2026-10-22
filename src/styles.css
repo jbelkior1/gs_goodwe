@@ -68,8 +68,6 @@
   --amber: var(--k-warn);
   --amber-soft: rgba(255, 176, 32, .10);
   --purple: var(--k-dim);
-  --solar: var(--k-warn);
-  --solar-soft: rgba(255, 176, 32, .10);
 
   --radius: 14px;
   --radius-sm: 10px;
@@ -314,7 +312,6 @@ button { font-family: inherit; }
 .kpi-accent-red { color: var(--k-text); }
 .kpi-accent-teal { color: var(--info); }
 .kpi-accent-green { color: var(--pos); }
-.kpi-accent-solar { color: var(--warn); }
 
 .card.kpi-card { position: relative; overflow: hidden; }
 
@@ -345,7 +342,7 @@ button { font-family: inherit; }
 /* tom semântico: quem usa só precisa de uma destas classes (ou das antigas, abaixo) */
 .tom-pos, .badge.green, .badge.pos, .note.green, .note.pos { --tom: var(--pos); --tom-soft: var(--pos-soft); --tom-line: var(--pos-line); }
 .tom-info, .badge.teal, .badge.info, .note.teal, .note.info { --tom: var(--info); --tom-soft: var(--info-soft); --tom-line: var(--info-line); }
-.tom-warn, .badge.amber, .badge.solar, .badge.warn, .note.amber, .note.warn { --tom: var(--warn); --tom-soft: var(--warn-soft); --tom-line: var(--warn-line); }
+.tom-warn, .badge.amber, .badge.warn, .note.amber, .note.warn { --tom: var(--warn); --tom-soft: var(--warn-soft); --tom-line: var(--warn-line); }
 .tom-neg, .badge.red, .badge.neg, .note.neg { --tom: var(--neg); --tom-soft: var(--neg-soft); --tom-line: var(--neg-line); }
 .tom-neu, .badge.gray, .badge.neu, .note.gray, .note.neu { --tom: var(--neu); --tom-soft: var(--neu-soft); --tom-line: var(--neu-line); }
 
@@ -414,7 +411,6 @@ table.tbl .c { text-align: center; }
 .load-seg { position: absolute; top: 0; bottom: 0; transition: width .45s cubic-bezier(.2, .7, .3, 1); }
 .load-seg.comercio { background: rgba(244, 242, 238, .22); left: 0; }
 .load-seg.recarga { background: var(--info); }
-.load-seg.solar { background: var(--warn); }
 .load-limit {
   position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--warn);
 }

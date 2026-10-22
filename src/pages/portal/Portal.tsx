@@ -79,7 +79,7 @@ const PAINEIS: Painel[] = [
     ico: 'antena',
     nome: 'GoodWe',
     quem: 'a franqueadora',
-    descricao: 'Visão consolidada da rede, homologação de novos pontos e o ecossistema solar instalado.',
+    descricao: 'Visão consolidada da rede, homologação de novos pontos e prospecção de novos locais.',
     aparelho: 'Torre de controle · desktop',
     destaque: (d) => [
       { valor: brl(d.kpis.faturamentoRedeMes), rotulo: 'faturamento no mês' },

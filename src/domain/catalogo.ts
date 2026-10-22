@@ -184,5 +184,3 @@ export const CURVA_SOLAR_HORA = [
   1.0, 0.97, 0.88, 0.72, 0.53, 0.32, 0.14, 0.03, 0, 0, 0, 0,
 ];
 
-/** Fator médio de emissão do SIN brasileiro (kg CO2 por kWh). */
-export const FATOR_CO2_KG_KWH = 0.0385;

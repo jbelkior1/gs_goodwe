@@ -26,3 +26,6 @@ dist-ssr
 # simulador empacotado para a VPS (gerado por npm run simulador:pacote) e o .env de lá
 deploy/vps-simulador/simulador.mjs
 deploy/vps-simulador/.env
+
+# backups locais dos scripts de dados
+.backup/

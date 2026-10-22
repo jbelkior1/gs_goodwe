@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AreaChart, Area, BarChart, Bar as RBar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  BarChart, Bar as RBar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import { useApp } from '../../app/estado';
 import {
   obterPonto, statusDoPonto, PERIODOS, resumoDoPonto, projecaoDoPonto, serieDoPeriodo, perfilHorario,
-  economiaDoPonto, inteligenciaDoPonto, carregadoresDoPonto, solarDoPonto, situacaoDaVaga,
+  economiaDoPonto, inteligenciaDoPonto, carregadoresDoPonto, situacaoDaVaga,
   atencaoDoPonto, checklistAtivacao, previsaoDoPonto, dadosAte, type PeriodoId,
 } from '../../domain/db';
 import { REGRAS } from '../../domain/catalogo';
 import { brl, horas, kwh, num, pct } from '../../domain/formato';
 import {
   Card, KPI, Nota, Badge, Bar, ChartTip, CHART, eixoProps, gradeProps, StatusBadge, Segmentado,
-  ChartFrame, GraficoDiario, ListaAtencao, EmptyState, TextoSituacao, METRICAS_DIA, eixoKW,
+  ChartFrame, GraficoDiario, ListaAtencao, EmptyState, TextoSituacao, METRICAS_DIA,
   type MetricaDia,
 } from '../../ui/kit';
 import { Icone } from '../../ui/icones';
@@ -156,7 +156,6 @@ export default function Painel() {
   const horario = perfilHorario(pontoId, periodo);
   const eco = economiaDoPonto(pontoId);
   const { resumo } = inteligenciaDoPonto(pontoId);
-  const solar = solarDoPonto(pontoId);
   const atencao = atencaoDoPonto(pontoId);
   const ate = dadosAte(pontoId);
   const base = r.periodo.anterior.base;
@@ -293,66 +292,6 @@ export default function Painel() {
         </Card>
       </div>
 
-      <Card
-        title="Ecossistema GoodWe no ponto"
-        sub="Modos Prioridade Solar e FV + Bateria do HCA G2 — quanto da energia vem do sol"
-        action={
-          solar.resumo.temEcossistema ? (
-            <div className="pill-row">
-              <Badge tom="solar"><Icone nome="sol" tamanho={12} /> {num(solar.resumo.potenciaFVkWp, 1)} kWp</Badge>
-              {solar.resumo.capacidadeBateriaKWh > 0 && (
-                <Badge tom="pos"><Icone nome="bateria" tamanho={12} /> {kwh(solar.resumo.capacidadeBateriaKWh)}</Badge>
-              )}
-            </div>
-          ) : <Badge tom="gray">sem geração própria</Badge>
-        }
-      >
-        {solar.resumo.temEcossistema ? (
-          <div className="grid g-2-1">
-            <ResponsiveContainer width="100%" height={210}>
-              <AreaChart data={solar.mix.map((m) => ({ ...m, rotulo: `${m.hora}h` }))} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
-                <CartesianGrid {...gradeProps} />
-                <XAxis dataKey="rotulo" {...eixoProps} minTickGap={16} />
-                <YAxis {...eixoProps} width={56} tickFormatter={eixoKW} />
-                <Tooltip content={<ChartTip fmt={(v) => `${num(v, 1)} kW`} nomes={{ solarKW: 'Solar', baterialKW: 'Bateria', redeKW: 'Rede' }} />} />
-                <Area type="monotone" dataKey="solarKW" stackId="1" name="Solar"
-                      stroke={CHART.serie3} fill="rgba(255,176,32,.28)" strokeWidth={2} />
-                <Area type="monotone" dataKey="baterialKW" stackId="1" name="Bateria"
-                      stroke={CHART.serie2} fill="rgba(61,220,151,.22)" strokeWidth={2} />
-                <Area type="monotone" dataKey="redeKW" stackId="1" name="Rede"
-                      stroke={CHART.neutro} fill={CHART.neutroFill} strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-
-            <div className="stack" style={{ gap: 11 }}>
-              <div>
-                <div className="kpi-label">Autossuficiência</div>
-                <div className="kpi-value sm">{pct(solar.resumo.autossuficiencia)}</div>
-                <div className="tiny muted">da energia do ponto vem de sol e bateria</div>
-              </div>
-              <div>
-                <div className="kpi-label">Economia na energia vendida</div>
-                <div className="kpi-value sm">{brl(solar.resumo.economiaRecargaMes)}</div>
-                <div className="tiny muted">
-                  parte da recarga que veio do sol · a conta de luz inteira do comércio economiza{' '}
-                  {brl(solar.resumo.economiaMes)}/mês
-                </div>
-              </div>
-              <div>
-                <div className="kpi-label">CO₂ evitado</div>
-                <div className="kpi-value sm">{num(solar.resumo.co2EvitadoMesKg, 1)} kg</div>
-                <div className="tiny muted">por mês (fator médio do SIN)</div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <Nota titulo="Oportunidade: este ponto ainda não tem geração própria" tom="amber">
-            Instalar inversor e painéis GoodWe aqui reduziria o custo do kWh vendido e liberaria
-            potência na entrada elétrica em horário de pico — menos pausa na recarga e mais margem
-            para o franqueado. É a porta de entrada natural para o ecossistema GoodWe.
-          </Nota>
-        )}
-      </Card>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import {
-  resumoDaRede, kpisDaRede, desempenhoPorRegiao, serieDoPeriodo, rankingPontos, base, solarDaRede,
+  resumoDaRede, kpisDaRede, desempenhoPorRegiao, serieDoPeriodo, rankingPontos, base,
   atencaoDaRede, dadosAte, type ItemAtencao,
 } from '../../domain/db';
 import { REGRAS } from '../../domain/catalogo';
@@ -28,7 +28,6 @@ export default function Visao() {
   const serie = serieDoPeriodo(null, 'mes');
   const ranking = rankingPontos();
   const atencao = atencaoDaRede();
-  const solar = solarDaRede();
   const ate = dadosAte();
   const base_ = r.periodo.anterior.base;
   const meta = REGRAS.limiarViabilidadeHoras;
@@ -214,41 +213,6 @@ export default function Visao() {
         </Card>
       </div>
 
-      <Card
-        title="Ecossistema GoodWe na rede"
-        sub="Cada ponto é também um cliente potencial de inversor, bateria e solar"
-      >
-        <div className="grid g4">
-          <div>
-            <div className="kpi-label">Pontos com geração própria</div>
-            <div className="kpi-value sm">
-              {num(solar.pontosComSolar)}<span className="tiny muted"> de {num(base.pontos.length)}</span>
-            </div>
-            <div className="tiny muted">{num(solar.potenciaFVkWp, 1)} kWp instalados</div>
-          </div>
-          <div>
-            <div className="kpi-label">Com bateria</div>
-            <div className="kpi-value sm">{num(solar.pontosComBateria)}</div>
-            <div className="tiny muted">modo FV + Bateria ativo</div>
-          </div>
-          <div>
-            <div className="kpi-label">Solar na energia vendida</div>
-            <div className="kpi-value sm">{brl(solar.economiaRecargaMes)}</div>
-            <div className="tiny muted">economia no custo da recarga, por mês</div>
-          </div>
-          <div>
-            <div className="kpi-label">Oportunidade aberta</div>
-            <div className="kpi-value sm">{num(solar.pontosSemSolar)}</div>
-            <div className="tiny muted">pontos ainda sem solar — leads qualificados</div>
-          </div>
-        </div>
-        <div className="sep" />
-        <div className="tiny muted">
-          A franquia de recarga funciona como canal de aquisição: cada comércio que entra na rede
-          instala carga elétrica nova e vira candidato natural a inversor, bateria e geração solar
-          GoodWe. Também são <b>{num(solar.co2EvitadoMesKg, 1)} kg de CO₂</b> evitados por mês.
-        </div>
-      </Card>
     </div>
   );
 }

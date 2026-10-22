@@ -49,8 +49,6 @@ export interface DadosTela {
   tarifa: ComposicaoTarifa;
   /** preço travado da sessão (QR e carga); sem sessão, o de agora */
   precoKWh: number;
-  /** fração da demanda do ponto coberta por sol e bateria; null quando o ponto não tem solar */
-  solar: number | null;
   /** minicurva de potência (só com 3 pontos ou mais) */
   serie: number[] | null;
   ocupado: boolean;

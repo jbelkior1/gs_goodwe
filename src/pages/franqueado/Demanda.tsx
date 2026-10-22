@@ -7,7 +7,6 @@ import {
   situacaoDaVaga, statusDoPonto,
 } from '../../domain/db';
 import { cargaComercioNaHora } from '../../domain/engine/demanda';
-import { geracaoSolarKW } from '../../domain/engine/solar';
 import { horaLocal } from '../../domain/tempo';
 import { kw, num, pct } from '../../domain/formato';
 import { BancadaVaga } from '../../ui/Bancada';
@@ -36,18 +35,10 @@ export default function Demanda() {
   const d = demandaDoPonto(pontoId);
   const carregadores = carregadoresDoPonto(pontoId);
   const agora = horaLocal();
-  const solarAgoraKW = geracaoSolarKW(ponto, agora);
   const faixa = faixaDaEntrada(d.utilizacaoEntrada);
 
-  // carga do comércio ao longo do dia contra o limite; com solar, a carga que a rede enxerga é menor
-  const projecao = Array.from({ length: 24 }, (_, h) => {
-    const comercio = cargaComercioNaHora(ponto, h);
-    return {
-      hora: `${h}h`,
-      comercio,
-      liquida: Math.max(0, comercio - geracaoSolarKW(ponto, h)),
-    };
-  });
+  // carga do comércio ao longo do dia contra o limite
+  const projecao = Array.from({ length: 24 }, (_, h) => ({ hora: `${h}h`, comercio: cargaComercioNaHora(ponto, h) }));
 
   return (
     <div className="stack">
@@ -63,9 +54,7 @@ export default function Demanda() {
         <KPI label="Carga do comércio" value={kw(d.cargaComercioKW)}
              foot="geladeiras, luzes, climatização" />
         <KPI label="Disponível para recarga" value={kw(d.disponivelParaRecargaKW)}
-             foot={solarAgoraKW > 0
-               ? `já com ${kw(solarAgoraKW)} do sol descontados`
-               : 'já com margem de segurança de 8%'} />
+             foot="já com margem de segurança de 8%" />
         <KPI label="Uso da entrada" value={pct(d.utilizacaoEntrada)}
              foot={(
                <>
@@ -81,7 +70,6 @@ export default function Demanda() {
           comercioKW={d.cargaComercioKW}
           recargaKW={d.demandaConcedidaKW}
           limiteKW={ponto.limitePotenciaKW}
-          solarKW={solarAgoraKW}
         />
         <div className="row wrap tiny muted" style={{ marginTop: 10, gap: 8 }}>
           <span>Faixas de uso:</span>
@@ -89,15 +77,6 @@ export default function Demanda() {
           <Badge tom="warn">Atenção de 85% a 92%</Badge>
           <Badge tom="neg">Crítico acima de 92%</Badge>
         </div>
-        {solarAgoraKW > 0 && (
-          <div style={{ marginTop: 11 }}>
-            <Nota titulo="O sol está ajudando agora" tom="amber">
-              A geração fotovoltaica entrega <b>{kw(solarAgoraKW)}</b> neste momento. Isso
-              reduz o que o ponto puxa da rede e <b>libera folga na entrada elétrica</b> — na
-              prática, mais carros carregando em potência cheia no horário de pico.
-            </Nota>
-          </div>
-        )}
         {d.emRestricao && (
           <div style={{ marginTop: 12 }}>
             <Nota titulo="Potência sendo limitada" tom="amber">
@@ -194,7 +173,7 @@ export default function Demanda() {
             <CartesianGrid {...gradeProps} />
             <XAxis dataKey="hora" {...eixoProps} minTickGap={20} />
             <YAxis {...eixoProps} width={62} tickFormatter={eixoKW} domain={[0, Math.ceil(ponto.limitePotenciaKW * 1.1)]} />
-            <Tooltip content={<ChartTip fmt={(v) => kw(v)} nomes={{ comercio: 'Carga do comércio', liquida: 'Carga com o sol' }} />} />
+            <Tooltip content={<ChartTip fmt={(v) => kw(v)} nomes={{ comercio: 'Carga do comércio' }} />} />
             <ReferenceLine y={ponto.limitePotenciaKW} stroke={CHART.neg} strokeWidth={2}
                            label={{ value: `limite ${kw(ponto.limitePotenciaKW)}`, fontSize: 11, fill: CHART.neg, position: 'insideTopRight' }} />
             <ReferenceLine y={ponto.limitePotenciaKW * 0.92} stroke={CHART.meta} strokeDasharray="4 3"
@@ -203,10 +182,6 @@ export default function Demanda() {
                            label={{ value: 'agora', fontSize: 11, fill: CHART.rotulo, position: 'insideTopLeft' }} />
             <Area type="monotone" dataKey="comercio" stroke={CHART.neutro} fill={CHART.neutroFill} strokeWidth={2}
                   name="Carga do comércio" isAnimationActive={false} />
-            {ponto.temSolar && (
-              <Area type="monotone" dataKey="liquida" stroke={CHART.serie3} fill="none" strokeWidth={2}
-                    strokeDasharray="5 3" name="Carga com o sol" isAnimationActive={false} />
-            )}
           </AreaChart>
         </ResponsiveContainer>
         <div className="tiny muted" style={{ marginTop: 6 }}>

@@ -329,7 +329,7 @@
   <header class="cab cont"><span class="n">2</span><div><h2>O fluxo <em>em 11 passos</em> · continuação</h2></div></header>
   <div class="passos">
     <div class="passo"><span class="n">7</span><div><h4>O motorista lê o QR ou digita o código <span class="tag t-voce">Motorista</span></h4>
-      <p>O app mostra o ponto, a vaga e o mesmo preço do totem, com o motivo ("energia do sol −2%", "horário de pico +12%"). Ele toca em "Iniciar recarga".</p>
+      <p>O app mostra o ponto, a vaga e o mesmo preço do totem, com o motivo ("horário de pico +12%", "últimas vagas +8%"). Ele toca em "Iniciar recarga".</p>
       <div class="meta"><span><b>Tela:</b> <code>/motorista/vincular?c=CODIGO</code></span><span><b>Grava:</b> sessão AUTENTICADO</span></div></div></div>
     <div class="passo"><span class="n">8</span><div><h4>O agente libera a potência <span class="tag t-sis">Agente</span></h4>
       <p>A carga roda (10 vezes mais rápida na demonstração). A cada 2 s o agente grava kW, kWh, bateria e R$. O controle de demanda divide a potência entre a loja e os carros sem passar do limite do disjuntor.</p>
@@ -598,10 +598,10 @@
   <header class="cab"><span class="n">7</span><div><h2>Como sai o <em>preço do kWh</em></h2></div></header>
   <p class="lead">O franqueado define o preço base. O sistema ajusta o preço de cada hora sozinho, sempre dentro de limites, e o motorista vê o preço travado antes de começar.</p>
   <div class="formula">
-    <div class="linha">preço = <b>preço base</b> × faixa do horário × últimas vagas − energia do sol</div>
+    <div class="linha">preço = <b>preço base</b> × faixa do horário × últimas vagas</div>
     <div class="g3">
       <div><b>Faixa do horário</b><p class="dim peq" style="margin-top:1mm">Vale (22h às 8h): −10%<br>Normal: o preço base<br>Pico (17h às 19h, dias úteis): +12%<br>No máximo 10% de diferença de uma hora para a outra.</p></div>
-      <div><b>Últimas vagas e sol</b><p class="dim peq" style="margin-top:1mm">Ponto com 2 vagas ou mais: até +8% quando o motorista pega uma das últimas vagas (mais da metade ocupada, contando ele).<br>Com geração solar sobrando no ponto: até −8%.</p></div>
+      <div><b>Últimas vagas</b><p class="dim peq" style="margin-top:1mm">Ponto com 2 vagas ou mais: até +8% quando o motorista pega uma das últimas vagas (mais da metade ocupada, contando ele).</p></div>
       <div><b>Limites e trava</b><p class="dim peq" style="margin-top:1mm">Piso: 85% da base e nunca abaixo de energia + taxas + R$ 0,20.<br>Teto: 130% da base.<br>O preço do QR vale 10 minutos e é o que vai para o Pix.</p></div>
     </div>
   </div>
@@ -626,7 +626,7 @@
       </g>
       <text x="370" y="244" font-size="9.5" fill="#6e6e73" text-anchor="middle">vale · normal · pico · as horas 8h, 16h, 20h e 22h são rampas de transição</text>
     </svg>
-    <figcaption>Calculado pelo próprio motor de tarifa do app, com o ponto vazio e sem sol. Na última vaga livre do pico o preço vai a R$ 2,30; no fim de semana não há pico.</figcaption>
+    <figcaption>Calculado pelo próprio motor de tarifa do app, com o ponto vazio. Na última vaga livre do pico o preço vai a R$ 2,30; no fim de semana não há pico.</figcaption>
   </figure>
 
   <h3 style="margin-top:4mm">O motorista sempre vê o porquê <span class="dim" style="font-weight:400;font-size:9pt">· as linhas que o totem e o celular mostram, geradas pelo motor</span></h3>
@@ -635,7 +635,7 @@
     <div class="card"><h4>18h, horário de pico</h4><div class="stat" style="background:none;border:0;padding:0 0 2mm"><div class="v">R$ 2,13<small>/kWh</small></div></div><p>Preço base R$ 1,90/kWh<br>Horário de pico (+12%) +R$ 0,23</p></div>
     <div class="card r"><h4>18h, a última vaga livre</h4><div class="stat" style="background:none;border:0;padding:0 0 2mm"><div class="v">R$ 2,30<small>/kWh</small></div></div><p>Preço base R$ 1,90/kWh<br>Horário de pico (+12%) +R$ 0,23<br>Últimas vagas (+8%) +R$ 0,17</p></div>
   </div>
-  <p class="nota">Num ponto com painéis solares aparece também a linha do sol, por exemplo "Energia do sol do ponto (−2%) −R$ 0,03" (a FIAP Aclimação tem painéis e bateria GoodWe). O preço que o motorista confirma fica travado por 10 minutos e vai inteiro para a cobrança.</p>
+  <p class="nota">O preço que o motorista confirma fica travado por 10 minutos e vai inteiro para a cobrança.</p>
   <div class="rod"><span>Ponto W · Como o sistema funciona</span><span class="pg"></span></div>
 </section>
 
@@ -776,7 +776,7 @@
     <thead><tr><th style="width:36%">Valor</th><th style="width:22%">Hoje (sugerido)</th><th>Quem ajusta e como</th></tr></thead>
     <tbody>
       <tr><td>Preço base do kWh do ponto</td><td>R$ 1,90 em SP</td><td><b style="color:#f5f5f7">Franqueado</b>, em Meu ponto. O app recusa abaixo do custo (R$ 1,17 em SP) e acima do dobro do sugerido, e avisa quando fica abaixo do sugerido.</td></tr>
-      <tr><td>Faixas de horário, últimas vagas, sol, piso e teto</td><td>−10% / +12% / +8% / −8% / 85% / 130%</td><td rowspan="3"><b style="color:#f5f5f7">GoodWe</b>, nas regras da rede. No MVP elas ficam num arquivo só (<code>catalogo.ts</code>); mudar um número muda junto o totem, o celular, a cobrança, a homologação e o simulador da franquia.</td></tr>
+      <tr><td>Faixas de horário, últimas vagas, piso e teto</td><td>−10% / +12% / +8% / 85% / 130%</td><td rowspan="3"><b style="color:#f5f5f7">GoodWe</b>, nas regras da rede. No MVP elas ficam num arquivo só (<code>catalogo.ts</code>); mudar um número muda junto o totem, o celular, a cobrança, a homologação e o simulador da franquia.</td></tr>
       <tr><td>Royalty, fundo e mensalidade da plataforma</td><td>6% / 2% / R$ 180</td></tr>
       <tr><td>Investimento e taxa de franquia por formato</td><td>tabela da página anterior</td></tr>
       <tr><td>Tarifa do Pix</td><td>1,5%</td><td>Depende do contrato com o meio de pagamento (no MVP o Pix é simulado).</td></tr>

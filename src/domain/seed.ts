@@ -155,13 +155,13 @@ const UNIDADES: UnidadeDemo[] = [
     nome: 'Graal Anhanguera', responsavel: NOMES[29], razaoSocial: 'Graal Anhanguera Alimentos LTDA',
     regiaoId: 'r-sp-anhanguera', endereco: 'Rod. Anhanguera, Perus — São Paulo/SP', lat: -23.3968, lng: -46.7742,
     segmento: 'Posto', formato: 'Hub', perfil: 'estrada', ajustePreco: 0.15,
-    cargaBaseKW: 36, folga: 1.08, solar: { kWp: 62, bateriaKWh: 30 }, uso: 3.0, inauguradoHaDias: 410,
+    cargaBaseKW: 36, folga: 1.08, uso: 3.0, inauguradoHaDias: 410,
   },
   {
     nome: 'Pão de Açúcar Moema', responsavel: NOMES[28], razaoSocial: 'Pão de Açúcar Moema Varejo LTDA',
     regiaoId: 'r-sp-moema', endereco: 'Av. Ibirapuera, Moema — São Paulo/SP', lat: -23.6058, lng: -46.6652,
     segmento: 'Mercado', formato: 'Standard', perfil: 'mercado', ajustePreco: 0.05,
-    cargaBaseKW: 20, folga: 0.95, solar: { kWp: 36, bateriaKWh: 20 }, uso: 2.9, inauguradoHaDias: 330,
+    cargaBaseKW: 20, folga: 0.95, uso: 2.9, inauguradoHaDias: 330,
   },
   {
     nome: 'Pão de Açúcar Higienópolis', responsavel: NOMES[27], razaoSocial: 'Pão de Açúcar Higienópolis Varejo LTDA',
@@ -173,7 +173,7 @@ const UNIDADES: UnidadeDemo[] = [
     nome: 'Carrefour Marginal Pinheiros', responsavel: NOMES[26], razaoSocial: 'Carrefour Pinheiros Hipermercados LTDA',
     regiaoId: 'r-sp-pinheiros', endereco: 'Av. das Nações Unidas (Marginal Pinheiros), Pinheiros — São Paulo/SP', lat: -23.5818, lng: -46.6928,
     segmento: 'Mercado', formato: 'Hub', perfil: 'hiper', ajustePreco: -0.05,
-    cargaBaseKW: 58, folga: 1.1, solar: { kWp: 96, bateriaKWh: 40 }, uso: 2.8, inauguradoHaDias: 380,
+    cargaBaseKW: 58, folga: 1.1, uso: 2.8, inauguradoHaDias: 380,
   },
   {
     nome: 'Carrefour Tatuapé', responsavel: NOMES[25], razaoSocial: 'Carrefour Tatuapé Hipermercados LTDA',
@@ -203,7 +203,7 @@ const UNIDADES: UnidadeDemo[] = [
     nome: 'Outback Morumbi', responsavel: NOMES[21], razaoSocial: 'Outback Morumbi Restaurantes LTDA',
     regiaoId: 'r-sp-morumbi', endereco: 'Av. Giovanni Gronchi, Morumbi — São Paulo/SP', lat: -23.6018, lng: -46.7165,
     segmento: 'Café / Restaurante', formato: 'Standard', perfil: 'restaurante', ajustePreco: 0.1,
-    cargaBaseKW: 18, folga: 1.1, solar: { kWp: 30 }, uso: 2.5, inauguradoHaDias: 270,
+    cargaBaseKW: 18, folga: 1.1, uso: 2.5, inauguradoHaDias: 270,
   },
   {
     nome: 'Starbucks Faria Lima', responsavel: NOMES[20], razaoSocial: 'Starbucks Faria Lima Cafés LTDA',
@@ -211,12 +211,12 @@ const UNIDADES: UnidadeDemo[] = [
     segmento: 'Café / Restaurante', formato: 'Light', perfil: 'cafe', ajustePreco: 0.1,
     cargaBaseKW: 9, folga: 1.25, uso: 5.6, inauguradoHaDias: 130,
   },
-  // o ponto da apresentação: no preço sugerido da região, com sol e bateria GoodWe; aulas de manhã e à noite
+  // o ponto da apresentação: no preço sugerido da região; aulas de manhã e à noite
   {
     nome: 'FIAP Aclimação', responsavel: NOMES[19], razaoSocial: 'FIAP Aclimação Ensino LTDA',
     regiaoId: 'r-sp-vila-mariana', endereco: 'Av. Lins de Vasconcelos, Aclimação — São Paulo/SP', lat: -23.5736, lng: -46.6232,
     segmento: 'Loja de rua', formato: 'Standard', perfil: 'academia', ajustePreco: 0,
-    cargaBaseKW: 30, folga: 1.1, solar: { kWp: 40, bateriaKWh: 20 }, uso: 2.8, inauguradoHaDias: 120,
+    cargaBaseKW: 30, folga: 1.1, uso: 2.8, inauguradoHaDias: 120,
   },
 ];
 
