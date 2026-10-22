@@ -2,6 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { Link } from 'react-router-dom';
 import { comTela, telaDoNavegador } from '../app/tela';
 import { desparearTotem } from '../data/totens';
+import { EMBUTIDO } from '../pages/demo/ambienteDemo';
+import { AlcaBarra, BarraInferior } from './BarraInferior';
+import { gravarBarra, gravarLimiteBarra, lerBarra, lerLimiteBarra, limitarBarra, LIMITES_BARRA } from './barraDoTotem';
 import { DESENHO, QuiosqueCtx } from './quiosqueContexto';
 import '../pages/totem/totem.css';
 
@@ -20,28 +23,37 @@ const lerModo = (): ModoTela => {
  * Palco de tamanho fixo que se escala para caber inteiro no espaço do pai, centralizado.
  * Mede o pai com ResizeObserver; é o mesmo mecanismo do quiosque (tela inteira) e da vitrine
  * (dentro da moldura 3D).
+ *
+ * Com `alturaMinima`, a altura do desenho acompanha o espaço: a largura continua `largura` e a altura
+ * vai de `altura` até `alturaMinima` (a grade do totem se reorganiza, sem diminuir texto nem botão).
+ * Só abaixo do mínimo o palco passa a diminuir inteiro. É o que a barra de baixo do totem usa.
  */
-export function PalcoEscalado({ largura, altura, children }: { largura: number; altura: number; children: ReactNode }) {
+export function PalcoEscalado({ largura, altura, alturaMinima, children }: {
+  largura: number; altura: number; alturaMinima?: number; children: ReactNode;
+}) {
   const caixa = useRef<HTMLDivElement>(null);
-  const [escala, setEscala] = useState(0);
+  const [medida, setMedida] = useState({ escala: 0, altura });
   useLayoutEffect(() => {
     const el = caixa.current;
     if (!el) return;
     const medir = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
-      if (w > 0 && h > 0) setEscala(Math.min(w / largura, h / altura));
+      if (!(w > 0 && h > 0)) return;
+      const alt = alturaMinima ? Math.round(Math.min(altura, Math.max(alturaMinima, (h * largura) / w))) : altura;
+      setMedida({ escala: Math.min(w / largura, h / alt), altura: alt });
     };
     medir();
     const obs = new ResizeObserver(medir);
     obs.observe(el);
     return () => obs.disconnect();
-  }, [largura, altura]);
+  }, [largura, altura, alturaMinima]);
+  const { escala } = medida;
   return (
     <div ref={caixa} className="palco-esc">
       <div
         className="palco-esc-palco"
-        style={{ width: largura, height: altura, transform: `translate(-50%, -50%) scale(${escala || 1})`, visibility: escala ? 'visible' : 'hidden' }}
+        style={{ width: largura, height: medida.altura, transform: `translate(-50%, -50%) scale(${escala || 1})`, visibility: escala ? 'visible' : 'hidden' }}
       >
         {children}
       </div>
@@ -54,6 +66,8 @@ export function PalcoEscalado({ largura, altura, children }: { largura: number; 
  * se a tela for diferente, mantém a tela acesa, tenta tela cheia no primeiro toque e bloqueia
  * menu de contexto, seleção, pinça e zoom do navegador. A engrenagem pública não existe mais:
  * o menu de manutenção abre com 5 toques seguidos no logo (veja useToquesSecretos).
+ * Em pé, a alça do canto inferior direito abre a barra de baixo (BarraInferior.tsx): num totem
+ * alto, a tela sobe até a mão de quem usa e a faixa que sobra embaixo mostra o símbolo do Ponto W.
  */
 export function Quiosque({ children }: { children: (orientacao: 'vertical' | 'horizontal') => ReactNode }) {
   const [modo, setModo] = useState<ModoTela>(lerModo);
@@ -123,21 +137,55 @@ export function Quiosque({ children }: { children: (orientacao: 'vertical' | 'ho
   const d = DESENHO[orientacao];
   const abrirMenu = useCallback(() => setMenu(true), []);
   const ctx = useMemo(() => ({ abrirMenu }), [abrirMenu]);
+  // a tela só é desenhada de novo quando a orientação muda: arrastar a alça não re-renderiza o totem
+  const conteudo = useMemo(() => children(orientacao), [children, orientacao]);
+
+  // barra de baixo (totem alto): só no totem em pé de verdade (o palco da central /demo embute o totem
+  // em tela cheia e fica como sempre foi); a altura fica guardada no aparelho
+  const [barra, setBarra] = useState(lerBarra);
+  const [limite, setLimite] = useState(lerLimiteBarra);
+  const emPe = orientacao === 'vertical' && !EMBUTIDO;
+  const alturaBarra = emPe ? limitarBarra(barra, limite) : 0;
+  const mudarLimite = (v: number) => {
+    setLimite(v); gravarLimiteBarra(v);
+    const nova = limitarBarra(barra, v);
+    setBarra(nova); gravarBarra(nova);
+  };
+  const recolher = () => { setBarra(0); gravarBarra(0); };
 
   return (
     <div className="quiosque" ref={raiz}>
-      <PalcoEscalado largura={d.w} altura={d.h}>
-        <QuiosqueCtx.Provider value={ctx}>
-          {children(orientacao)}
-          {menu && <MenuManutencao modo={modo} aoMudarModo={setModo} aoFechar={() => setMenu(false)} />}
-        </QuiosqueCtx.Provider>
-      </PalcoEscalado>
+      <div className="quiosque-tela">
+        {/* barra fechada: o palco só escala, como antes (uma tela fora de 9:16 não reorganiza o totem) */}
+        <PalcoEscalado largura={d.w} altura={d.h} alturaMinima={alturaBarra > 0 ? ALTURA_MINIMA_EM_PE : undefined}>
+          <QuiosqueCtx.Provider value={ctx}>
+            {conteudo}
+            {menu && (
+              <MenuManutencao
+                modo={modo} aoMudarModo={setModo} aoFechar={() => setMenu(false)}
+                emPe={emPe} limite={limite} aoMudarLimite={mudarLimite} barraAberta={alturaBarra > 0} aoRecolher={recolher}
+              />
+            )}
+          </QuiosqueCtx.Provider>
+        </PalcoEscalado>
+        {emPe && limite > 0 && <AlcaBarra valor={alturaBarra} limite={limite} aoMudar={setBarra} aoSoltar={gravarBarra} />}
+      </div>
+      <BarraInferior altura={alturaBarra} />
     </div>
   );
 }
 
-/** Menu de manutenção (5 toques no logo): modo da tela, tela cheia e desparear. Fecha sozinho em 20 s. */
-function MenuManutencao({ modo, aoMudarModo, aoFechar }: { modo: ModoTela; aoMudarModo: (m: ModoTela) => void; aoFechar: () => void }) {
+/**
+ * Em pé, a altura útil pode cair até aqui (a barra de baixo come o resto) com texto e botões no
+ * tamanho normal; a grade cede espaço no meio. Abaixo disso o palco diminui inteiro.
+ */
+const ALTURA_MINIMA_EM_PE = 1440;
+
+/** Menu de manutenção (5 toques no logo): modo da tela, barra de baixo, tela cheia e desparear. Fecha sozinho em 20 s. */
+function MenuManutencao({ modo, aoMudarModo, aoFechar, emPe, limite, aoMudarLimite, barraAberta, aoRecolher }: {
+  modo: ModoTela; aoMudarModo: (m: ModoTela) => void; aoFechar: () => void;
+  emPe: boolean; limite: number; aoMudarLimite: (v: number) => void; barraAberta: boolean; aoRecolher: () => void;
+}) {
   const [confirmando, setConfirmando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   useEffect(() => {
@@ -172,6 +220,19 @@ function MenuManutencao({ modo, aoMudarModo, aoFechar }: { modo: ModoTela; aoMud
             </button>
           ))}
         </div>
+        {emPe && (
+          <>
+            <div className="qm-rotulo">Barra de baixo (totem alto)</div>
+            <div className="qm-linha">
+              {LIMITES_BARRA.map((v) => (
+                <button key={v} className={`qm-btn ${Math.abs(limite - v) < 0.001 ? 'on' : ''}`} onClick={() => aoMudarLimite(v)}>
+                  {v === 0 ? 'Desligada' : `Até ${Math.round(v * 100)}%`}
+                </button>
+              ))}
+            </div>
+            {barraAberta && <button className="qm-btn" onClick={() => { aoRecolher(); aoFechar(); }}>Recolher a barra</button>}
+          </>
+        )}
         <button className="qm-btn" onClick={telaCheia}>Tela cheia: ligar ou desligar</button>
         {DEMO && (
           <Link className="qm-btn" to={comTela('/totem', window.location.search, 'vitrine')} onClick={() => telaDoNavegador(false)}>

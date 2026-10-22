@@ -19,6 +19,27 @@
 .palco-esc { position: relative; width: 100%; height: 100%; overflow: clip; }
 .palco-esc-palco { position: absolute; left: 50%; top: 50%; transform-origin: center; overflow: clip; }
 
+/* barra de baixo do totem em pé (ui/BarraInferior.tsx): a tela fica em cima e a faixa preta com o
+   símbolo ocupa o que a alça abriu. Medidas em vmin: a alça e o símbolo são da tela real, fora do palco. */
+.quiosque { display: flex; flex-direction: column; }
+.quiosque-tela { position: relative; flex: 1 1 auto; min-height: 0; }
+.quiosque-tela > .palco-esc { position: absolute; inset: 0; }
+.quiosque-barra { flex: none; background: #000; display: grid; place-items: center; overflow: hidden; }
+.quiosque-barra-simbolo { display: block; height: min(44%, 15vmin); width: auto; aspect-ratio: 1; opacity: .92; }
+/* a alça é uma aba baixa: cabe na margem que toda tela deixa embaixo (28 px), sem cobrir botão */
+.quiosque-alca {
+  position: absolute; right: 0; bottom: 0; z-index: 70;
+  width: max(48px, 7vmin); height: max(20px, 2.2vmin); padding: 0; margin: 0;
+  border: 0; border-radius: 1.2vmin 1.2vmin 0 0; background: rgba(44, 44, 48, .8); color: rgba(244, 242, 238, .8);
+  display: grid; place-items: center; opacity: .5; cursor: ns-resize; touch-action: none;
+  -webkit-tap-highlight-color: transparent; transition: opacity .15s;
+}
+.quiosque-alca:active, .quiosque-alca:focus-visible { opacity: 1; outline: none; }
+.quiosque-alca:focus-visible { box-shadow: inset 0 0 0 3px #f4f2ee; }
+.quiosque-alca svg { height: 90%; width: auto; aspect-ratio: 1; }
+/* com diálogo, Volt ou menu aberto, a alça sai de cena: os botões desses painéis ficam embaixo */
+.quiosque:has(.tk-dialogo-fundo, .tk-volt-fundo, .qm-fundo) .quiosque-alca { display: none; }
+
 /* a vitrine (dentro da moldura 3D) ocupa o visor inteiro; o palco escala dentro dele */
 .tk-vitrine { position: relative; flex: 1 1 auto; align-self: stretch; min-width: 0; min-height: 0; background: #000; }
 @media (max-width: 780px) { .tk-vitrine { min-height: calc(100vh - 300px); } }
@@ -62,10 +83,13 @@
 
 /* em pé: topo 132 · passos · estado (o que sobra) · números · rodapé (ação + Volt) · vagas · demonstração */
 .tk-v {
+  /* a altura do palco em pé varia com a barra de baixo (1920 até 1340): as regras "em pé mais baixo" leem este contêiner */
+  container: totem / size;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: 132px auto auto minmax(0, 1fr) auto auto auto auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto auto;
   grid-template-areas: "topo topo" "avisos avisos" "etapas etapas" "estado estado" "numeros numeros" "acao volt" "vagas vagas" "demo demo";
 }
+.tk-v .tk-topo { height: 132px; }
 /* deitado: topo 112 · passos · estado 7/12 à esquerda · números, ação e demonstração na lateral · faixa de vagas e Volt */
 .tk-h {
   grid-template-columns: 1120px minmax(0, 1fr);
@@ -125,6 +149,8 @@
 
 /* ------------------------------------------------------------ áreas */
 .tk-estado { min-width: 0; min-height: 0; padding: 44px 54px 24px; display: flex; flex-direction: column; overflow: clip; container-type: size; }
+/* o nome "estado" só em pé: as regras de altura curta da barra de baixo não valem para o totem deitado */
+.tk-v .tk-estado { container-name: estado; }
 .tk-numeros { min-width: 0; padding: 24px 54px 36px; }
 .tk-acao {
   min-width: 0; min-height: 132px; padding: 24px 0 24px 54px; border-top: 1px solid var(--tk-linha-painel);
@@ -510,9 +536,120 @@
   background: var(--tk-painel2); border: 2px solid var(--tk-hair); color: var(--tk-texto);
 }
 .qm-btn.on { background: var(--tk-texto); color: #000; border-color: transparent; }
+/* linha com 4 opções (limite da barra de baixo): cabe numa linha só */
+.qm-linha:has(> :nth-child(4)) .qm-btn { padding: 0 10px; font-size: 28px; white-space: nowrap; }
 .qm-btn.perigo { border-color: var(--tk-vermelho-claro); color: var(--tk-vermelho-claro); }
 .qm-btn.perigo.on { background: #8e0410; color: #fff; }
 .qm-btn:disabled { opacity: .55; }
+
+/* ------------------------------------------------------------ em pé, mais baixo: a barra de baixo (totem alto)
+   Com a barra aberta, o palco em pé fica com 1920 até 1440 px de altura (ui/Quiosque.tsx). Texto e botões
+   mantêm o tamanho de leitura; o que cede é espaçamento, os painéis de números e a área do meio.
+   As regras "totem" leem a altura do palco; as regras "estado", a altura que sobrou para a área do meio.
+   As margens de baixo (28 px) ficam: é nelas que a alça da barra se encaixa sem cobrir botão. */
+@container totem (max-height: 1640px) {
+  .tk-v .tk-topo { height: 112px; }
+  .tk-etapas { padding-top: 20px; }
+  .tk-estado { padding-top: 28px; padding-bottom: 16px; }
+  .tk-numeros { padding-top: 12px; padding-bottom: 20px; }
+  .tk-acao { min-height: 108px; padding-top: 14px; padding-bottom: 14px; }
+  /* embaixo fica 24 px: sem vagas (instalação, suspenso), o Volt é a última linha e a alça encosta nele */
+  .tk-volt-area { padding-top: 12px; }
+  /* o disco do Volt não encolhe: o boneco tem 76 × 81 px (Totem.tsx) e flutua; só cabe inteiro em 88 px */
+  .tk-v .tk-volt-rotulo { font-size: 20px; }
+  .tk-vaga { min-height: 80px; }
+  .tk-demo { padding: 8px 14px 12px; gap: 6px; }
+  .tk-demo-btn { min-height: 62px; }
+  .tk-cartao { padding: 26px 32px; gap: 12px; }
+  .tk-linhas { padding-top: 12px; gap: 6px; }
+  .tk-metrica { min-height: 160px; padding: 20px 26px; }
+  .tk-metrica-valor { font-size: 68px; }
+  .tk-metrica-valor.t-p { font-size: 56px; }
+  .tk-preco-valor { font-size: 116px; }
+  .tk-valor-gigante { font-size: 132px; }
+  .tk-pago-lado { gap: 16px; }
+  .tk-recibo-total { padding-top: 12px; }
+  .tk-recibo-total b { font-size: 76px; }
+  .tk-recibo-qr { padding: 14px 22px; gap: 24px; }
+  .tk-qr.mini { width: 128px; height: 128px; }
+  .tk-v .tk-volt-painel { height: min(1160px, 84cqh); }
+}
+@container totem (max-height: 1520px) {
+  .tk-metrica { min-height: 124px; gap: 6px; }
+  .tk-metrica-valor { font-size: 58px; }
+  .tk-metrica-nota, .tk-minicurva { display: none; }
+  .tk-preco-valor { font-size: 100px; }
+  .tk-valor-gigante { font-size: 112px; }
+  .tk-recibo-qr-texto span { display: none; }
+  .tk-qr.mini { width: 104px; height: 104px; }
+  .tk-btn { min-height: 90px; font-size: 35px; }
+  .tk-btn.sec { min-height: 86px; font-size: 31px; }
+  .tk-v .tk-dialogo { padding: 40px 48px 36px; gap: 22px; }
+  .tk-dialogo-destaque { padding: 18px 0; }
+  .tk-dialogo-destaque .tk-preco-valor { font-size: 80px; }
+  .tk-opcao { min-height: 74px; }
+  .tk-escolha { gap: 8px; }
+}
+
+/* área do meio curta: o QR vai para o lado do código (como no totem deitado). Os limites contam a área
+   sem o espaçamento interno; com a barra fechada (1920 px) nenhuma tela chega neles */
+@container estado (max-height: 560px) {
+  .tk-qr-tela { gap: 18px; }
+  .tk-qr-corpo { flex-direction: row; justify-content: center; gap: 40px; }
+  .tk-qr-corpo .tk-qr { flex: none; height: 100%; max-height: 520px; width: auto; }
+  .tk-qr-codigo { width: auto; flex: 0 1 auto; flex-direction: column; align-items: flex-start; border: 0; padding: 0; gap: 12px; }
+}
+@container estado (max-height: 420px) {
+  .tk-qr-cabeca .tk-sub { display: none; }
+  .tk-qr-cabeca .tk-titulo { font-size: 58px; }
+  .tk-codigo { font-size: 88px; }
+}
+/* Pix com pouca altura: o QR vai para a esquerda e as frases para a direita, para o QR não encolher demais */
+@container estado (max-height: 1010px) {
+  .tk-pagar { gap: 22px; }
+  .tk-pix .tk-titulo { font-size: 60px; }
+  .tk-pix {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+    gap: 18px 36px; align-items: center; justify-items: start; text-align: left;
+  }
+  .tk-pix > .tk-titulo { grid-column: 1 / -1; justify-self: center; }
+  .tk-pix > .tk-qr { grid-row: 2; height: 100%; max-height: 520px; width: auto; }
+  .tk-pix-textos { grid-row: 2; gap: 12px; }
+  .tk-pix-textos .tk-instrucao-g { font-size: 36px; }
+}
+/* espera: título, foto e passos apertam; bem curta, os passos viram uma grade 2×2 */
+@container estado (max-height: 1040px) {
+  .tk-espera { gap: 22px; }
+  .tk-espera-texto .tk-titulo-grande { font-size: 68px; }
+  .tk-espera-carro { width: 280px; max-height: 180px; }
+  .tk-passos { gap: 10px; }
+  .tk-passo { flex-basis: 88px; min-height: 72px; }
+  .tk-passo-n { width: 56px; height: 56px; font-size: 28px; }
+}
+@container estado (max-height: 900px) {
+  /* a grade cresce até ocupar o que sobrou (sem faixa vazia embaixo) */
+  .tk-passos { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(104px, 150px); gap: 12px; flex: 1 1 auto; align-content: start; }
+  .tk-passo { min-height: 0; max-height: none; padding: 0 22px; gap: 16px; }
+  .tk-passo > svg { display: none; }
+  .tk-passo-texto b { font-size: 29px; }
+  .tk-passo-texto span { font-size: 22px; }
+}
+/* ícone grande + título (reconhecendo, tudo certo, pago, expirado…): o ícone diminui e, bem curto, sai */
+@container estado (max-height: 460px) {
+  .tk-bloco { gap: 20px; }
+  .tk-bloco-icone { width: min(220px, 34cqh); height: min(220px, 34cqh); }
+  .tk-bloco .tk-titulo-grande { font-size: 66px; }
+  .tk-bloco-textos { gap: 10px; }
+}
+@container estado (max-height: 320px) {
+  .tk-bloco-icone { display: none; }
+}
+/* carga: com pouca altura, o anel fica do tamanho que sobra e o texto de cima sai */
+@container estado (max-height: 460px) {
+  .tk-carga { gap: 14px; }
+  .tk-carga > .tk-sub { display: none; }
+  .tk-eta { font-size: 34px; }
+}
 
 /* ------------------------------------------------------------ movimento */
 @keyframes tkGira { to { transform: rotate(360deg); } }
