@@ -50,6 +50,41 @@ function potencialDe(op: Oportunidade) {
   return { analise, preco, prev, goodweMes: prev.royaltiesMes + prev.plataformaMes };
 }
 
+/**
+ * Caminho para trocar o simulado por dado real (pesquisa de 22/10/2026, fontes conferidas nas páginas
+ * oficiais quando possível). Prazos são estimativa de esforço, não compromisso. A conta da tela não muda:
+ * só a origem das vias, dos carregadores e dos comércios.
+ */
+const NIVEIS: { nome: string; prazo: string; fontes: string[]; risco: string }[] = [
+  {
+    nome: '1 · Só dados abertos', prazo: '3 a 5 semanas',
+    fontes: [
+      'Fluxo: contagens da CET (PDF, última de 2019), lentidão por trecho (até 2023) e Pesquisa Origem-Destino do Metrô',
+      'Carregadores: OpenChargeMap (API grátis com chave) e OpenStreetMap',
+      'Comércios: CNPJ da Receita Federal (com CNAE e endereço) e OpenStreetMap',
+      'Elétricos e renda: frota do Senatran por município e Censo 2022 do IBGE por setor',
+    ],
+    risco: 'Fluxo antigo e indireto (lentidão não é volume) e carregadores incompletos: no OpenStreetMap a cidade de São Paulo tem poucas dezenas de carregadores, então um "vazio" pode ser falso.',
+  },
+  {
+    nome: '2 · Com API paga', prazo: '1,5 a 3 meses, com a negociação',
+    fontes: [
+      'Fluxo por trecho e hora: TomTom Traffic Stats ou HERE, calibrado com as contagens da CET',
+      'Carregadores e comércios: Google Places (traz conectores e potência dos eletropostos)',
+    ],
+    risco: 'Preço de tráfego sob consulta e cobertura de volume no Brasil limitada; o volume continua sendo estimado.',
+  },
+  {
+    nome: '3 · Parcerias', prazo: '3 a 6 meses',
+    fontes: [
+      'Movimento de pessoas por antena de celular (ex.: Claro GeoData)',
+      'Waze for Cities por convênio com a Prefeitura ou a CET (o programa é para órgão público)',
+      'As recargas da própria rede Ponto W, que mostram onde o uso já é alto',
+    ],
+    risco: 'Contrato, custo e LGPD; dado de antena mede pessoas, não carros, com resolução de 500 m a 1 km.',
+  },
+];
+
 const tomDoScore = (s: number) => (s >= 70 ? 'pos' : s >= 45 ? 'warn' : 'neu');
 
 export default function Prospeccao() {
@@ -101,7 +136,7 @@ export default function Prospeccao() {
     <div className="stack">
       <Nota tom="warn" titulo="MVP com dados simulados">
         O fluxo de carros nas vias, os carregadores de outras empresas e os comércios candidatos são simulados para mostrar a ideia.
-        Os pontos Ponto W no mapa são os de verdade da rede.
+        Os pontos Ponto W no mapa são os de verdade da rede. No fim da página está de onde viriam os dados reais.
       </Nota>
 
       <div className="grid g4">
@@ -235,6 +270,26 @@ export default function Prospeccao() {
             ))}
           </ul>
         )}
+      </Card>
+
+      <Card
+        title="Como fica com dado real"
+        sub="O que já existe para São Paulo e o esforço de cada caminho. A conta desta tela não muda: só a origem dos dados."
+      >
+        <div className="grid g3">
+          {NIVEIS.map((n) => (
+            <div key={n.nome} className="pp-nivel">
+              <div className="row between"><span className="strong">{n.nome}</span><span className="selo">{n.prazo}</span></div>
+              <ul>{n.fontes.map((f) => <li key={f}>{f}</li>)}</ul>
+              <div className="tiny muted"><b>Risco:</b> {n.risco}</div>
+            </div>
+          ))}
+        </div>
+        <div className="sep" />
+        <div className="tiny muted">
+          Nenhuma base aberta e atual dá o volume de carros por rua em São Paulo, e a ANEEL não publica a lista de eletropostos.
+          Por isso o primeiro nível já entrega o mapa, mas o salto de qualidade vem do tráfego pago ou de parceria.
+        </div>
       </Card>
     </div>
   );

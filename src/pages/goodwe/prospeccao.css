@@ -30,3 +30,7 @@
 .pp-lista li > .tiny { flex: 1 1 260px; }
 .pp-link { padding: 0; border: 0; background: none; color: var(--k-text); font: inherit; font-weight: 500; cursor: pointer; text-align: left; }
 .pp-link:hover { text-decoration: underline; }
+
+/* caminhos para o dado real */
+.pp-nivel { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--k-line); border-radius: 10px; }
+.pp-nivel ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--k-text); }
