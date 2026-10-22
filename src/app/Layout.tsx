@@ -69,6 +69,7 @@ const MENUS: Record<Persona, { grupo: string; itens: { to: string; ico: NomeIcon
       itens: [
         { to: '/goodwe', ico: 'globo', label: 'Visão da rede' },
         { to: '/goodwe/homologacao', ico: 'check', label: 'Homologação' },
+        { to: '/goodwe/prospeccao', ico: 'mapaLupa', label: 'Prospecção' },
       ],
     },
   ],
@@ -86,6 +87,7 @@ const TITULOS: Record<string, { t: string; s: string }> = {
   '/franqueado/financeiro': { t: 'Tarifas e financeiro', s: 'Preço dinâmico, cobranças e resultado da unidade' },
   '/goodwe': { t: 'Visão da rede', s: 'Todos os pontos Ponto W no Brasil' },
   '/goodwe/homologacao': { t: 'Homologação de pontos', s: 'Análise de viabilidade dos candidatos' },
+  '/goodwe/prospeccao': { t: 'Prospecção de pontos', s: 'Onde passa muito carro e ainda falta carregador' },
 };
 
 const ROTULO: Record<Persona, { nome: string; ico: NomeIcone; sub: string }> = {

@@ -1,0 +1,32 @@
+/* ==========================================================================
+   PROSPECÇÃO (src/pages/goodwe/Prospeccao.tsx) — prefixo pp-
+   ========================================================================== */
+
+/* ranking: cada linha é um botão (escolhe a oportunidade no mapa e no detalhe) */
+.pp-ranking { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 560px; overflow-y: auto; }
+.pp-item {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; text-align: left;
+  border: 1px solid var(--k-line); border-radius: 10px; background: transparent; color: var(--k-text); font: inherit; cursor: pointer;
+}
+.pp-item:hover { background: var(--k-panel-2); }
+.pp-item.ativo { border-color: var(--k-red); background: var(--k-redsoft); }
+.pp-item:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--k-ring); }
+.pp-n {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--k-text); color: #0b0b0d; font: 600 11px/1 var(--mono);
+}
+.pp-item.ativo .pp-n { background: var(--k-red); color: #fff; }
+.pp-texto { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pp-texto b { font-size: 13px; font-weight: 500; line-height: 1.25; }
+
+/* números da previsão: rótulo à esquerda, valor à direita */
+.pp-linhas { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.pp-linhas > div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--k-line-2); }
+.pp-linhas > div > span:first-child { color: var(--k-label); }
+
+/* lista de abordagem */
+.pp-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pp-lista li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--k-line-2); }
+.pp-lista li > .tiny { flex: 1 1 260px; }
+.pp-link { padding: 0; border: 0; background: none; color: var(--k-text); font: inherit; font-weight: 500; cursor: pointer; text-align: left; }
+.pp-link:hover { text-decoration: underline; }

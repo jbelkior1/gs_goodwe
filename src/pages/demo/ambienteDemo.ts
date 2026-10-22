@@ -97,11 +97,12 @@ export const APARELHOS: AparelhoDef[] = [
   },
   {
     id: 'goodwe', nome: 'Notebook da GoodWe', aparelho: 'Notebook · torre de controle',
-    serve: 'A franqueadora: aprova os pedidos de franquia, acompanha a rede e os royalties.',
+    serve: 'A franqueadora: aprova os pedidos de franquia, acompanha a rede e os royalties e procura lugares novos.',
     conta: 'goodwe', largura: 1440, altura: 900,
     abas: [
       { id: 'rede', rotulo: 'Visão da rede', caminho: '/goodwe' },
       { id: 'homologacao', rotulo: 'Homologação', caminho: '/goodwe/homologacao' },
+      { id: 'prospeccao', rotulo: 'Prospecção', caminho: '/goodwe/prospeccao' },
     ],
   },
 ];

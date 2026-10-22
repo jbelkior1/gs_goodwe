@@ -1,0 +1,45 @@
+/* ==========================================================================
+   MAPA DE CALOR DA PROSPECÇÃO (src/ui/MapaCalor.tsx) — prefixo mc-
+   ========================================================================== */
+
+.mc { position: relative; overflow: hidden; border: 1px solid var(--k-line); border-radius: var(--radius); background: #0b0b0d; }
+.mc-mapa { width: 100%; aspect-ratio: 4 / 3; background: #0b0b0d; font: inherit; outline: none; }
+.mc-mapa:focus-visible { box-shadow: inset 0 0 0 2px var(--k-red); }
+@media (max-width: 780px) { .mc-mapa { aspect-ratio: 1 / 1; } }
+
+/* o calor fica abaixo dos marcadores e não pega clique */
+.mc-calor { position: absolute; left: 0; top: 0; pointer-events: none; }
+
+.mc-icone { background: none; border: none; }
+.mc-pino { position: absolute; inset: 0; margin: auto; border-radius: 50%; display: grid; place-items: center; cursor: default; }
+/* ponto da rede: vermelho da marca, com aro escuro */
+.mc-pino.rede { width: 16px; height: 16px; background: var(--k-red); border: 2px solid #0b0b0d; box-shadow: 0 0 0 1px rgba(255, 85, 96, .7); }
+/* carregador de terceiros: quadrado cinza pequeno (não é da rede) */
+.mc-pino.terceiro { width: 10px; height: 10px; border-radius: 2px; background: #c9c9cf; border: 1px solid #0b0b0d; }
+/* oportunidade: número do ranking num círculo claro; a escolhida cresce */
+.mc-pino.oportunidade {
+  width: 26px; height: 26px; background: var(--k-text); color: #0b0b0d; border: 2px solid #0b0b0d;
+  box-shadow: 0 0 0 2px rgba(244, 242, 238, .35), 0 4px 12px rgba(0, 0, 0, .6);
+  font: 600 12px/1 var(--mono); cursor: pointer; transition: transform .15s ease;
+}
+.mc-pino.oportunidade:hover { transform: scale(1.12); }
+.mc-pino.oportunidade.ativo { width: 34px; height: 34px; background: var(--k-red); color: #fff; font-size: 14px; box-shadow: 0 0 0 3px rgba(230, 0, 18, .35), 0 6px 16px rgba(0, 0, 0, .7); }
+
+.mc-dica.leaflet-tooltip {
+  background: var(--k-panel); color: var(--k-text); border: 1px solid var(--k-hair); border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .5); font-size: 12px; padding: 6px 9px;
+}
+.mc-dica.leaflet-tooltip-top::before { border-top-color: var(--k-hair); }
+
+/* legenda: a escala de cor e o que cada marcador é */
+.mc-legenda { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; font-size: 12px; color: var(--k-label); }
+.mc-escala { display: inline-flex; align-items: center; gap: 8px; }
+.mc-escala i {
+  display: inline-block; width: 120px; height: 8px; border-radius: 4px;
+  background: linear-gradient(90deg, #1e3a8a, #2563eb 25%, #22c55e 48%, #ffb020 68%, #ff5560 86%, #ffe4e6);
+}
+.mc-chave { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.mc-chave input { accent-color: var(--k-red); margin: 0; }
+.mc-chave .mc-pino { position: static; margin: 0; flex: none; }
+.mc-chave .mc-pino.rede { width: 12px; height: 12px; }
+.mc-chave .mc-pino.oportunidade { width: 16px; height: 16px; font-size: 9px; cursor: default; }

@@ -30,6 +30,7 @@ import Financeiro from './pages/franqueado/Financeiro';
 
 import Visao from './pages/goodwe/Visao';
 import Homologacao from './pages/goodwe/Homologacao';
+import Prospeccao from './pages/goodwe/Prospeccao';
 
 /** Mantém vivo o endereço antigo (/lojista, /rede) apontando para o novo. */
 function Redireciona({ de, para }: { de: string; para: string }) {
@@ -140,6 +141,7 @@ export default function App() {
         {/* goodwe — a franqueadora */}
         <Route path="/goodwe" element={<Visao />} />
         <Route path="/goodwe/homologacao" element={<Homologacao />} />
+        <Route path="/goodwe/prospeccao" element={<Prospeccao />} />
       </Route>
 
       <Route path="/seja-goodwe" element={<SejaGoodwe />} />
