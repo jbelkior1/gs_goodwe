@@ -10,6 +10,7 @@ const EXTRA = {
   celular: 'M8 2.5h8a1.5 1.5 0 0 1 1.5 1.5v16a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 20V4A1.5 1.5 0 0 1 8 2.5Z M11 18.5h2',
   pix: 'M12 3l9 9-9 9-9-9 9-9Z M9 12l3-3 3 3-3 3-3-3Z',
   bloqueio: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M5.6 5.6l12.8 12.8',
+  pessoa: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M4.5 20.5c1.4-3.6 4.2-5.5 7.5-5.5s6.1 1.9 7.5 5.5',
 } as const;
 
 export type NomeIc = NomeIcone | keyof typeof EXTRA;

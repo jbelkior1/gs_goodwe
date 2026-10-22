@@ -3,11 +3,31 @@ import type { Cobranca, Ponto, Sessao, Veiculo } from '../../domain/types';
 import type { ComposicaoTarifa } from '../../domain/engine/tarifa';
 import type { VagaVista } from '../../domain/engine/totem';
 
-/** o que cada tela entrega ao layout: o estado grande, os números e a ação (cada um vai para o seu canto da grade) */
+/**
+ * Faixa dos 4 passos da recarga (Conectar · Confirmar · Carregar · Pagar). `n` é o passo atual; os de
+ * antes aparecem como feitos. `tom` dá a cor do atual (vermelho = falta o motorista agir, ok = energia
+ * correndo ou pago, aviso = parado ou vencido) e `rotulo` troca a palavra do atual ("Pausada").
+ */
+export interface Etapa {
+  n: 1 | 2 | 3 | 4;
+  tom?: 'vermelho' | 'ok' | 'aviso';
+  rotulo?: string;
+  /** palavra do passo 2 já feito quando a recarga é de visitante ("Sem app" em vez de "Confirmado") */
+  visitante?: boolean;
+  /** o passo atual também já terminou (pago): todos aparecem como feitos */
+  concluida?: boolean;
+}
+
+/**
+ * O que cada tela entrega ao layout, cada parte no seu canto da grade: os passos, o estado grande,
+ * os números, a ação (instrução ou botão) e os controles da demonstração.
+ */
 export interface Partes {
+  etapa?: Etapa;
   estado: ReactNode;
   numeros?: ReactNode;
   acao?: ReactNode;
+  demo?: ReactNode;
 }
 
 /** ações que pedem confirmação antes de gravar */

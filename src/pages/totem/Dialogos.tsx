@@ -1,18 +1,25 @@
 import { useState, type ReactNode } from 'react';
 import { VEICULOS } from '../../domain/catalogo';
+import { ListaDePassos } from './componentes';
 
-/** pergunta de confirmação em tela cheia: ações que mexem na conta de alguém pedem um segundo toque */
+/**
+ * Pergunta de confirmação: ações que mexem na conta de alguém pedem um segundo toque. Em pé ela sobe
+ * de baixo, como o painel do Volt. `destaque` é a linha que decide (o preço travado) e `passos`, o que
+ * acontece depois do toque.
+ */
 export function Confirmacao({
-  titulo, texto, rotuloOk, rotuloVoltar = 'Voltar', perigo, ocupado, erro, aoConfirmar, aoVoltar,
+  titulo, texto, destaque, passos, rotuloOk, rotuloVoltar = 'Voltar', perigo, ocupado, erro, aoConfirmar, aoVoltar,
 }: {
-  titulo: string; texto: ReactNode; rotuloOk: string; rotuloVoltar?: string; perigo?: boolean;
+  titulo: string; texto: ReactNode; destaque?: ReactNode; passos?: string[]; rotuloOk: string; rotuloVoltar?: string; perigo?: boolean;
   ocupado: boolean; erro?: string; aoConfirmar: () => void; aoVoltar: () => void;
 }) {
   return (
     <div className="tk-dialogo-fundo" onClick={aoVoltar}>
-      <section className="tk-dialogo" role="alertdialog" aria-label={titulo} onClick={(e) => e.stopPropagation()}>
+      <section className={`tk-dialogo${perigo ? ' perigo' : ''}`} role="alertdialog" aria-label={titulo} onClick={(e) => e.stopPropagation()}>
         <h2 className="tk-titulo">{titulo}</h2>
-        <p className="tk-instrucao-g">{texto}</p>
+        <p className="tk-instrucao dim">{texto}</p>
+        {destaque && <div className="tk-dialogo-destaque">{destaque}</div>}
+        {passos && <ListaDePassos passos={passos} tom="neutro" />}
         {erro && <p className="tk-erro" role="alert">{erro}</p>}
         <div className="tk-dialogo-botoes">
           <button className={`tk-btn ${perigo ? 'perigo' : 'primario'}`} disabled={ocupado} onClick={aoConfirmar}>

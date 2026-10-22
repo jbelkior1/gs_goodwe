@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
  * QR que ocupa o espaço que o CSS der (quadrado, fundo branco): o totem desenha o QR na maior
  * área livre da tela, então o tamanho não é fixo. Gerado no próprio app, em alta resolução.
  */
-export function QrFlex({ texto, rotulo }: { texto: string; rotulo: string }) {
+export function QrFlex({ texto, rotulo, className }: { texto: string; rotulo: string; className?: string }) {
   const [src, setSrc] = useState('');
   useEffect(() => {
     let vivo = true;
@@ -15,7 +15,7 @@ export function QrFlex({ texto, rotulo }: { texto: string; rotulo: string }) {
     return () => { vivo = false; };
   }, [texto]);
   return (
-    <div className="tk-qr" role="img" aria-label={rotulo}>
+    <div className={`tk-qr${className ? ` ${className}` : ''}`} role="img" aria-label={rotulo}>
       {src && <img src={src} alt="" draggable={false} />}
     </div>
   );

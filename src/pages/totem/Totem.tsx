@@ -9,12 +9,12 @@ import {
   minutosAte100, prioritariasAgora, serieDePotencia, telaDoTotem, TEMPO, veiculoDaVaga,
   type Aviso, type EscolhaManual, type NomeTela, type VagaDados,
 } from '../../domain/engine/totem';
-import { brl, horaMin, tarifaKWh } from '../../domain/formato';
+import { brl, horaMin } from '../../domain/formato';
 import { conectarCarro, desconectarCarro, encerrarSessao, iniciarVisitante, pagarCobranca } from '../../data/acoes';
 import { PalcoEscalado } from '../../ui/Quiosque';
 import { DESENHO, useInatividade, useQuiosque, useToquesSecretos } from '../../ui/quiosqueContexto';
 import { Volt } from '../../ui/Volt';
-import { Bloco } from './componentes';
+import { Bloco, Etapas, ValorKWh } from './componentes';
 import { Confirmacao, SimularCarro } from './Dialogos';
 import { useAgora, useExpiradas, useOnline, usePontoDoTotem } from './hooks';
 import { Ic } from './icones';
@@ -47,7 +47,7 @@ export default function Totem({ orientacao = 'vertical', aparelho = false }: { o
 
   const tela = alvo.fase === 'pareando' ? (
     <Casca
-      orientacao={orientacao} tela="parear" nomePonto="Totem sem ponto" online={online} hora={horaMin(new Date(agora))}
+      orientacao={orientacao} tela="parear" nomePonto="totem sem ponto" online={online} hora={horaMin(new Date(agora))}
       avisos={[]} partes={parteParear(alvo)}
     />
   ) : (
@@ -94,7 +94,7 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
   if (!ponto) {
     return (
       <Casca
-        orientacao={orientacao} tela="semPonto" nomePonto="Totem sem ponto" online={online} hora={horaMin(new Date(agora))} avisos={[]}
+        orientacao={orientacao} tela="semPonto" nomePonto="totem sem ponto" online={online} hora={horaMin(new Date(agora))} avisos={[]}
         partes={{
           estado: (
             <Bloco
@@ -107,7 +107,8 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
     );
   }
 
-  const tarifa = tarifaAtual(pontoId);
+  // com o carro já no cabo, cota como o simulador vai cotar ao abrir a sessão: a vaga dele não conta como "última vaga"
+  const tarifa = tarifaAtual(pontoId, r.tela === 'reconhecendo' ? r.foco?.id : undefined);
   const veiculo = veiculoDaVaga(sessao, r.foco?.dados.vaga);
   const precoKWh = sessao && sessao.tarifaAplicadaKWh > 0 ? sessao.tarifaAplicadaKWh : tarifa.precoFinalKWh;
   const emCurva = r.tela === 'carga' || r.tela === 'pausada';
@@ -135,6 +136,10 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
   };
 
   const partes = escolherPartes(r.tela, d);
+  // demonstração: a retirada do cabo vale em qualquer tela com carro (na espera ela já vem na Simulacao)
+  const retirar = DEMO && r.foco?.comCarro && r.tela !== 'espera' ? (
+    <button className="tk-demo-btn" disabled={ocupado} onClick={() => d.retirarCabo(r.foco!.id)}>Simular retirada do cabo</button>
+  ) : null;
 
   // contexto do Volt: sessão só quando há recarga (sem ela o Volt não cita número de recarga)
   const comRecarga = ['iniciando', 'carga', 'pausada', 'encerrando', 'pagar', 'pago'].includes(r.fase);
@@ -161,17 +166,13 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
       orientacao={orientacao} tela={r.tela} nomePonto={ponto.nome} online={online} hora={horaMin(new Date(agora))} avisos={r.avisos}
       partes={{
         ...partes,
-        acao: (
+        acao: partes.acao || (erro && !dialogo) ? (
           <>
             {partes.acao}
             {erro && !dialogo && <p className="tk-erro" role="alert">{erro}</p>}
-            {DEMO && r.foco?.comCarro && r.tela !== 'espera' && (
-              <button className="tk-demo-btn" disabled={ocupado} onClick={() => d.retirarCabo(r.foco!.id)}>
-                Simular retirada do cabo (demonstração)
-              </button>
-            )}
           </>
-        ),
+        ) : undefined,
+        demo: partes.demo || retirar ? <>{partes.demo}{retirar}</> : undefined,
       }}
       vagas={r.tela === 'instalacao' || r.tela === 'suspenso' ? undefined : <CartoesDeVaga vagas={r.vagas} focoId={r.foco?.id} aoEscolher={escolher} />}
       volt={(
@@ -179,7 +180,7 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
           className="tk-volt-btn" onClick={() => setVoltChave(voltAberto ? null : chaveFase)}
           aria-label="Dúvidas? Falar com o Volt" aria-expanded={voltAberto}
         >
-          <span className="tk-volt-disco"><Volt tamanho={92} /></span>
+          <span className="tk-volt-disco"><Volt tamanho={76} /></span>
           <span className="tk-volt-rotulo">Dúvidas?</span>
         </button>
       )}
@@ -189,8 +190,10 @@ function TotemDoPonto({ pontoId, orientacao, online, agora }: { pontoId: string;
           {dialogo?.tipo === 'visitante' && (
             <Confirmacao
               titulo="Carregar sem o app?"
-              texto={`O preço fica travado em ${tarifaKWh(precoKWh)}. Você encerra e paga com Pix aqui no totem.`}
-              rotuloOk="Começar a carregar" ocupado={ocupado} erro={erro}
+              texto="Sem cadastro. Você acompanha, encerra e paga aqui no totem."
+              destaque={<><span className="tk-rotulo">Preço travado agora</span><ValorKWh valor={precoKWh} /></>}
+              passos={['A carga começa assim que você tocar abaixo', 'Toque em Encerrar quando quiser parar', 'Pague só o que entrou, com Pix']}
+              rotuloOk="Começar a carregar" rotuloVoltar="Voltar para o QR" ocupado={ocupado} erro={erro}
               aoConfirmar={() => { if (sessao) agir(() => iniciarVisitante(sessao, undefined, sessao.tarifaAplicadaKWh ?? undefined), fechar); }}
               aoVoltar={fechar}
             />
@@ -229,8 +232,8 @@ function escolherPartes(tela: NomeTela, d: DadosTela): Partes {
     case 'iniciando': return parteIniciando(d);
     case 'carga': return d.sessao ? parteCarga(d, false) : parteEspera(d);
     case 'pausada': return d.sessao ? parteCarga(d, true) : parteEspera(d);
-    case 'encerrando': return parteEncerrando();
-    case 'pagar': return d.sessao && d.cobranca ? partePagar(d) : parteEncerrando();
+    case 'encerrando': return parteEncerrando(d);
+    case 'pagar': return d.sessao && d.cobranca ? partePagar(d) : parteEncerrando(d);
     case 'pago': return d.sessao ? partePago(d) : parteEspera(d);
     case 'expirado': return parteExpirado();
     case 'manutencao': return parteManutencao(d);
@@ -256,9 +259,8 @@ function Casca({
       <header className="tk-topo">
         <button className="tk-marca" onClick={toqueNoLogo} tabIndex={-1} aria-label="GoodWe Ponto W">
           <span className="tk-marca-raio"><Ic nome="raio" tamanho={40} /></span>
-          <span className="tk-marca-texto"><b>GoodWe</b><span>Ponto W</span></span>
+          <span className="tk-marca-texto"><b>GoodWe</b><span>Ponto W · {nomePonto}</span></span>
         </button>
-        <div className="tk-topo-ponto">{nomePonto}</div>
         <div className="tk-topo-lado">
           <span className="tk-hora">{hora}</span>
           <span className={`tk-conexao ${online ? 'ok' : 'sem'}`}>
@@ -279,11 +281,18 @@ function Casca({
         </div>
       )}
 
+      {partes.etapa && <Etapas etapa={partes.etapa} />}
       <main className="tk-estado" aria-live="polite">{partes.estado}</main>
       {partes.numeros && <section className="tk-numeros">{partes.numeros}</section>}
-      {vagas}
       {partes.acao && <section className="tk-acao">{partes.acao}</section>}
       {volt && <div className="tk-volt-area">{volt}</div>}
+      {vagas}
+      {partes.demo && (
+        <section className="tk-demo" aria-label="Controles da demonstração">
+          <span className="tk-demo-rotulo">Demonstração</span>
+          <div className="tk-demo-botoes">{partes.demo}</div>
+        </section>
+      )}
       {sobreposicao}
     </div>
   );
