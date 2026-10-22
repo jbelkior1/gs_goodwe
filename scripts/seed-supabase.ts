@@ -4,9 +4,9 @@
  *   npm run seed                 só grava (upsert): comportamento antigo, não apaga nada
  *   npm run seed -- --limpar     apaga a rede inteira e grava a rede nova
  *
- * Usa a chave secreta do .env.local. A rede (10 unidades em São Paulo, 90 dias de histórico até
+ * Usa a chave secreta do .env.local. A rede (11 unidades em São Paulo, 90 dias de histórico até
  * agora, solicitações de exemplo) vem do src/domain/seed.ts. As contas de demonstração têm a senha
- * DEMO_SENHA: goodwe@, franqueado@ (opera o Pão de Açúcar Moema), motorista@ e comerciante@pontow.app
+ * DEMO_SENHA: goodwe@, franqueado@ (opera a FIAP Aclimação), motorista@ e comerciante@pontow.app
  * (motorista, sem franqueado, no começo do fluxo de pedido de franquia).
  *
  * Com --limpar, antes de gravar, apaga nesta ordem (respeita as chaves estrangeiras):

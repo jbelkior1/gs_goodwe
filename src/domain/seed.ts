@@ -55,8 +55,8 @@ const DIAS_HISTORICO = 90;
 const HORA_MS = 3_600_000;
 const DIA_MS = 24 * HORA_MS;
 
-/** o ponto que a conta de franqueado de demonstração opera (a 2ª unidade da lista abaixo) */
-export const PONTO_FRANQUEADO_DEMO = 'p-002';
+/** o ponto da apresentação, que a conta de franqueado de demonstração opera (a 11ª unidade: FIAP Aclimação) */
+export const PONTO_FRANQUEADO_DEMO = 'p-011';
 
 // ---------------------------------------------------------------- perfis de uso
 type PerfilUso = 'estrada' | 'mercado' | 'hiper' | 'shopping' | 'farmacia' | 'academia' | 'cafe' | 'restaurante';
@@ -210,6 +210,13 @@ const UNIDADES: UnidadeDemo[] = [
     regiaoId: 'r-sp-itaim', endereco: 'Av. Brigadeiro Faria Lima, Itaim Bibi — São Paulo/SP', lat: -23.5868, lng: -46.6822,
     segmento: 'Café / Restaurante', formato: 'Light', perfil: 'cafe', ajustePreco: 0.1,
     cargaBaseKW: 9, folga: 1.25, uso: 5.6, inauguradoHaDias: 130,
+  },
+  // o ponto da apresentação: no preço sugerido da região, com sol e bateria GoodWe; aulas de manhã e à noite
+  {
+    nome: 'FIAP Aclimação', responsavel: NOMES[19], razaoSocial: 'FIAP Aclimação Ensino LTDA',
+    regiaoId: 'r-sp-vila-mariana', endereco: 'Av. Lins de Vasconcelos, Aclimação — São Paulo/SP', lat: -23.5736, lng: -46.6232,
+    segmento: 'Loja de rua', formato: 'Standard', perfil: 'academia', ajustePreco: 0,
+    cargaBaseKW: 30, folga: 1.1, solar: { kWp: 40, bateriaKWh: 20 }, uso: 2.8, inauguradoHaDias: 120,
   },
 ];
 

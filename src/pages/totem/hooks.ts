@@ -7,6 +7,9 @@ import {
 import { aoMudarBase, sessoesDoPonto } from '../../domain/db';
 import { foiExpiradaPorTempo } from '../../domain/engine/totem';
 import type { Sessao } from '../../domain/types';
+import { pontoPadrao } from '../demo/ambienteDemo';
+
+const DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
 
 /** relógio do totem: um tique por segundo (a contagem do código e a hora dependem dele) */
 export function useAgora(): number {
@@ -45,8 +48,16 @@ export type EstadoPonto =
  */
 export function usePontoDoTotem(aparelho: boolean, pontoDoPainel: string): EstadoPonto {
   const [params] = useSearchParams();
+  // na demonstração o totem já nasce no ponto da apresentação: sem código para parear.
+  // ?parear=1 mostra o pareamento de verdade (passo 4 do fluxograma)
+  const parear = params.get('parear') === '1';
   const daUrl = params.get('ponto');
-  const [guardado, setGuardado] = useState<string | null>(() => (aparelho ? (daUrl ?? lerPontoGuardado()) : null));
+  const [guardado, setGuardado] = useState<string | null>(() => {
+    if (!aparelho) return null;
+    if (daUrl) return daUrl;
+    if (parear) return null;
+    return lerPontoGuardado() ?? (DEMO ? pontoPadrao() || null : null);
+  });
   const [registro, setRegistro] = useState<{ codigo: string | null; erro?: string; semTabela?: boolean } | null>(null);
   const fixo = aparelho ? (daUrl ?? guardado) : (daUrl ?? pontoDoPainel);
 

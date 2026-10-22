@@ -31,7 +31,7 @@ export const SEGUIR_RECARGA: boolean = EMBUTIDO && (() => {
 
 /** ponto que o painel abre quando ninguém escolheu (o mesmo do franqueado de demonstração) */
 export function pontoPadrao(): string {
-  // o ponto que a conta franqueado@ opera no seed (Pão de Açúcar Moema); sem ele, o primeiro ativo
+  // o ponto da apresentação, que a conta franqueado@ opera no seed (FIAP Aclimação); sem ele, o primeiro ativo
   if (base.pontos.some((p) => p.id === PONTO_FRANQUEADO_DEMO)) return PONTO_FRANQUEADO_DEMO;
   return (base.pontos.find((p) => p.ativo) ?? base.pontos[0])?.id ?? '';
 }

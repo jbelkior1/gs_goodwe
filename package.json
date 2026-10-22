@@ -13,7 +13,8 @@
     "simulador": "tsx --env-file=.env.local simulador/index.ts",
     "seed": "tsx --env-file=.env.local scripts/seed-supabase.ts",
     "demo:comerciante": "tsx --env-file=.env.local scripts/demo-comerciante.ts",
-    "demo:atualizar": "tsx --env-file=.env.local scripts/demo-atualizar.ts"
+    "demo:atualizar": "tsx --env-file=.env.local scripts/demo-atualizar.ts",
+    "demo:fiap": "tsx --env-file=.env.local scripts/demo-fiap.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
