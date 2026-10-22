@@ -14,7 +14,8 @@
     "seed": "tsx --env-file=.env.local scripts/seed-supabase.ts",
     "demo:comerciante": "tsx --env-file=.env.local scripts/demo-comerciante.ts",
     "demo:atualizar": "tsx --env-file=.env.local scripts/demo-atualizar.ts",
-    "demo:fiap": "tsx --env-file=.env.local scripts/demo-fiap.ts"
+    "demo:fiap": "tsx --env-file=.env.local scripts/demo-fiap.ts",
+    "simulador:pacote": "esbuild simulador/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=deploy/vps-simulador/simulador.mjs --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --log-level=warning"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

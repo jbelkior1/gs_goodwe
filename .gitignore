@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# simulador empacotado para a VPS (gerado por npm run simulador:pacote) e o .env de lá
+deploy/vps-simulador/simulador.mjs
+deploy/vps-simulador/.env

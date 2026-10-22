@@ -1,0 +1,20 @@
+# Projeto próprio (nome, rede e contêiner separados): não encosta nos outros serviços da VPS.
+# Sem porta aberta: o simulador só faz chamadas de saída para o Supabase.
+name: pontow-simulador
+services:
+  simulador:
+    build: .
+    image: pontow-simulador:1
+    container_name: pontow-simulador
+    restart: unless-stopped
+    # SUPABASE_URL e SUPABASE_SECRET_KEY (arquivo com chmod 600, nunca no git)
+    env_file: .env
+    environment:
+      SIM_ACELERACAO: "10"
+      TZ: America/Sao_Paulo
+    # teto de recurso: não disputa CPU nem memória com o resto da VPS
+    cpus: 0.25
+    mem_limit: 192m
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "2" }
