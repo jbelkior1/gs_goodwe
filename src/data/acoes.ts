@@ -170,7 +170,6 @@ async function criarPontoAprovado(h: (typeof base.homologacoes)[number]) {
 
 export async function salvarPonto(pontoId: string, campos: Partial<{
   nome: string; endereco: string; precoBaseKWh: number; limitePotenciaKW: number; cargaBaseKW: number;
-  temSolar: boolean; potenciaFVkWp: number;
 }>) {
   const ponto = obterPonto(pontoId);
   if (!ponto) throw new Error('Ponto não encontrado.');
@@ -180,9 +179,6 @@ export async function salvarPonto(pontoId: string, campos: Partial<{
   }
   if (campos.cargaBaseKW != null && !(Number.isFinite(campos.cargaBaseKW) && campos.cargaBaseKW >= 0)) {
     throw new Error('A carga típica do comércio não pode ser negativa.');
-  }
-  if (campos.potenciaFVkWp != null && !(Number.isFinite(campos.potenciaFVkWp) && campos.potenciaFVkWp >= 0)) {
-    throw new Error('A potência solar não pode ser negativa.');
   }
   const limpos = { ...campos };
   if (campos.precoBaseKWh != null) {
