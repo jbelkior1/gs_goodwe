@@ -7,9 +7,9 @@ import type { PontoDeCalor } from '../domain/engine/prospeccao';
 
 /**
  * Mapa de calor da prospecção: Leaflet (mesmos blocos escuros do mapa da rede) com uma camada de
- * calor desenhada em canvas, sem biblioteca extra. Cada ponto de calor é um borrão cujo peso (0–1)
- * soma com os vizinhos; a soma vira cor numa escala azul → verde → âmbar → vermelho. O raio do borrão
- * é fixo em metros, então o desenho acompanha o zoom.
+ * calor desenhada em canvas, sem biblioteca extra. Cada amostra espalha o seu peso (0–1) com um núcleo
+ * gaussiano largo; o maior valor de cada lugar vira cor na escala clássica azul → ciano → verde → amarelo → vermelho,
+ * sobre um véu azul no mapa todo. O raio é em metros (com limites em pixels), então acompanha o zoom.
  *
  * Por cima vão os marcadores: pontos da rede (vermelho), carregadores de terceiros (cinza) e as
  * oportunidades numeradas (a selecionada cresce). Clicar numa oportunidade chama `aoSelecionar`.
@@ -25,10 +25,20 @@ export interface MarcadorCalor {
   n?: number;
 }
 
-/** raio de cada borrão, em metros no chão (vira pixels conforme o zoom) */
-const RAIO_M = 280;
+/**
+ * Raio de influência de cada amostra, em metros no chão: grande de propósito, para vias vizinhas se
+ * fundirem em manchas contínuas (o visual clássico de mapa de calor), com limites em pixels para o
+ * desenho não sumir no zoom de cidade nem virar um borrão único de perto.
+ */
+const RAIO_M = 2600;
+const RAIO_MIN_PX = 52;
+const RAIO_MAX_PX = 170;
+/** a conta é feita numa grade de CELULA × CELULA pixels e ampliada com suavização: rápido e sem degraus */
+const CELULA = 4;
+/** véu azul sobre o mapa todo (como no mapa de calor de cliques): o "frio" também é cor */
+const VEU = 0.38;
 const ESCALA: [number, string][] = [
-  [0, 'rgba(0,0,0,0)'], [0.18, '#1e3a8a'], [0.36, '#2563eb'], [0.55, '#22c55e'], [0.72, '#ffb020'], [0.88, '#ff5560'], [1, '#ffe4e6'],
+  [0, '#1b1bb3'], [0.2, '#1f4fff'], [0.38, '#00c8ff'], [0.55, '#14f07a'], [0.7, '#e6ff00'], [0.82, '#ffb000'], [0.92, '#ff4a00'], [1, '#e00000'],
 ];
 
 /** a escala de cores em 256 tons (RGBA), feita uma vez */
@@ -46,26 +56,22 @@ function obterPaleta(): Uint8ClampedArray {
   return paleta;
 }
 
-/** borrão de um ponto: círculo com sombra desfocada (a técnica do simpleheat), guardado por raio */
-const pinceis = new Map<number, HTMLCanvasElement>();
-function pincel(r: number): HTMLCanvasElement {
-  const chave = Math.round(r);
-  const pronto = pinceis.get(chave);
+/** núcleo gaussiano (raio em células), guardado por raio */
+const nucleos = new Map<number, Float32Array>();
+function nucleo(raio: number): Float32Array {
+  const pronto = nucleos.get(raio);
   if (pronto) return pronto;
-  const blur = chave * 0.85;
-  const lado = (chave + blur) * 2;
-  const c = document.createElement('canvas');
-  c.width = lado; c.height = lado;
-  const ctx = c.getContext('2d')!;
-  // o círculo fica fora do quadro e só a sombra dele aparece: borda macia sem gradiente manual
-  ctx.shadowOffsetX = ctx.shadowOffsetY = lado * 2;
-  ctx.shadowBlur = blur;
-  ctx.shadowColor = '#000';
-  ctx.beginPath();
-  ctx.arc(-lado * 1.5, -lado * 1.5, chave, 0, Math.PI * 2);
-  ctx.fill();
-  pinceis.set(chave, c);
-  return c;
+  const lado = raio * 2 + 1;
+  const k = new Float32Array(lado * lado);
+  const sigma = raio / 2.4;
+  for (let y = -raio; y <= raio; y++) {
+    for (let x = -raio; x <= raio; x++) {
+      const d2 = x * x + y * y;
+      if (d2 <= raio * raio) k[(y + raio) * lado + (x + raio)] = Math.exp(-d2 / (2 * sigma * sigma));
+    }
+  }
+  nucleos.set(raio, k);
+  return k;
 }
 
 /** camada de calor: um canvas no painel de sobreposição, redesenhado quando o mapa para de mexer */
@@ -123,35 +129,64 @@ class CamadaCalor extends L.Layer {
     // metros por pixel nesta latitude e neste zoom (Web Mercator, blocos de 256 px)
     const lat = mapa.getCenter().lat;
     const mPorPx = (40_075_016.686 * Math.cos((lat * Math.PI) / 180)) / 2 ** (mapa.getZoom() + 8);
-    const r = Math.min(48, Math.max(7, RAIO_M / mPorPx));
-    const p = pincel(r);
-    const meio = p.width / 2;
+    const rPx = Math.min(RAIO_MAX_PX, Math.max(RAIO_MIN_PX, RAIO_M / mPorPx));
+    const raio = Math.max(2, Math.round(rPx / CELULA));
+    const k = nucleo(raio);
+    const lado = raio * 2 + 1;
 
-    const ctx = tela.getContext('2d', { willReadFrequently: true })!;
-    ctx.clearRect(0, 0, tam.x, tam.y);
-    // borrões vizinhos se somam: o alfa de cada um é baixo para a via cheia não virar um bloco só
+    // 1) espalha cada amostra numa grade de números (sem os degraus de 8 bits do canvas). Cada célula
+    //    guarda a MAIOR influência que recebe, não a soma: um cruzamento de vias medianas não pode
+    //    esquentar mais que uma via ótima sozinha, senão o vermelho do mapa não bate com o ranking.
+    const gw = Math.ceil(tam.x / CELULA);
+    const gh = Math.ceil(tam.y / CELULA);
+    const grade = new Float32Array(gw * gh);
     for (const [la, ln, peso] of this.pontos) {
+      if (peso <= 0) continue;
       const pt = mapa.latLngToContainerPoint([la, ln]);
-      if (pt.x < -meio || pt.y < -meio || pt.x > tam.x + meio || pt.y > tam.y + meio) continue;
-      ctx.globalAlpha = Math.max(0.04, Math.min(1, peso)) * 0.34;
-      ctx.drawImage(p, pt.x - meio, pt.y - meio);
+      const cx = Math.round(pt.x / CELULA);
+      const cy = Math.round(pt.y / CELULA);
+      if (cx < -raio || cy < -raio || cx > gw + raio || cy > gh + raio) continue;
+      for (let y = Math.max(0, cy - raio); y <= Math.min(gh - 1, cy + raio); y++) {
+        const ky = (y - cy + raio) * lado;
+        const linha = y * gw;
+        for (let x = Math.max(0, cx - raio); x <= Math.min(gw - 1, cx + raio); x++) {
+          const v = peso * k[ky + (x - cx + raio)];
+          if (v > grade[linha + x]) grade[linha + x] = v;
+        }
+      }
     }
-    ctx.globalAlpha = 1;
 
-    // pinta: a intensidade acumulada (alfa) escolhe a cor da escala
-    const img = ctx.getImageData(0, 0, tam.x, tam.y);
-    const d = img.data;
+    // 2) contraste automático: o topo (percentil 97 do que tem calor) já é vermelho; a curva abre os
+    //    tons do meio (verde e amarelo), como no mapa de calor de cliques
+    const comCalor: number[] = [];
+    for (let i = 0; i < grade.length; i += 3) if (grade[i] > 0) comCalor.push(grade[i]);
+    comCalor.sort((a, b) => a - b);
+    const max = comCalor.length ? comCalor[Math.floor(comCalor.length * 0.97)] : 0;
     const pal = obterPaleta();
-    for (let i = 3; i < d.length; i += 4) {
-      const a = d[i];
-      if (!a) continue;
-      const j = Math.min(255, a) * 4;
-      d[i - 3] = pal[j];
-      d[i - 2] = pal[j + 1];
-      d[i - 1] = pal[j + 2];
-      d[i] = Math.min(225, a * 1.6);
+    const pequena = document.createElement('canvas');
+    pequena.width = gw;
+    pequena.height = gh;
+    const pctx = pequena.getContext('2d')!;
+    const img = pctx.createImageData(gw, gh);
+    const d = img.data;
+    const veu = Math.round(VEU * 255);
+    for (let i = 0; i < grade.length; i++) {
+      const v = max > 0 ? Math.pow(Math.min(1, grade[i] / max), 0.55) : 0;
+      const j = Math.min(255, Math.round(v * 255)) * 4;
+      d[i * 4] = pal[j];
+      d[i * 4 + 1] = pal[j + 1];
+      d[i * 4 + 2] = pal[j + 2];
+      // o frio fica só no véu; o quente fica mais opaco, sem esconder de vez o mapa embaixo
+      d[i * 4 + 3] = Math.round(veu + v * (215 - veu));
     }
-    ctx.putImageData(img, 0, 0);
+    pctx.putImageData(img, 0, 0);
+
+    // 3) amplia a grade para o tamanho do mapa com suavização: as manchas saem contínuas
+    const ctx = tela.getContext('2d')!;
+    ctx.clearRect(0, 0, tam.x, tam.y);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(pequena, 0, 0, gw * CELULA, gh * CELULA);
   }
 }
 

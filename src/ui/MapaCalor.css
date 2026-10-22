@@ -36,7 +36,7 @@
 .mc-escala { display: inline-flex; align-items: center; gap: 8px; }
 .mc-escala i {
   display: inline-block; width: 120px; height: 8px; border-radius: 4px;
-  background: linear-gradient(90deg, #1e3a8a, #2563eb 25%, #22c55e 48%, #ffb020 68%, #ff5560 86%, #ffe4e6);
+  background: linear-gradient(90deg, #1b1bb3, #1f4fff 20%, #00c8ff 38%, #14f07a 55%, #e6ff00 70%, #ffb000 82%, #ff4a00 92%, #e00000);
 }
 .mc-chave { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
 .mc-chave input { accent-color: var(--k-red); margin: 0; }
