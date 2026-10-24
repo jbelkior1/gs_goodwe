@@ -18,6 +18,7 @@ import MeuPonto from './pages/franqueado/MeuPonto';
 import SejaGoodwe from './pages/SejaGoodwe';
 
 import Portal from './pages/portal/Portal';
+import SessoesPython from './pages/sessoes/SessoesPython';
 
 import Recarga from './pages/motorista/Recarga';
 import Pagar from './pages/motorista/Pagar';
@@ -115,6 +116,9 @@ export default function App() {
 
       {/* central da demonstração: fluxograma ao vivo, links dos aparelhos e o palco */}
       <Route path="/demo" element={<Demo />} />
+
+      {/* Sprint 4 (DSA): sessões de recarga servidas pelo backend Python (pasta backend/) */}
+      <Route path="/sessoes" element={<SessoesPython />} />
 
       {/* totem — vitrine no notebook ou quiosque em tela cheia no aparelho real */}
       <Route element={<CascaTotem />}>
